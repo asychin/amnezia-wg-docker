@@ -59,6 +59,33 @@ make client-add name=myclient ip=10.13.13.10
 - **Docker** >= 20.10
 - **Docker Compose** >= 1.29
 - **Linux** хост с поддержкой TUN/TAP
+- **Привилегированный режим** или доступ к `/dev/net/tun`
+
+### ⚠️ Важно: TUN устройство
+
+AmneziaWG требует доступ к TUN интерфейсу. Убедитесь что:
+
+1. **TUN модуль загружен:**
+   ```bash
+   # Проверка модуля
+   lsmod | grep tun
+   
+   # Загрузка если нужно
+   sudo modprobe tun
+   ```
+
+2. **TUN устройство существует:**
+   ```bash
+   # Проверка устройства
+   ls -la /dev/net/tun
+   
+   # Создание если нужно
+   sudo mkdir -p /dev/net
+   sudo mknod /dev/net/tun c 10 200
+   sudo chmod 666 /dev/net/tun
+   ```
+
+3. **Docker запущен с правильными флагами** (см. секцию развертывания)
 
 ### Установка Docker (Ubuntu/Debian)
 
@@ -191,6 +218,85 @@ make client-qr name=<TAB>      # Существующие клиенты
 awg_add_client mobile          # Быстрое добавление
 awg_help                       # Справка по автокомплиту
 ```
+
+---
+
+## 🚀 Развертывание
+
+### Способ 1: Docker Compose (рекомендуется)
+
+```bash
+# Быстрый запуск с docker-compose
+make build && make up
+
+# Проверка статуса
+make status
+```
+
+Docker Compose уже настроен с правильными параметрами в `docker-compose.yml`:
+- `privileged: true` - полные права контейнера
+- `devices: - /dev/net/tun` - доступ к TUN устройству
+- `cap_add: [NET_ADMIN, SYS_MODULE]` - сетевые возможности
+
+### Способ 2: Docker run (ручной запуск)
+
+```bash
+# Сборка образа
+docker build -t amneziawg-server .
+
+# Запуск с необходимыми правами
+docker run -d \
+  --name amneziawg-server \
+  --privileged \
+  --cap-add=NET_ADMIN \
+  --cap-add=SYS_MODULE \
+  --device=/dev/net/tun \
+  --sysctl net.ipv4.ip_forward=1 \
+  -p 51820:51820/udp \
+  -v $(pwd)/config:/app/config \
+  -v $(pwd)/clients:/app/clients \
+  -e SERVER_PUBLIC_IP=YOUR_SERVER_IP \
+  amneziawg-server
+```
+
+### Способ 3: Облачные провайдеры
+
+Для **VPS/VDS** серверов (DigitalOcean, Vultr, Hetzner и др.):
+
+```bash
+# Убедитесь что TUN модуль доступен
+lsmod | grep tun || sudo modprobe tun
+
+# Создайте TUN устройство если нужно
+sudo mkdir -p /dev/net
+sudo mknod /dev/net/tun c 10 200
+sudo chmod 666 /dev/net/tun
+
+# Запускайте как обычно
+make build && make up
+```
+
+### ⚠️ Устранение проблем с TUN
+
+Если получаете ошибку `CreateTUN("awg0") failed; /dev/net/tun does not exist`:
+
+1. **Проверьте доступность TUN на хосте:**
+   ```bash
+   ls -la /dev/net/tun
+   cat /dev/net/tun  # должно вернуть "cat: /dev/net/tun: File descriptor in bad state"
+   ```
+
+2. **Для Docker без привилегий (не рекомендуется):**
+   ```bash
+   # Добавьте в docker-compose.yml или docker run:
+   --cap-add=NET_ADMIN --device=/dev/net/tun
+   ```
+
+3. **Для Podman или других runtime:**
+   ```bash
+   # Используйте аналогичные флаги с вашим runtime
+   podman run --privileged --device=/dev/net/tun ...
+   ```
 
 ---
 

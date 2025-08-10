@@ -128,10 +128,19 @@ jobs:
             exit 0
           fi
           
-          # Simple image check
+          # Create TUN device on host for testing
+          sudo mkdir -p /dev/net
+          sudo mknod /dev/net/tun c 10 200 || true
+          sudo chmod 666 /dev/net/tun || true
+          
+          # Simple image check with TUN device access
           docker run --rm \
+            --privileged \
+            --cap-add=NET_ADMIN \
+            --device=/dev/net/tun \
             -e AWG_INTERFACE=awg0 \
             -e AWG_PORT=51820 \
+            -e AWG_DISABLE_IPTABLES=true \
             "$FIRST_TAG" \
             amneziawg-go --version
           

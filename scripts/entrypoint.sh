@@ -285,9 +285,55 @@ setup_iptables() {
     log "Настройка iptables завершена (могут быть предупреждения в CI/CD)"
 }
 
+# Функция создания TUN устройства при необходимости
+ensure_tun_device() {
+    log "Проверяем доступность TUN устройства..."
+    
+    # Проверяем наличие /dev/net/tun
+    if [ ! -e "/dev/net/tun" ]; then
+        warn "TUN устройство не найдено, пытаемся создать..."
+        
+        # Создаем директорию если нужно
+        mkdir -p /dev/net
+        
+        # Пытаемся создать TUN устройство
+        if mknod /dev/net/tun c 10 200 2>/dev/null; then
+            log "✅ TUN устройство создано: /dev/net/tun"
+            chmod 666 /dev/net/tun
+        else
+            # Альтернативный способ через modprobe
+            if command -v modprobe >/dev/null 2>&1; then
+                log "Пытаемся загрузить модуль tun..."
+                modprobe tun 2>/dev/null || warn "Не удалось загрузить модуль tun"
+            fi
+            
+            # Еще одна попытка создания
+            if mknod /dev/net/tun c 10 200 2>/dev/null; then
+                log "✅ TUN устройство создано после загрузки модуля"
+                chmod 666 /dev/net/tun
+            else
+                error "❌ Не удалось создать TUN устройство"
+                error "Запустите контейнер с флагами: --privileged --cap-add=NET_ADMIN --device=/dev/net/tun"
+                exit 1
+            fi
+        fi
+    else
+        log "✅ TUN устройство доступно: /dev/net/tun"
+    fi
+    
+    # Проверяем права доступа
+    if [ ! -r "/dev/net/tun" ] || [ ! -w "/dev/net/tun" ]; then
+        warn "Недостаточно прав для доступа к TUN устройству"
+        chmod 666 /dev/net/tun 2>/dev/null || warn "Не удалось изменить права доступа"
+    fi
+}
+
 # Функция запуска AmneziaWG userspace (правильный подход согласно документации)
 start_amneziawg() {
     log "Запускаем AmneziaWG userspace интерфейс ${AWG_INTERFACE}..."
+    
+    # Убеждаемся что TUN устройство доступно
+    ensure_tun_device
     
     # Проверяем, существует ли уже интерфейс
     if ip link show ${AWG_INTERFACE} &>/dev/null; then

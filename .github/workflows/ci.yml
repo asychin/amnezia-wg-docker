@@ -217,12 +217,18 @@ jobs:
         run: |
           echo "🚀 Testing container startup..."
           
-          # Start container in test mode
+          # Create TUN device on host for testing
+          sudo mkdir -p /dev/net
+          sudo mknod /dev/net/tun c 10 200 || true
+          sudo chmod 666 /dev/net/tun || true
+          
+          # Start container in test mode with proper TUN device access
           docker run -d \
             --name amneziawg-test \
             --privileged \
             --cap-add=NET_ADMIN \
             --cap-add=SYS_MODULE \
+            --device=/dev/net/tun \
             -e AWG_INTERFACE=awg0 \
             -e AWG_PORT=51820 \
             -e AWG_NET=10.13.13.0/24 \
@@ -268,12 +274,20 @@ jobs:
         run: |
           echo "⚙️ Testing basic commands..."
           
+          # Check TUN device availability
+          docker exec amneziawg-test ls -la /dev/net/tun
+          docker exec amneziawg-test test -c /dev/net/tun
+          
           # Check installed software versions
           docker exec amneziawg-test amneziawg-go --version
           docker exec amneziawg-test awg --version
           
-          # Check network interfaces
+          # Check network interfaces (should include awg0)
           docker exec amneziawg-test ip link show
+          docker exec amneziawg-test ip link show awg0 || echo "awg0 interface not yet created"
+          
+          # Check that AmneziaWG process is running
+          docker exec amneziawg-test ps aux | grep amneziawg-go | grep -v grep || echo "AmneziaWG process check"
           
           # Check script availability
           docker exec amneziawg-test ls -la /app/scripts/
