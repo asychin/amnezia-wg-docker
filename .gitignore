@@ -25,6 +25,7 @@ clients/
 *.backup
 *.bak
 amneziawg-backup-*.tar.gz
+amneziawg-auto-backup-*.tar.gz
 
 # ============================================================================
 # DOCKER И КОНТЕЙНЕРЫ

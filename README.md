@@ -25,8 +25,9 @@
 This project provides a **containerized AmneziaWG VPN server** with userspace implementation. AmneziaWG is a protocol based on WireGuard that adds obfuscation capabilities to bypass DPI (Deep Packet Inspection) systems.
 
 ### Key Components:
+
 - **amneziawg-go**: Userspace implementation (no kernel modules required)
-- **amneziawg-tools**: Configuration and management utilities  
+- **amneziawg-tools**: Configuration and management utilities
 - **Docker containerization**: Easy deployment and management
 - **Makefile automation**: Simple commands for all operations
 
@@ -35,7 +36,7 @@ This project provides a **containerized AmneziaWG VPN server** with userspace im
 ## 🌟 Features
 
 - ✅ **AmneziaWG Userspace** - Works without kernel modules
-- ✅ **DPI Bypass** - Camouflages VPN traffic as HTTPS  
+- ✅ **DPI Bypass** - Camouflages VPN traffic as HTTPS
 - ✅ **Docker Container** - Simple deployment with docker-compose
 - ✅ **Auto IP Detection** - Smart public IP discovery through multiple services
 - ✅ **Automatic Setup** - iptables, routing, DNS configuration
@@ -57,6 +58,9 @@ cd amnezia-wg-docker
 
 # If you forgot --recursive:
 git submodule update --init --recursive
+
+# Initialize project (optional - will be done automatically)
+make init
 ```
 
 ### 2. Build and Start
@@ -92,44 +96,47 @@ make client-config name=laptop > laptop.conf
 
 ## 📋 Available Commands
 
-| Command | Description |
-|---------|-------------|
-| `make help` | Show all available commands |
-| `make build` | Build Docker image |
-| `make up` | Start VPN server |
-| `make down` | Stop VPN server |
-| `make restart` | Restart VPN server |
-| `make status` | Show server status and connections |
-| `make logs` | View real-time logs |
-| `make client-add name=X` | Add new client |
-| `make client-rm name=X` | Remove client |
-| `make client-qr name=X` | Show client QR code |
-| `make client-config name=X` | Show client configuration |
-| `make client-list` | List all clients |
-| `make backup` | Create configuration backup |
-| `make clean` | Full cleanup (stop + remove data) |
+| Command                     | Description                              |
+| --------------------------- | ---------------------------------------- |
+| `make help`                 | Show all available commands              |
+| `make init`                 | Initialize project (submodules + config) |
+| `make build`                | Build Docker image                       |
+| `make up`                   | Start VPN server                         |
+| `make down`                 | Stop VPN server                          |
+| `make restart`              | Restart VPN server                       |
+| `make status`               | Show server status and connections       |
+| `make logs`                 | View real-time logs                      |
+| `make client-add name=X`    | Add new client                           |
+| `make client-rm name=X`     | Remove client                            |
+| `make client-qr name=X`     | Show client QR code                      |
+| `make client-config name=X` | Show client configuration                |
+| `make client-list`          | List all clients                         |
+| `make backup`               | Create configuration backup              |
+| `make clean`                | Full cleanup (stop + remove data)        |
 
 ---
 
 ## 📚 Documentation
 
-| Document | Link |
-|----------|------|
-| **📋 Full Documentation** | [📖 Read](docs/en/README.md) |
-| **🔄 CI/CD Pipeline** | [🔄 Pipeline](docs/en/pipeline.md) |
-| **🍴 Fork Setup** | [🍴 Fork](docs/en/fork-setup.md) |
+| Document                  | Link                               |
+| ------------------------- | ---------------------------------- |
+| **📋 Full Documentation** | [📖 Read](docs/en/README.md)       |
+| **🔄 CI/CD Pipeline**     | [🔄 Pipeline](docs/en/pipeline.md) |
+| **🍴 Fork Setup**         | [🍴 Fork](docs/en/fork-setup.md)   |
 
 ---
 
 ## 🛠️ Technical Details
 
 ### Network Configuration
+
 - **VPN Network**: `10.13.13.0/24`
 - **Server IP**: `10.13.13.1`
 - **Port**: `51820/udp`
 - **DNS**: `8.8.8.8, 8.8.4.4`
 
 ### AmneziaWG Obfuscation Parameters
+
 - **Junk Packet Count (Jc)**: 7
 - **Junk Packet Min Size (Jmin)**: 50
 - **Junk Packet Max Size (Jmax)**: 1000
@@ -138,6 +145,7 @@ make client-config name=laptop > laptop.conf
 - **Header fields**: H1=1, H2=2, H3=3, H4=4
 
 ### Requirements
+
 - Docker with Docker Compose
 - Git (for submodules)
 - Root privileges (for network configuration)
@@ -162,11 +170,11 @@ make client-config name=laptop > laptop.conf
 
 <div align="center">
 
-| Platform | Link |
-|----------|------|
-| 🐛 **Issues** | [GitHub Issues](https://github.com/asychin/amnezia-wg-docker/issues) |
+| Platform           | Link                                                                           |
+| ------------------ | ------------------------------------------------------------------------------ |
+| 🐛 **Issues**      | [GitHub Issues](https://github.com/asychin/amnezia-wg-docker/issues)           |
 | 💬 **Discussions** | [GitHub Discussions](https://github.com/asychin/amnezia-wg-docker/discussions) |
-| 📧 **Contact** | [Email](mailto:asychin@users.noreply.github.com) |
+| 📧 **Contact**     | [Email](mailto:asychin@users.noreply.github.com)                               |
 
 </div>
 

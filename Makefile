@@ -33,7 +33,7 @@ MSG_SERVER_NOT_RUNNING := $(RED)❌ Контейнер $(SERVICE_NAME) не за
 # ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 # ============================================================================
 
-.PHONY: check-compose check-container check-client-name
+.PHONY: check-compose check-container check-client-name init-submodules auto-backup
 
 # Проверка наличия docker compose
 check-compose:
@@ -54,6 +54,59 @@ check-client-name:
 		exit 1; \
 	fi
 
+# Автоматическая инициализация git submodules
+init-submodules:
+	@if [ ! -d "amneziawg-go/.git" ] || [ ! -d "amneziawg-tools/.git" ]; then \
+		echo "$(YELLOW)🔧 Инициализация git submodules...$(NC)"; \
+		git submodule update --init --recursive; \
+		echo "$(GREEN)✅ Submodules инициализированы$(NC)"; \
+	fi
+
+# Автоматическое создание бэкапа конфигурации
+auto-backup:
+	@if [ -d "config" ] || [ -d "clients" ] || [ -f ".env" ]; then \
+		BACKUP_FILE="amneziawg-auto-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz"; \
+		echo "$(YELLOW)💾 Автоматическое создание резервной копии...$(NC)"; \
+		tar -czf $$BACKUP_FILE config/ clients/ .env 2>/dev/null || true; \
+		echo "$(GREEN)✅ Автобэкап создан: $$BACKUP_FILE$(NC)"; \
+		# Автоматическая очистка старых бэкапов (оставляем последние 10) \
+		BACKUP_COUNT=$$(ls amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
+		if [ $$BACKUP_COUNT -gt 10 ]; then \
+			ls -t amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f 2>/dev/null || true; \
+		fi; \
+	fi
+
+# Проверка что сервер запущен
+check-server-running:
+	@if ! $(DOCKER_COMPOSE) ps | grep -q "$(SERVICE_NAME).*Up"; then \
+		echo "$(RED)❌ Сервер не запущен$(NC)"; \
+		echo "$(YELLOW)💡 Используйте 'make up' для запуска сервера$(NC)"; \
+		exit 1; \
+	fi
+
+# Проверка что сервер остановлен
+check-server-stopped:
+	@if $(DOCKER_COMPOSE) ps | grep -q "$(SERVICE_NAME).*Up"; then \
+		echo "$(YELLOW)⚠️  Сервер уже запущен$(NC)"; \
+		echo "$(YELLOW)💡 Используйте 'make down' для остановки сервера$(NC)"; \
+		exit 1; \
+	fi
+
+# Проверка что контейнер существует
+check-container-exists:
+	@if ! $(DOCKER_COMPOSE) ps -a | grep -q "$(SERVICE_NAME)"; then \
+		echo "$(RED)❌ Контейнер $(SERVICE_NAME) не найден$(NC)"; \
+		echo "$(YELLOW)💡 Используйте 'make build' для создания контейнера$(NC)"; \
+		exit 1; \
+	fi
+
+# Проверка что есть конфигурация
+check-config-exists:
+	@if [ ! -d "config" ] && [ ! -d "clients" ] && [ ! -f ".env" ]; then \
+		echo "$(YELLOW)⚠️  Конфигурация не найдена$(NC)"; \
+		echo "$(YELLOW)💡 Используйте 'make init' для инициализации проекта$(NC)"; \
+	fi
+
 .PHONY: help
 help: ## Показать эту справку
 	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
@@ -63,7 +116,7 @@ help: ## Показать эту справку
 	@echo "$(CYAN)📋 ОСНОВНЫЕ КОМАНДЫ:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-		grep -E "(build|up|down|restart|status|logs)"
+		grep -E "(init|build|up|down|restart|status|logs)"
 	@echo ""
 	@echo "$(CYAN)👥 УПРАВЛЕНИЕ КЛИЕНТАМИ:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -92,30 +145,40 @@ install: ## Автоматическая установка (требует root
 	@sudo ./install.sh
 
 .PHONY: init
-init: check-compose ## Инициализация проекта (сабмодули + конфигурация)
+init: check-compose init-submodules ## Инициализация проекта (сабмодули + конфигурация)
 	@echo "$(BLUE)📦 Инициализация проекта...$(NC)"
-	@if [ ! -d "amneziawg-go/.git" ]; then \
-		echo "$(YELLOW)Обновляем сабмодули...$(NC)"; \
-		git submodule update --init --recursive; \
-	fi
 	@if [ ! -f ".env" ]; then \
 		echo "$(YELLOW)Создаем конфигурацию из шаблона...$(NC)"; \
 		cp env.example .env; \
 		echo "$(GREEN)✅ Файл .env создан. Отредактируйте его при необходимости.$(NC)"; \
 	fi
+	@echo "$(CYAN)💡 Команда init автоматически вызывается при:$(NC)"
+	@echo "$(CYAN)   - make up (если .env отсутствует)$(NC)"
+	@echo "$(CYAN)   - make build (если .env отсутствует)$(NC)"
+	@echo "$(CYAN)   - make build-safe (если .env отсутствует)$(NC)"
 
 .PHONY: build build-advanced build-safe
-build: init ## Сборка Docker образа (полная пересборка)
+build: check-compose init-submodules check-config-exists auto-backup ## Сборка Docker образа (полная пересборка)
 	@echo "$(BLUE)🔨 Сборка Docker образа...$(NC)"
+	@# Автоматическая инициализация если нужно
+	@if [ ! -f ".env" ]; then \
+		echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
+		$(MAKE) init; \
+	fi
 	@$(DOCKER_COMPOSE) build --no-cache
 	@echo "$(GREEN)✅ Образ собран успешно$(NC)"
 
-build-safe: init ## Безопасная сборка Docker образа (с использованием кеша)
+build-safe: check-compose init-submodules check-config-exists auto-backup ## Безопасная сборка Docker образа (с использованием кеша)
 	@echo "$(BLUE)🔨 Безопасная сборка Docker образа...$(NC)"
+	@# Автоматическая инициализация если нужно
+	@if [ ! -f ".env" ]; then \
+		echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
+		$(MAKE) init; \
+	fi
 	@$(DOCKER_COMPOSE) build
 	@echo "$(GREEN)✅ Образ собран успешно$(NC)"
 
-build-advanced: init ## Сборка с метаданными и версионированием
+build-advanced: check-compose init-submodules check-config-exists auto-backup ## Сборка с метаданными и версионированием
 	@echo "$(BLUE)🔨 Расширенная сборка Docker образа...$(NC)"
 	@./build.sh
 
@@ -159,30 +222,35 @@ quick-start: ## Клонирование проекта для разработ�
 	echo "3. make build && make up"
 
 .PHONY: up
-up: check-compose ## Запуск сервера
+up: check-compose init-submodules check-server-stopped ## Запуск сервера
 	@echo "$(BLUE)🚀 Запуск AmneziaWG сервера...$(NC)"
+	@# Автоматическая инициализация если нужно
+	@if [ ! -f ".env" ]; then \
+		echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
+		$(MAKE) init; \
+	fi
 	@$(DOCKER_COMPOSE) up -d
 	@echo "$(GREEN)✅ Сервер запущен$(NC)"
 	@sleep 5
 	@$(MAKE) status
 
 .PHONY: down
-down: check-compose ## Остановка сервера
+down: check-compose check-server-running auto-backup ## Остановка сервера
 	@echo "$(BLUE)🛑 Остановка AmneziaWG сервера...$(NC)"
 	@$(DOCKER_COMPOSE) down
 	@echo "$(GREEN)✅ Сервер остановлен$(NC)"
 
 .PHONY: restart
-restart: ## Перезапуск сервера
+restart: check-compose check-server-running auto-backup ## Перезапуск сервера
 	@echo "$(BLUE)🔄 Перезапуск сервера...$(NC)"
-	@$(MAKE) down
+	@$(DOCKER_COMPOSE) down
 	@sleep 2
 	@$(MAKE) up
 
 .PHONY: logs
-logs: check-compose ## Просмотр логов в реальном времени
+logs: check-compose check-server-running ## Просмотр логов в реальном времени
 	@echo "$(BLUE)📄 Логи AmneziaWG сервера (Ctrl+C для выхода):$(NC)"
-	@$(DOCKER_LOGS) -f $(SERVICE_NAME) 2>/dev/null || echo "$(RED)Контейнер не найден$(NC)"
+	@$(DOCKER_LOGS) -f $(SERVICE_NAME)
 
 .PHONY: status
 status: check-compose ## Статус сервера и соединений
@@ -208,7 +276,7 @@ status: check-compose ## Статус сервера и соединений
 # ============================================================================
 
 .PHONY: client-add
-client-add: check-compose check-container check-client-name ## Добавить клиента (name=имя [ip=IP])
+client-add: check-compose check-server-running check-client-name auto-backup ## Добавить клиента (name=имя [ip=IP])
 	@if [ -z "$(ip)" ]; then \
 		echo "$(YELLOW)⚠️  IP не указан, будет выбран автоматически$(NC)"; \
 		$(DOCKER_EXEC) /app/scripts/manage-clients.sh add $(name) || exit 1; \
@@ -218,25 +286,25 @@ client-add: check-compose check-container check-client-name ## Добавить 
 	@echo "$(GREEN)✅ Клиент $(name) добавлен$(NC)"
 
 .PHONY: client-rm
-client-rm: check-compose check-container check-client-name ## Удалить клиента (name=имя)
+client-rm: check-compose check-server-running check-client-name auto-backup ## Удалить клиента (name=имя)
 	@$(DOCKER_EXEC) /app/scripts/manage-clients.sh remove $(name) || exit 1
 	@echo "$(GREEN)✅ Клиент $(name) удален$(NC)"
 
 .PHONY: client-qr
-client-qr: check-compose check-container check-client-name ## Показать QR код клиента (name=имя)
+client-qr: check-compose check-server-running check-client-name ## Показать QR код клиента (name=имя)
 	@echo "$(BLUE)📱 QR код для клиента '$(name)':$(NC)"
 	@$(DOCKER_EXEC) /app/scripts/manage-clients.sh qr $(name)
 
 .PHONY: client-config
-client-config: check-compose check-container check-client-name ## Показать конфигурацию клиента (name=имя)
+client-config: check-compose check-server-running check-client-name ## Показать конфигурацию клиента (name=имя)
 	@$(DOCKER_EXEC) /app/scripts/manage-clients.sh show $(name)
 
 .PHONY: client-list
-client-list: check-compose check-container ## Список всех клиентов
+client-list: check-compose check-server-running ## Список всех клиентов
 	@$(DOCKER_EXEC) /app/scripts/manage-clients.sh list
 
 .PHONY: client-info
-client-info: check-compose check-container ## Информация о подключениях клиентов
+client-info: check-compose check-server-running ## Информация о подключениях клиентов
 	@echo "$(BLUE)📊 Информация о клиентах:$(NC)"
 	@$(DOCKER_EXEC) awg show awg0 dump 2>/dev/null || \
 		echo "$(YELLOW)Информация недоступна$(NC)"
@@ -246,29 +314,27 @@ client-info: check-compose check-container ## Информация о подкл
 # ============================================================================
 
 .PHONY: shell
-shell: check-compose ## Войти в контейнер
+shell: check-compose check-server-running ## Войти в контейнер
 	@echo "$(BLUE)🐚 Вход в контейнер AmneziaWG...$(NC)"
 	@docker exec -it $(SERVICE_NAME) /bin/bash
 
 .PHONY: clean
-clean: check-compose ## Полная очистка (остановка + удаление данных)
+clean: check-compose check-container-exists auto-backup ## Полная очистка (остановка + удаление данных)
 	@echo "$(YELLOW)⚠️  Это удалит все данные сервера и клиентов!$(NC)"
+	@echo "$(GREEN)💾 Резервная копия уже создана автоматически$(NC)"
 	@read -p "Продолжить? [y/N]: " confirm && [ "$$confirm" = "y" ]
-	@$(MAKE) down
 	@$(DOCKER_COMPOSE) down -v --remove-orphans
 	@docker system prune -f
 	@rm -rf config/ clients/
 	@echo "$(GREEN)✅ Очистка завершена$(NC)"
 
 .PHONY: update
-update: ## Обновление сабмодулей и пересборка (с сохранением настроек)
+update: check-compose init-submodules check-server-running auto-backup ## Обновление сабмодулей и пересборка (с сохранением настроек)
 	@echo "$(BLUE)🔄 Обновление проекта...$(NC)"
-	@echo "$(YELLOW)💾 Создаем резервную копию настроек...$(NC)"
-	@$(MAKE) backup
 	@echo "$(BLUE)📥 Обновляем сабмодули...$(NC)"
 	@git submodule update --remote --recursive
 	@echo "$(BLUE)🛑 Останавливаем сервер...$(NC)"
-	@$(MAKE) down
+	@$(DOCKER_COMPOSE) down
 	@echo "$(BLUE)🔨 Пересобираем образ...$(NC)"
 	@$(MAKE) build-safe
 	@echo "$(BLUE)🚀 Запускаем сервер...$(NC)"
@@ -277,12 +343,14 @@ update: ## Обновление сабмодулей и пересборка (с
 	@echo "$(YELLOW)💡 Если возникли проблемы с конфигурацией, используйте 'make restore file=<backup_file>'$(NC)"
 
 .PHONY: update-fast
-update-fast: ## Быстрое обновление сабмодулей без пересборки образа
+update-fast: check-compose init-submodules check-server-running auto-backup ## Быстрое обновление сабмодулей без пересборки образа
 	@echo "$(BLUE)⚡ Быстрое обновление проекта...$(NC)"
 	@echo "$(BLUE)📥 Обновляем сабмодули...$(NC)"
 	@git submodule update --remote --recursive
 	@echo "$(BLUE)🔄 Перезапускаем сервер...$(NC)"
-	@$(MAKE) restart
+	@$(DOCKER_COMPOSE) down
+	@sleep 2
+	@$(MAKE) up
 	@echo "$(GREEN)✅ Быстрое обновление завершено$(NC)"
 	@echo "$(YELLOW)💡 Если обновления сабмодулей требуют пересборки, используйте 'make update'$(NC)"
 
@@ -292,6 +360,17 @@ backup: check-compose ## Создать резервную копию конфи
 	echo "$(BLUE)💾 Создание резервной копии...$(NC)"; \
 	tar -czf $$BACKUP_FILE config/ clients/ .env 2>/dev/null || true; \
 	echo "$(GREEN)✅ Резервная копия создана: $$BACKUP_FILE$(NC)"
+
+.PHONY: backup-cleanup
+backup-cleanup: ## Очистка старых автоматических бэкапов (оставляет последние 10)
+	@echo "$(BLUE)🧹 Очистка старых автоматических бэкапов...$(NC)"; \
+	BACKUP_COUNT=$$(ls amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
+	if [ $$BACKUP_COUNT -gt 10 ]; then \
+		ls -t amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f; \
+		echo "$(GREEN)✅ Удалено $$(($$BACKUP_COUNT - 10)) старых бэкапов$(NC)"; \
+	else \
+		echo "$(YELLOW)ℹ️  Количество бэкапов ($$BACKUP_COUNT) в пределах нормы$(NC)"; \
+	fi
 
 .PHONY: restore
 restore: ## Восстановить из резервной копии (file=путь_к_архиву)
