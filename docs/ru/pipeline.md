@@ -2,7 +2,14 @@
 
 Комплексный CI/CD пайплайн для автоматизированной сборки, тестирования и публикации образов AmneziaWG Docker Server.
 
-**🌍 Языки: [🇺🇸 English](../en/pipeline.md) | [🇷🇺 Русский](../ru/pipeline.md) | [🇨🇳 中文](../zh/pipeline.md)**
+<details>
+  <summary>🌍 Язык: Русский</summary>
+  <p>
+    <a href="../en/pipeline.md">🇺🇸 English</a> •
+    <a href="../ru/pipeline.md">🇷🇺 Русский</a> •
+    <a href="../zh/pipeline.md">🇨🇳 中文</a>
+  </p>
+</details>
 
 ---
 

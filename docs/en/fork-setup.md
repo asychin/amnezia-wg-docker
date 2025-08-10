@@ -2,7 +2,14 @@
 
 This guide helps you set up the CI/CD pipeline when forking this repository for your own projects.
 
-**🌍 Languages: [🇺🇸 English](../en/fork-setup.md) | [🇷🇺 Русский](../ru/fork-setup.md) | [🇨🇳 中文](../zh/fork-setup.md)**
+<details>
+  <summary>🌍 Language: English</summary>
+  <p>
+    <a href="../en/fork-setup.md">🇺🇸 English</a> •
+    <a href="../ru/fork-setup.md">🇷🇺 Русский</a> •
+    <a href="../zh/fork-setup.md">🇨🇳 中文</a>
+  </p>
+</details>
 
 ---
 

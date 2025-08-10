@@ -8,7 +8,14 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amneziawg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amneziawg-docker)
 [![GitHub Stars](https://img.shields.io/github/stars/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/stargazers)
 
-**🌍 Languages: [🇺🇸 English](../en/README.md) | [🇷🇺 Русский](../ru/README.md) | [🇨🇳 中文](../zh/README.md)**
+<details>
+  <summary>🌍 Language: English</summary>
+  <p>
+    <a href="../en/README.md">🇺🇸 English</a> •
+    <a href="../ru/README.md">🇷🇺 Русский</a> •
+    <a href="../zh/README.md">🇨🇳 中文</a>
+  </p>
+</details>
 
 </div>
 
