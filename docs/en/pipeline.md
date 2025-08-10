@@ -2,7 +2,7 @@
 
 Comprehensive CI/CD pipeline for automated building, testing, and publishing of AmneziaWG Docker Server images.
 
-**🌍 Languages: [🇺🇸 English](../en/pipeline.md) | [🇷🇺 Русский](../ru/pipeline.md) | [🇨🇳 中文](../zh/pipeline.md)**
+**🌍 Languages: [🇷🇺 Russian](../ru/pipeline.md) | [🇨🇳 Chinese](../zh/pipeline.md)**
 
 ---
 

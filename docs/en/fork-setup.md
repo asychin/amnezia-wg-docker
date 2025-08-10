@@ -2,7 +2,7 @@
 
 This guide helps you set up the CI/CD pipeline when forking this repository for your own projects.
 
-**🌍 Languages: [🇺🇸 English](../en/fork-setup.md) | [🇷🇺 Русский](../ru/fork-setup.md) | [🇨🇳 中文](../zh/fork-setup.md)**
+**🌍 Languages: [🇷🇺 Russian](../ru/README.md) | [🇨🇳 Chinese](../zh/README.md)**
 
 ---
 

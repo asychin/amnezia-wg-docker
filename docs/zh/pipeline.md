@@ -2,7 +2,7 @@
 
 用于自动构建、测试和发布 AmneziaWG Docker Server 镜像的综合性 CI/CD 流水线。
 
-**🌍 语言: [🇺🇸 English](../en/pipeline.md) | [🇷🇺 Русский](../ru/pipeline.md) | [🇨🇳 中文](../zh/pipeline.md)**
+**🌍 Languages: [🇺🇸 English](../en/pipeline.md) | [🇷🇺 Russian](../ru/pipeline.md)**
 
 ---
 

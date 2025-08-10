@@ -135,6 +135,7 @@ make client-config name=laptop > laptop.conf
 
 完整文档包含在此文件中。技术细节请参考：
 - **🔄 CI/CD Pipeline**: [pipeline.md](pipeline.md)
+- **🍴 Fork Setup**: [fork-setup.md](../en/fork-setup.md) (English only)
 - **🇺🇸 English version**: [../../README.md](../../README.md)
 
 ---
