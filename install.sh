@@ -1,6 +1,7 @@
 #!/bin/bash
-
 # AmneziaWG Docker Server - Скрипт быстрой установки
+# Docker-реализация: asychin (https://github.com/asychin)
+# Оригинальный VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
 # Автоматическая установка и настройка AmneziaWG сервера
 
 set -e

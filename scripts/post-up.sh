@@ -11,7 +11,7 @@ echo "[$(date)] Настройка маршрутизации для $AWG_INTERF
 echo 1 > /proc/sys/net/ipv4/ip_forward
 
 # Настройка iptables для NAT
-iptables -t nat -A POSTROUTING -s ${AWG_NET} -o eth+ -j MASQUERADE
+iptables -t nat -A POSTROUTING -s ${AWG_NET} -o eth0 -j MASQUERADE
 iptables -A FORWARD -i ${AWG_INTERFACE} -j ACCEPT
 iptables -A FORWARD -o ${AWG_INTERFACE} -j ACCEPT
 

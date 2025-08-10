@@ -1,4 +1,6 @@
 # AmneziaWG Docker Server
+# Docker-реализация от asychin (https://github.com/asychin)
+# Основной VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
 # Multi-stage сборка для оптимизации размера образа
 
 # ============================================================================
@@ -38,14 +40,20 @@ RUN /usr/local/bin/amneziawg-go --version
 FROM ubuntu:22.04
 
 # Метаданные образа
-LABEL maintainer="AmneziaWG Docker Team"
-LABEL description="AmneziaWG VPN Server with DPI bypass capabilities"
+LABEL maintainer="asychin <moloko@skofey.com>"
+LABEL description="AmneziaWG VPN Server with DPI bypass capabilities (Docker implementation by asychin)"
 LABEL version="1.0.0"
 LABEL org.label-schema.name="AmneziaWG Docker Server"
 LABEL org.label-schema.description="Ready-to-use AmneziaWG VPN server in Docker with userspace implementation"
-LABEL org.label-schema.url="https://github.com/amnezia-vpn"
-LABEL org.label-schema.vcs-url="https://github.com/amnezia-vpn/amneziawg-go"
+LABEL org.label-schema.url="https://github.com/asychin/amnezia-wg-docker"
+LABEL org.label-schema.vcs-url="https://github.com/asychin/amnezia-wg-docker"
 LABEL org.label-schema.schema-version="1.0"
+LABEL docker.author="asychin"
+LABEL docker.author.github="https://github.com/asychin"
+LABEL docker.author.telegram="https://t.me/BlackSazha"
+LABEL amneziawg.original.url="https://github.com/amnezia-vpn"
+LABEL amneziawg.original.go="https://github.com/amnezia-vpn/amneziawg-go"
+LABEL amneziawg.original.tools="https://github.com/amnezia-vpn/amneziawg-tools"
 
 # Переменные окружения
 ENV DEBIAN_FRONTEND=noninteractive \

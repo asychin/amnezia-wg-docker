@@ -1,4 +1,7 @@
 #!/bin/bash
+# AmneziaWG Client Management Script
+# Docker-реализация: asychin (https://github.com/asychin)
+# Оригинальный VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
 
 # Скрипт для управления клиентами AmneziaWG
 
@@ -53,9 +56,69 @@ usage() {
 # Получение публичного IP сервера
 get_public_ip() {
     if [ "$SERVER_PUBLIC_IP" = "auto" ] || [ -z "$SERVER_PUBLIC_IP" ]; then
-        PUBLIC_IP=$(curl -s --connect-timeout 5 ipinfo.io/ip 2>/dev/null || echo "127.0.0.1")
+        log "Определяем публичный IP автоматически..."
+        
+        # Исправляем DNS если нужно
+        if ! nslookup google.com >/dev/null 2>&1; then
+            log "Исправляем DNS настройки..."
+            echo "nameserver 8.8.8.8" > /etc/resolv.conf
+            echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        fi
+        
+        # Список сервисов для определения публичного IP (в порядке приоритета)
+        IP_SERVICES=(
+            "http://eth0.me"                    # Быстрый HTTP сервис
+            "https://ipv4.icanhazip.com"        # Надежный HTTPS
+            "https://api.ipify.org"             # JSON API
+            "https://checkip.amazonaws.com"     # AWS сервис
+            "https://ipinfo.io/ip"              # Подробная информация
+            "https://ifconfig.me/ip"            # Классический сервис
+            "http://whatismyip.akamai.com"      # CDN Akamai
+            "http://i.pn"                       # JSON ответ
+        )
+        
+        PUBLIC_IP=""
+        
+        # Пробуем каждый сервис до получения валидного IP
+        for service in "${IP_SERVICES[@]}"; do
+            log "Пробуем сервис: $service"
+            
+            # Получаем ответ с таймаутом 10 секунд
+            response=$(curl -s --connect-timeout 10 --max-time 15 "$service" 2>/dev/null)
+            
+            # Извлекаем IP из ответа
+            if [[ "$service" == *"i.pn"* ]]; then
+                # Парсим JSON ответ от i.pn
+                ip=$(echo "$response" | grep '"query"' | sed 's/.*"query"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+            else
+                # Простой текстовый ответ - удаляем пробелы и переносы строк
+                ip=$(echo "$response" | tr -d '[:space:]')
+            fi
+            
+            # Проверяем что получили валидный IPv4 адрес
+            if echo "$ip" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'; then
+                # Дополнительная проверка диапазонов IPv4
+                if echo "$ip" | awk -F. '$1>=1 && $1<=255 && $2>=0 && $2<=255 && $3>=0 && $3<=255 && $4>=0 && $4<=255' | grep -q "$ip"; then
+                    PUBLIC_IP="$ip"
+                    log "✅ Публичный IP определён: $PUBLIC_IP (через $service)"
+                    break
+                fi
+            fi
+            
+            log "❌ Сервис $service не ответил корректно: '$ip'"
+            sleep 1
+        done
+        
+        # Если все сервисы не сработали, используем fallback
+        if [ -z "$PUBLIC_IP" ]; then
+            warn "⚠️ Не удалось определить публичный IP автоматически!"
+            warn "Используем fallback IP. ОБЯЗАТЕЛЬНО укажите правильный IP в .env файле:"
+            warn "echo 'SERVER_PUBLIC_IP=ВАШ_ПУБЛИЧНЫЙ_IP' > .env"
+            PUBLIC_IP="UNKNOWN_IP_PLEASE_SET_MANUALLY"
+        fi
     else
         PUBLIC_IP="$SERVER_PUBLIC_IP"
+        log "Используем заданный IP: $PUBLIC_IP"
     fi
 }
 

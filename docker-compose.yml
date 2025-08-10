@@ -1,3 +1,7 @@
+# AmneziaWG Docker Server Compose Configuration
+# Docker-реализация: asychin (https://github.com/asychin)
+# Оригинальный VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
+
 services:
   amneziawg:
     build: .
@@ -39,7 +43,7 @@ services:
       - AWG_H4=4
       
       # Настройки сервера
-      - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP:-auto}
+      - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP}
       - CLIENTS_SUBNET=10.13.13.0/24
       - ALLOWED_IPS=0.0.0.0/0
       

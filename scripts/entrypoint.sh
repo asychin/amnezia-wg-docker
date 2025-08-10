@@ -1,4 +1,8 @@
 #!/bin/bash
+# AmneziaWG Docker Server Entrypoint
+# Docker-реализация: asychin (https://github.com/asychin)
+# Оригинальный VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
+
 set -e
 
 # Цвета для логов
@@ -41,26 +45,76 @@ AWG_H4=${AWG_H4:-4}
 
 # Путь к конфигурации
 CONFIG_FILE="/app/config/${AWG_INTERFACE}.conf"
+CLIENT_DIR="/app/clients"
 
 # Функция получения публичного IP
 get_public_ip() {
     if [ "$SERVER_PUBLIC_IP" = "auto" ] || [ -z "$SERVER_PUBLIC_IP" ]; then
-        log "Определяем публичный IP адрес..."
-        # Пробуем несколько сервисов
-        PUBLIC_IP=$(curl -s --connect-timeout 5 ipinfo.io/ip 2>/dev/null || \
-                   curl -s --connect-timeout 5 ifconfig.me 2>/dev/null || \
-                   curl -s --connect-timeout 5 ipecho.net/plain 2>/dev/null || \
-                   echo "127.0.0.1")
+        # Исправляем DNS если нужно
+        if ! nslookup google.com >/dev/null 2>&1; then
+            log "Исправляем DNS настройки..."
+            echo "nameserver 8.8.8.8" > /etc/resolv.conf
+            echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+        fi
         
-        if [ "$PUBLIC_IP" = "127.0.0.1" ]; then
-            warn "Не удалось определить публичный IP. Используется localhost."
-        else
-            log "Публичный IP: $PUBLIC_IP"
+        log "Определяем публичный IP автоматически..."
+        
+            # Список сервисов для определения публичного IP (в порядке приоритета)
+    IP_SERVICES=(
+        "http://eth0.me"                    # Быстрый HTTP сервис
+        "https://ipv4.icanhazip.com"        # Надежный HTTPS
+        "https://api.ipify.org"             # JSON API
+        "https://checkip.amazonaws.com"     # AWS сервис
+        "https://ipinfo.io/ip"              # Подробная информация
+        "https://ifconfig.me/ip"            # Классический сервис
+        "http://whatismyip.akamai.com"      # CDN Akamai
+        "http://i.pn"                       # JSON ответ
+    )
+        
+        SERVER_PUBLIC_IP=""
+        
+        # Пробуем каждый сервис до получения валидного IP
+        for service in "${IP_SERVICES[@]}"; do
+            log "Пробуем сервис: $service"
+            
+            # Получаем ответ с таймаутом 10 секунд
+            response=$(curl -s --connect-timeout 10 --max-time 15 "$service" 2>/dev/null)
+            
+            # Извлекаем IP из ответа
+            if [[ "$service" == *"i.pn"* ]]; then
+                # Парсим JSON ответ от i.pn
+                ip=$(echo "$response" | grep '"query"' | sed 's/.*"query"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+            else
+                # Простой текстовый ответ - удаляем пробелы и переносы строк
+                ip=$(echo "$response" | tr -d '[:space:]')
+            fi
+            
+            # Проверяем что получили валидный IPv4 адрес
+            if echo "$ip" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'; then
+                # Дополнительная проверка диапазонов IPv4
+                if echo "$ip" | awk -F. '$1>=1 && $1<=255 && $2>=0 && $2<=255 && $3>=0 && $3<=255 && $4>=0 && $4<=255' | grep -q "$ip"; then
+                    SERVER_PUBLIC_IP="$ip"
+                    log "✅ Публичный IP определён: $SERVER_PUBLIC_IP (через $service)"
+                    break
+                fi
+            fi
+            
+            log "❌ Сервис $service не ответил корректно: '$ip'"
+            sleep 1
+        done
+        
+        # Если все сервисы не сработали, используем fallback
+        if [ -z "$SERVER_PUBLIC_IP" ]; then
+            warn "⚠️ Не удалось определить публичный IP автоматически!"
+            warn "Используем fallback IP. ОБЯЗАТЕЛЬНО укажите правильный IP в .env файле:"
+            warn "echo 'SERVER_PUBLIC_IP=ВАШ_ПУБЛИЧНЫЙ_IP' > .env"
+            SERVER_PUBLIC_IP="UNKNOWN_IP_PLEASE_SET_MANUALLY"
         fi
     else
-        PUBLIC_IP="$SERVER_PUBLIC_IP"
-        log "Используется указанный IP: $PUBLIC_IP"
+        log "Используется заданный IP: $SERVER_PUBLIC_IP"
     fi
+    
+    log "Публичный IP: $SERVER_PUBLIC_IP"
 }
 
 # Функция генерации ключей
@@ -108,6 +162,51 @@ EOF
     log "Конфигурация сервера создана: $CONFIG_FILE"
 }
 
+# Функция синхронизации существующих клиентов
+sync_existing_clients() {
+    log "Синхронизируем существующих клиентов с серверной конфигурацией..."
+    log "CLIENT_DIR: $CLIENT_DIR"
+    
+    if [ -d "$CLIENT_DIR" ]; then
+        log "Директория клиентов найдена"
+        for client_file in "$CLIENT_DIR"/*.conf; do
+            log "Проверяем файл: $client_file"
+            if [ -f "$client_file" ]; then
+                # Извлекаем имя клиента из имени файла
+                client_name=$(basename "$client_file" .conf)
+                log "Найден клиент: $client_name"
+                
+                # Получаем публичный ключ клиента
+                public_key_file="${CLIENT_DIR}/${client_name}_public.key"
+                if [ -f "$public_key_file" ]; then
+                    public_key=$(cat "$public_key_file")
+                    log "Публичный ключ получен для $client_name"
+                    
+                    # Получаем IP адрес клиента из конфигурации
+                    client_ip=$(grep "^Address" "$client_file" | cut -d'=' -f2 | tr -d ' ' | cut -d'/' -f1)
+                    log "IP адрес клиента $client_name: $client_ip"
+                    
+                    # Добавляем peer в серверную конфигурацию
+                    cat >> "$CONFIG_FILE" << EOF
+
+[Peer]
+# $client_name
+PublicKey = $public_key
+AllowedIPs = $client_ip/32
+EOF
+                    log "Добавлен клиент в серверную конфигурацию: $client_name ($client_ip)"
+                else
+                    log "Файл публичного ключа не найден: $public_key_file"
+                fi
+            fi
+        done
+    else
+        log "Директория клиентов не найдена: $CLIENT_DIR"
+    fi
+    
+    log "Синхронизация клиентов завершена"
+}
+
 # Функция настройки iptables
 setup_iptables() {
     log "Настраиваем iptables..."
@@ -117,7 +216,7 @@ setup_iptables() {
     iptables -t filter -F FORWARD
     
     # Включаем NAT для клиентов
-    iptables -t nat -A POSTROUTING -s ${AWG_NET} -o eth+ -j MASQUERADE
+    iptables -t nat -A POSTROUTING -s ${AWG_NET} -o eth0 -j MASQUERADE
     iptables -A FORWARD -i ${AWG_INTERFACE} -j ACCEPT
     iptables -A FORWARD -o ${AWG_INTERFACE} -j ACCEPT
     
@@ -294,6 +393,9 @@ main() {
     
     # Создаем конфигурацию сервера
     create_server_config
+    
+    # Синхронизируем существующих клиентов
+    sync_existing_clients
     
     # Настраиваем iptables
     setup_iptables

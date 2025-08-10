@@ -1,6 +1,7 @@
 #!/bin/bash
-
 # AmneziaWG Docker Server - Скрипт быстрого старта
+# Docker-реализация: asychin (https://github.com/asychin)
+# Оригинальный VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
 # Для пользователей которые хотят быстро развернуть сервер
 
 set -e

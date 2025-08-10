@@ -1,6 +1,7 @@
 #!/bin/bash
-
 # AmneziaWG Docker Server - Build Script
+# Docker-реализация: asychin (https://github.com/asychin)
+# Оригинальный VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
 # Автоматическая сборка с метаданными
 
 set -e

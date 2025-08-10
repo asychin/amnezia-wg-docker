@@ -1,7 +1,7 @@
 [submodule "amneziawg-go"]
 	path = amneziawg-go
 	url = https://github.com/amnezia-vpn/amneziawg-go.git
-	branch = main
+	branch = master
 
 [submodule "amneziawg-tools"]
 	path = amneziawg-tools
