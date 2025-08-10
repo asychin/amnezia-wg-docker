@@ -6,7 +6,7 @@
 
 [![Latest Tag](https://img.shields.io/github/v/tag/asychin/amnezia-wg-docker?style=flat-square&logo=github&label=latest%20tag)](https://github.com/asychin/amnezia-wg-docker/tags)
 [![GHCR](https://img.shields.io/badge/ghcr.io-asychin%2Famnezia-wg-docker-181717?logo=github&style=flat-square)](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amnezia-wg-docker)
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](../../stargazers)
 
 <details>
   <summary>🌍 Язык: Русский</summary>
