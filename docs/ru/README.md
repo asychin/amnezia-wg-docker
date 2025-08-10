@@ -11,7 +11,7 @@
 
 > 🍴 **Форкнули репозиторий?** Обновите badges выше, заменив `asychin/amnezia-wg-docker` на `yourusername/amnezia-wg-docker` в файлах документации.
 
-**🌍 Языки: [🇺🇸 English](../en/README.md) | [🇷🇺 Русский](../ru/README.md) | [🇨🇳 中文](../zh/README.md)**
+**🌍 Languages: [🇺🇸 English](../../README.md) | [🇨🇳 Chinese](../zh/README.md)**
 
 </div>
 

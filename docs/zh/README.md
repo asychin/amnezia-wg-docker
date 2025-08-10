@@ -11,7 +11,7 @@
 
 > 🍴 **分叉了此仓库？** 将上面徽章中的 `asychin/amnezia-wg-docker` 替换为 `yourusername/amnezia-wg-docker`。
 
-**🌍 语言: [🇺🇸 English](../en/README.md) | [🇷🇺 Русский](../ru/README.md) | [🇨🇳 中文](../zh/README.md)**
+**🌍 Languages: [🇺🇸 English](../../README.md) | [🇷🇺 Russian](../ru/README.md)**
 
 </div>
 

@@ -11,7 +11,7 @@
 
 > 🍴 **Forked this repository?** Update the badges above by replacing `asychin/amnezia-wg-docker` with `yourusername/amnezia-wg-docker` in documentation files.
 
-**🌍 Languages: [🇺🇸 English](../en/README.md) | [🇷🇺 Русский](../ru/README.md) | [🇨🇳 中文](../zh/README.md)**
+**🌍 Languages: [🇷🇺 Russian](../ru/README.md) | [🇨🇳 Chinese](../zh/README.md)**
 
 </div>
 
