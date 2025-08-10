@@ -4,7 +4,7 @@
 
 **生产就绪的 AmneziaWG VPN 服务器 Docker 解决方案，支持 DPI 绕过功能**
 
-[![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/releases)
+[![Latest Tag](https://img.shields.io/github/v/tag/asychin/amnezia-wg-docker?style=flat-square&logo=github&label=latest%20tag)](https://github.com/asychin/amnezia-wg-docker/tags)
 [![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amneziawg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amneziawg-docker)
 [![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/stargazers)
 
