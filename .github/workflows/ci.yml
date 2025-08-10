@@ -172,7 +172,8 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
-            type=sha,prefix={{branch}}-
+            type=sha,prefix={{branch}}-,enable={{is_default_branch}}
+            type=sha,prefix=pr-{{number}}-,enable=${{ github.event_name == 'pull_request' }}
       
       - name: 🏗️ Build test image
         uses: docker/build-push-action@v5
