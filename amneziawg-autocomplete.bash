@@ -95,7 +95,7 @@ _amneziawg_make() {
                           awk -F: '{print $1}' | sort)
     else
         # Fallback список основных команд
-        makefile_targets="help install init build up down restart logs status 
+        makefile_targets="help init build up down restart logs status 
                          client-add client-rm client-qr client-config client-list client-info
                          shell clean update backup restore test debug monitor
                          autocomplete-install autocomplete-remove autocomplete-status autocomplete-test"
@@ -422,43 +422,9 @@ _amneziawg_manage_clients() {
 # СКРИПТЫ ПРОЕКТА
 # =============================================================================
 
-_amneziawg_build_sh() {
-    local cur prev
-    COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    # build.sh может принимать имя образа и тег
-    case "${#COMP_WORDS[@]}" in
-        2)
-            # Первый аргумент - имя образа
-            COMPREPLY=($(compgen -W "amneziawg-server amneziawg-custom" -- "$cur"))
-            ;;
-        3)
-            # Второй аргумент - тег
-            COMPREPLY=($(compgen -W "latest v1.0 stable dev test" -- "$cur"))
-            ;;
-    esac
-}
 
-_amneziawg_quick_start() {
-    local cur prev
-    COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
 
-    # quick-start.sh может принимать URL репозитория и имя директории
-    case "${#COMP_WORDS[@]}" in
-        2)
-            # Первый аргумент - URL репозитория (предлагаем общие варианты)
-            COMPREPLY=($(compgen -W "https://github.com/user/amneziawg-docker.git git@github.com:user/amneziawg-docker.git ." -- "$cur"))
-            ;;
-        3)
-            # Второй аргумент - имя директории
-            COMPREPLY=($(compgen -W "amneziawg-docker docker-wg vpn-server amnezia-wg" -- "$cur"))
-            ;;
-    esac
-}
 
 # =============================================================================
 # DOCKER COMPOSE АВТОКОМПЛИТ
@@ -511,10 +477,7 @@ complete -F _amneziawg_manage_clients /root/docker-wg/scripts/manage-clients.sh
 complete -F _amneziawg_docker_compose docker
 
 # Автокомплит для скриптов проекта
-complete -F _amneziawg_build_sh build.sh
-complete -F _amneziawg_build_sh ./build.sh
-complete -F _amneziawg_quick_start quick-start.sh
-complete -F _amneziawg_quick_start ./quick-start.sh
+
 
 # Автокомплит файлов конфигурации
 complete -f -X "!*.conf" -o default cat less more nano vim vi gedit
@@ -755,9 +718,9 @@ awg_help() {
   make autocomplete-<TAB>       - Автокомплит команд управления автокомплитом
 
 🔧 СКРИПТЫ:
-  ./build.sh <TAB>              - Автокомплит имени образа и тега
+
   ./scripts/manage-clients.sh <TAB> - Автокомплит команд управления
-  ./quick-start.sh <TAB>        - Автокомплит URL репозитория
+
   docker compose <TAB>          - Автокомплит Docker Compose команд
 
 🚀 БЫСТРЫЕ КОМАНДЫ:

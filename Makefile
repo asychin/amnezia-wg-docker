@@ -139,10 +139,7 @@ help: ## Показать эту справку
 # ОСНОВНЫЕ КОМАНДЫ
 # ============================================================================
 
-.PHONY: install
-install: ## Автоматическая установка (требует root)
-	@echo "$(BLUE)🚀 Запуск автоматической установки...$(NC)"
-	@sudo ./install.sh
+
 
 .PHONY: init
 init: check-compose init-submodules ## Инициализация проекта (сабмодули + конфигурация)
@@ -157,7 +154,7 @@ init: check-compose init-submodules ## Инициализация проекта
 	@echo "$(CYAN)   - make build (если .env отсутствует)$(NC)"
 	@echo "$(CYAN)   - make build-safe (если .env отсутствует)$(NC)"
 
-.PHONY: build build-advanced build-safe
+.PHONY: build build-safe
 build: check-compose init-submodules check-config-exists auto-backup ## Сборка Docker образа (полная пересборка)
 	@echo "$(BLUE)🔨 Сборка Docker образа...$(NC)"
 	@# Автоматическая инициализация если нужно
@@ -178,48 +175,9 @@ build-safe: check-compose init-submodules check-config-exists auto-backup ## Б�
 	@$(DOCKER_COMPOSE) build
 	@echo "$(GREEN)✅ Образ собран успешно$(NC)"
 
-build-advanced: check-compose init-submodules check-config-exists auto-backup ## Сборка с метаданными и версионированием
-	@echo "$(BLUE)🔨 Расширенная сборка Docker образа...$(NC)"
-	@./build.sh
 
-.PHONY: quick-start
-quick-start: ## Клонирование проекта для разработки (url=repo-url [dir=dirname])
-	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(PURPLE)║                  AmneziaWG Quick Start                      ║$(NC)"
-	@echo "$(PURPLE)║                 Быстрое развертывание                       ║$(NC)"
-	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-	@echo ""
-	@if [ -z "$(url)" ]; then \
-		echo "$(RED)❌ Укажите URL репозитория: make quick-start url=https://github.com/user/repo.git$(NC)"; \
-		exit 1; \
-	fi
-	@if ! command -v git &> /dev/null; then \
-		echo "$(RED)❌ Git не установлен$(NC)"; \
-		exit 1; \
-	fi
-	@REPO_NAME=$$(basename "$(url)" .git); \
-	TARGET_DIR=$${dir:-$$REPO_NAME}; \
-	echo "$(BLUE)📥 Клонирование $$REPO_NAME в $$TARGET_DIR...$(NC)"; \
-	if [ -d "$$TARGET_DIR" ]; then \
-		echo "$(YELLOW)⚠️  Директория $$TARGET_DIR уже существует$(NC)"; \
-		read -p "Удалить и пересоздать? [y/N]: " confirm; \
-		if [ "$$confirm" = "y" ] || [ "$$confirm" = "Y" ]; then \
-			rm -rf "$$TARGET_DIR"; \
-		else \
-			echo "$(RED)❌ Операция отменена$(NC)"; \
-			exit 1; \
-		fi; \
-	fi; \
-	git clone --recursive "$(url)" "$$TARGET_DIR"; \
-	if [ ! -f "$$TARGET_DIR/Makefile" ] || [ ! -f "$$TARGET_DIR/docker-compose.yml" ]; then \
-		echo "$(RED)❌ Это не AmneziaWG Docker проект$(NC)"; \
-		exit 1; \
-	fi; \
-	echo "$(GREEN)✅ Проект клонирован в $$TARGET_DIR$(NC)"; \
-	echo "$(BLUE)🚀 Следующие шаги:$(NC)"; \
-	echo "1. cd $$TARGET_DIR"; \
-	echo "2. sudo make install"; \
-	echo "3. make build && make up"
+
+
 
 .PHONY: up
 up: check-compose init-submodules check-server-stopped ## Запуск сервера
@@ -529,35 +487,62 @@ monitor: check-compose ## Мониторинг в реальном времен�
 # ============================================================================
 
 # ============================================================================
-# RELEASE MANAGEMENT
+# RELEASE MANAGEMENT (MOVED TO GITHUB ACTIONS)
 # ============================================================================
+# Releases are now handled through GitHub Actions pipeline.
+# Use the GitHub UI to create releases with semantic versioning:
+# 
+# 1. Go to: https://github.com/{your-repo}/actions/workflows/release.yml
+# 2. Click "Run workflow" 
+# 3. Select release type: patch, minor, major, prerelease, or custom
+# 4. The pipeline will automatically:
+#    - Calculate new version using semantic versioning
+#    - Update VERSION file
+#    - Create git tag
+#    - Build and publish Docker images
+#    - Generate changelog
+#    - Create GitHub release
+#
+# For more information, see: PIPELINE.md
 
-.PHONY: release-patch release-minor release-major release-prerelease release-custom
-release-patch: ## Создать patch релиз (x.x.X)
-	@./.github/scripts/release.sh patch
+.PHONY: release-info
+release-info: ## Показать информацию о релизах (теперь через GitHub Actions)
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║                    RELEASE INFORMATION                      ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(YELLOW)📢 Релизы теперь создаются через GitHub Actions!$(NC)"
+	@echo ""
+	@echo "$(CYAN)🚀 Как создать релиз:$(NC)"
+	@echo "1. Откройте: https://github.com/$$(git config --get remote.origin.url | sed 's/.*github.com[\/:]//; s/.git$$//')/actions/workflows/release.yml"
+	@echo "2. Нажмите 'Run workflow'"
+	@echo "3. Выберите тип релиза:"
+	@echo "   • patch  - увеличивает версию патча (1.0.0 → 1.0.1)"
+	@echo "   • minor  - увеличивает минорную версию (1.0.0 → 1.1.0)"
+	@echo "   • major  - увеличивает мажорную версию (1.0.0 → 2.0.0)"
+	@echo "   • prerelease - создает предварительную версию (1.0.0 → 1.0.1-rc.1)"
+	@echo "   • custom - позволяет указать произвольную версию"
+	@echo ""
+	@echo "$(CYAN)⚡ Пайплайн автоматически:$(NC)"
+	@echo "   ✓ Вычислит новую версию по семантическому версионированию"
+	@echo "   ✓ Обновит файл VERSION"
+	@echo "   ✓ Создаст git тег"
+	@echo "   ✓ Соберет и опубликует Docker образы"
+	@echo "   ✓ Сгенерирует changelog"
+	@echo "   ✓ Создаст GitHub релиз"
+	@echo ""
+	@echo "$(CYAN)📚 Подробнее:$(NC) $(GREEN)PIPELINE.md$(NC)"
 
-release-minor: ## Создать minor релиз (x.X.x)
-	@./.github/scripts/release.sh minor
-
-release-major: ## Создать major релиз (X.x.x)
-	@./.github/scripts/release.sh major
-
-release-prerelease: ## Создать prerelease (x.x.x-rc.x)
-	@./.github/scripts/release.sh prerelease
-
-release-custom: ## Создать кастомный релиз (version=x.x.x)
-	@if [ -z "$(version)" ]; then \
-		echo "$(RED)❌ Укажите версию: make release-custom version=1.0.0$(NC)"; \
-		exit 1; \
-	fi
-	@./.github/scripts/release.sh $(version)
-
-.PHONY: release-test release-current
-release-test: ## Тестирование релизной сборки
-	@./.github/scripts/release.sh --test
-
+.PHONY: release-current
 release-current: ## Показать текущую версию
-	@./.github/scripts/release.sh --current
+	@if [ -f "VERSION" ]; then \
+		CURRENT_VERSION=$$(cat VERSION | tr -d '\n'); \
+		echo "$(GREEN)📁 Current version (from VERSION file): $$CURRENT_VERSION$(NC)"; \
+	else \
+		LATEST_TAG=$$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.0"); \
+		echo "$(YELLOW)🏷️ Latest tag: $$LATEST_TAG$(NC)"; \
+		echo "$(CYAN)💡 No VERSION file found. Consider creating a release to initialize versioning.$(NC)"; \
+	fi
 
 # По умолчанию показываем справку
 .DEFAULT_GOAL := help
