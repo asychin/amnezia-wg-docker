@@ -97,7 +97,8 @@ _amneziawg_make() {
         # Fallback список основных команд
         makefile_targets="help install init build up down restart logs status 
                          client-add client-rm client-qr client-config client-list client-info
-                         shell clean update backup restore test debug monitor"
+                         shell clean update backup restore test debug monitor
+                         autocomplete-install autocomplete-remove autocomplete-status autocomplete-test"
     fi
 
     # =============================================================================
@@ -687,6 +688,56 @@ _awg_config() {
 
 complete -F _awg_config awg_config
 
+# Функция для управления автокомплитом
+awg_autocomplete() {
+    local action="$1"
+    
+    case "$action" in
+        install)
+            echo "🔧 Установка автокомплита AmneziaWG..."
+            make autocomplete-install --no-print-directory
+            ;;
+        remove)
+            echo "🗑️ Удаление автокомплита AmneziaWG..."
+            make autocomplete-remove --no-print-directory
+            ;;
+        status)
+            echo "🔍 Проверка статуса автокомплита..."
+            make autocomplete-status --no-print-directory
+            ;;
+        test)
+            echo "🧪 Тестирование автокомплита..."
+            make autocomplete-test --no-print-directory
+            ;;
+        *)
+            echo "Использование: awg_autocomplete <действие>"
+            echo "Действия:"
+            echo "  install  - Установить автокомплит в ~/.bashrc"
+            echo "  remove   - Удалить автокомплит из ~/.bashrc"
+            echo "  status   - Проверить статус автокомплита"
+            echo "  test     - Протестировать автокомплит"
+            echo ""
+            echo "Примеры:"
+            echo "  awg_autocomplete install"
+            echo "  awg_autocomplete status"
+            echo "  awg_autocomplete remove"
+            return 1
+            ;;
+    esac
+}
+
+# Автокомплит для awg_autocomplete
+_awg_autocomplete() {
+    local cur
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    
+    local actions="install remove status test"
+    COMPREPLY=($(compgen -W "$actions" -- "$cur"))
+}
+
+complete -F _awg_autocomplete awg_autocomplete
+
 # Справка по автокомплиту
 awg_help() {
     cat << "EOF"
@@ -701,6 +752,7 @@ awg_help() {
   make client-qr name=<TAB>     - Автокомплит существующих клиентов
   make client-rm name=<TAB>     - Автокомплит для удаления
   make restore file=<TAB>       - Автокомплит архивных файлов
+  make autocomplete-<TAB>       - Автокомплит команд управления автокомплитом
 
 🔧 СКРИПТЫ:
   ./build.sh <TAB>              - Автокомплит имени образа и тега
@@ -716,6 +768,7 @@ awg_help() {
   awg_list                      - Список всех клиентов
   awg_status                    - Быстрый статус сервера
   awg_logs                      - Быстрый просмотр логов
+  awg_autocomplete <действие>   - Управление автокомплитом
 
 📝 УСТАНОВКА:
   source amneziawg-autocomplete.bash
@@ -729,6 +782,8 @@ awg_help() {
   awg_add_client mobile          # IP назначится автоматически
   awg_qr mobile
   awg_rm_client old-device
+  make autocomplete-install      # Установить автокомплит в ~/.bashrc
+  make autocomplete-status       # Проверить статус автокомплита
 
 🔍 ОСОБЕННОСТИ:
   ✅ Автокомплит работает с параметрами name=, ip=, file=
@@ -745,7 +800,7 @@ EOF
 }
 
 # Экспорт функций для использования в других скриптах
-export -f awg_add_client awg_rm_client awg_status awg_logs awg_qr awg_config awg_list awg_help
+export -f awg_add_client awg_rm_client awg_status awg_logs awg_qr awg_config awg_list awg_help awg_autocomplete
 export -f _get_client_names _get_next_ip _get_backup_files
 
 # Приветственное сообщение

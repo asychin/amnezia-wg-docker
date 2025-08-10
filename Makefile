@@ -126,7 +126,7 @@ help: ## Показать эту справку
 	@echo "$(CYAN)🔧 УТИЛИТЫ:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-		grep -E "(shell|clean|update|backup|restore)"
+		grep -E "(shell|clean|update|backup|restore|autocomplete)"
 	@echo ""
 	@echo "$(YELLOW)💡 Примеры использования:$(NC)"
 	@echo "  make client-add name=john                   # Добавить клиента john (IP автоматически)"
@@ -371,6 +371,94 @@ backup-cleanup: ## Очистка старых автоматических бэ
 	else \
 		echo "$(YELLOW)ℹ️  Количество бэкапов ($$BACKUP_COUNT) в пределах нормы$(NC)"; \
 	fi
+
+.PHONY: autocomplete-install autocomplete-remove autocomplete-status
+autocomplete-install: ## Установить автокомплит в ~/.bashrc
+	@echo "$(BLUE)🔧 Установка автокомплита AmneziaWG...$(NC)"; \
+	if [ ! -f "amneziawg-autocomplete.bash" ]; then \
+		echo "$(RED)❌ Файл amneziawg-autocomplete.bash не найден$(NC)"; \
+		exit 1; \
+	fi; \
+	AUTOCOMPLETE_PATH="$$(readlink -f amneziawg-autocomplete.bash)"; \
+	BASHRC_PATH="$$HOME/.bashrc"; \
+	if grep -q "amneziawg-autocomplete.bash" "$$BASHRC_PATH" 2>/dev/null; then \
+		echo "$(YELLOW)⚠️  Автокомплит уже установлен в $$BASHRC_PATH$(NC)"; \
+		echo "$(CYAN)💡 Используйте 'make autocomplete-status' для проверки$(NC)"; \
+	else \
+		echo "" >> "$$BASHRC_PATH"; \
+		echo "# AmneziaWG Docker Server Autocomplete" >> "$$BASHRC_PATH"; \
+		echo "source \"$$AUTOCOMPLETE_PATH\"" >> "$$BASHRC_PATH"; \
+		echo "$(GREEN)✅ Автокомплит установлен в $$BASHRC_PATH$(NC)"; \
+		echo "$(CYAN)💡 Перезапустите терминал или выполните: source $$BASHRC_PATH$(NC)"; \
+	fi
+
+autocomplete-remove: ## Удалить автокомплит из ~/.bashrc
+	@echo "$(BLUE)🗑️ Удаление автокомплита AmneziaWG...$(NC)"; \
+	BASHRC_PATH="$$HOME/.bashrc"; \
+	if [ ! -f "$$BASHRC_PATH" ]; then \
+		echo "$(RED)❌ Файл $$BASHRC_PATH не найден$(NC)"; \
+		exit 1; \
+	fi; \
+	if grep -q "amneziawg-autocomplete.bash" "$$BASHRC_PATH" 2>/dev/null; then \
+		echo "$(YELLOW)Удаляем строки автокомплита...$(NC)"; \
+		grep -v "amneziawg-autocomplete.bash" "$$BASHRC_PATH" | \
+		grep -v "AmneziaWG Docker Server Autocomplete" > "$$BASHRC_PATH.tmp"; \
+		mv "$$BASHRC_PATH.tmp" "$$BASHRC_PATH"; \
+		echo "$(GREEN)✅ Автокомплит удален из $$BASHRC_PATH$(NC)"; \
+		echo "$(CYAN)💡 Перезапустите терминал для применения изменений$(NC)"; \
+	else \
+		echo "$(YELLOW)ℹ️  Автокомплит не найден в $$BASHRC_PATH$(NC)"; \
+	fi
+
+autocomplete-status: ## Проверить статус автокомплита
+	@echo "$(BLUE)🔍 Проверка статуса автокомплита...$(NC)"; \
+	AUTOCOMPLETE_PATH="$$(readlink -f amneziawg-autocomplete.bash 2>/dev/null || echo '')"; \
+	BASHRC_PATH="$$HOME/.bashrc"; \
+	echo "$(CYAN)📁 Файл автокомплита:$(NC)"; \
+	if [ -f "amneziawg-autocomplete.bash" ]; then \
+		echo "$(GREEN)✅ amneziawg-autocomplete.bash найден$(NC)"; \
+		echo "   Путь: $$AUTOCOMPLETE_PATH"; \
+	else \
+		echo "$(RED)❌ amneziawg-autocomplete.bash не найден$(NC)"; \
+	fi; \
+	echo ""; \
+	echo "$(CYAN)📝 Интеграция в bashrc:$(NC)"; \
+	if [ -f "$$BASHRC_PATH" ] && grep -q "amneziawg-autocomplete.bash" "$$BASHRC_PATH" 2>/dev/null; then \
+		echo "$(GREEN)✅ Автокомплит интегрирован в $$BASHRC_PATH$(NC)"; \
+		grep "amneziawg-autocomplete.bash" "$$BASHRC_PATH" | head -1; \
+	else \
+		echo "$(RED)❌ Автокомплит НЕ интегрирован в $$BASHRC_PATH$(NC)"; \
+		echo "$(YELLOW)💡 Используйте 'make autocomplete-install' для установки$(NC)"; \
+	fi; \
+	echo ""; \
+	echo "$(CYAN)🔧 Текущая сессия:$(NC)"; \
+	if command -v _amneziawg_make &>/dev/null; then \
+		echo "$(GREEN)✅ Автокомплит активен в текущей сессии$(NC)"; \
+	else \
+		echo "$(YELLOW)⚠️  Автокомплит НЕ активен в текущей сессии$(NC)"; \
+		echo "$(CYAN)💡 Выполните: source amneziawg-autocomplete.bash$(NC)"; \
+	fi
+
+autocomplete-test: ## Протестировать автокомплит
+	@echo "$(BLUE)🧪 Тестирование автокомплита...$(NC)"; \
+	if [ ! -f "amneziawg-autocomplete.bash" ]; then \
+		echo "$(RED)❌ Файл amneziawg-autocomplete.bash не найден$(NC)"; \
+		exit 1; \
+	fi; \
+	echo "$(CYAN)📋 Загружаем автокомплит...$(NC)"; \
+	echo "$(GREEN)✅ Автокомплит готов к тестированию$(NC)"; \
+	echo ""; \
+	echo "$(CYAN)🎯 Инструкции для тестирования:$(NC)"; \
+	echo "   1. Выполните: source amneziawg-autocomplete.bash"; \
+	echo "   2. Попробуйте: make <TAB>"; \
+	echo "   3. Попробуйте: make client-add name=<TAB>"; \
+	echo "   4. Попробуйте: awg_add_client <TAB>"; \
+	echo ""; \
+	echo "$(YELLOW)💡 Для постоянной установки используйте: make autocomplete-install$(NC)"
+	@echo "$(CYAN)💡 Автокомплит предоставляет:$(NC)"
+	@echo "$(CYAN)   - Автодополнение всех make команд$(NC)"
+	@echo "$(CYAN)   - Умный подбор имен клиентов и IP адресов$(NC)"
+	@echo "$(CYAN)   - Быстрые команды awg_* для частых операций$(NC)"
 
 .PHONY: restore
 restore: ## Восстановить из резервной копии (file=путь_к_архиву)

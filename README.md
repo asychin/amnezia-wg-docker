@@ -92,6 +92,19 @@ make client-qr name=myphone
 make client-config name=laptop > laptop.conf
 ```
 
+### 4. Enable Autocomplete (Optional)
+
+```bash
+# Install autocomplete in ~/.bashrc
+make autocomplete-install
+
+# Check autocomplete status
+make autocomplete-status
+
+# Test autocomplete
+make autocomplete-test
+```
+
 ---
 
 ## 📋 Available Commands
@@ -112,6 +125,7 @@ make client-config name=laptop > laptop.conf
 | `make client-config name=X` | Show client configuration                |
 | `make client-list`          | List all clients                         |
 | `make backup`               | Create configuration backup              |
+| `make autocomplete-install` | Install bash autocomplete                |
 | `make clean`                | Full cleanup (stop + remove data)        |
 
 ---
