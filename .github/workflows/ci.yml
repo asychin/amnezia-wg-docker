@@ -227,6 +227,7 @@ jobs:
             -e AWG_NET=10.13.13.0/24 \
             -e AWG_SERVER_IP=10.13.13.1 \
             -e SERVER_PUBLIC_IP=127.0.0.1 \
+            -e AWG_DISABLE_IPTABLES=true \
             amneziawg-test:latest
           
           # Wait for initialization

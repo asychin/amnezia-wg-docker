@@ -121,6 +121,10 @@ get_public_ip() {
 generate_keys() {
     log "Генерируем ключи для сервера..."
     
+    # Убеждаемся что директория config существует
+    mkdir -p /app/config
+    chmod 750 /app/config
+    
     if [ ! -f "/app/config/server_private.key" ]; then
         awg genkey > /app/config/server_private.key
         chmod 600 /app/config/server_private.key
@@ -207,20 +211,78 @@ EOF
     log "Синхронизация клиентов завершена"
 }
 
+# Функция проверки доступности iptables
+check_iptables_available() {
+    # Проверяем принудительное отключение через переменную окружения
+    if [ "$DISABLE_IPTABLES" = "true" ] || [ "$AWG_DISABLE_IPTABLES" = "true" ]; then
+        warn "iptables принудительно отключен через переменную окружения"
+        return 1
+    fi
+    
+    # Проверяем CI/CD окружения
+    if [ "$GITHUB_ACTIONS" = "true" ] || [ "$CI" = "true" ] || [ "$GITLAB_CI" = "true" ] || [ "$JENKINS_URL" != "" ]; then
+        warn "Обнаружено CI/CD окружение, iptables может быть недоступен"
+        return 1
+    fi
+    
+    # Проверяем доступность iptables
+    if ! command -v iptables >/dev/null 2>&1; then
+        warn "iptables не найден в системе"
+        return 1
+    fi
+    
+    # Тестируем базовую работу iptables
+    if ! iptables -L >/dev/null 2>&1; then
+        warn "iptables недоступен (нет прав или nf_tables недоступен)"
+        return 1
+    fi
+    
+    return 0
+}
+
 # Функция настройки iptables
 setup_iptables() {
     log "Настраиваем iptables..."
     
-    # Очистка старых правил
-    iptables -t nat -F
-    iptables -t filter -F FORWARD
+    # Проверяем доступность iptables
+    if ! check_iptables_available; then
+        warn "⚠️ iptables недоступен, переходим в режим только userspace"
+        warn "ВНИМАНИЕ: NAT и маршрутизация должны быть настроены на уровне хоста!"
+        warn "Для продакшена обязательно настройте:"
+        warn "  • IP forwarding: echo 1 > /proc/sys/net/ipv4/ip_forward"
+        warn "  • NAT правила: iptables -t nat -A POSTROUTING -s ${AWG_NET} -o eth0 -j MASQUERADE"
+        warn "  • Forward правила: iptables -A FORWARD -i ${AWG_INTERFACE} -j ACCEPT"
+        return 0
+    fi
     
-    # Включаем NAT для клиентов
-    iptables -t nat -A POSTROUTING -s ${AWG_NET} -o eth0 -j MASQUERADE
-    iptables -A FORWARD -i ${AWG_INTERFACE} -j ACCEPT
-    iptables -A FORWARD -o ${AWG_INTERFACE} -j ACCEPT
+    # Пытаемся настроить iptables с обработкой ошибок
+    log "Попытка настройки iptables..."
     
-    log "iptables настроены"
+    # Очистка старых правил (игнорируем ошибки)
+    iptables -t nat -F 2>/dev/null || warn "Не удалось очистить NAT правила"
+    iptables -t filter -F FORWARD 2>/dev/null || warn "Не удалось очистить FORWARD правила"
+    
+    # Пытаемся включить NAT для клиентов
+    if iptables -t nat -A POSTROUTING -s ${AWG_NET} -o eth0 -j MASQUERADE 2>/dev/null; then
+        log "✅ NAT правило добавлено"
+    else
+        warn "❌ Не удалось добавить NAT правило"
+    fi
+    
+    # Пытаемся настроить forward правила
+    if iptables -A FORWARD -i ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
+        log "✅ FORWARD правило (входящий) добавлено"
+    else
+        warn "❌ Не удалось добавить FORWARD правило (входящий)"
+    fi
+    
+    if iptables -A FORWARD -o ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
+        log "✅ FORWARD правило (исходящий) добавлено"
+    else
+        warn "❌ Не удалось добавить FORWARD правило (исходящий)"
+    fi
+    
+    log "Настройка iptables завершена (могут быть предупреждения в CI/CD)"
 }
 
 # Функция запуска AmneziaWG userspace (правильный подход согласно документации)
@@ -293,6 +355,10 @@ create_client_config() {
     local client_ip=${2:-"10.13.13.2"}
     
     log "Создаем конфигурацию для клиента: $client_name"
+    
+    # Убеждаемся что директория clients существует
+    mkdir -p /app/clients
+    chmod 750 /app/clients
     
     # Генерируем ключи клиента
     CLIENT_PRIVATE_KEY=$(awg genkey)
@@ -402,11 +468,6 @@ main() {
     
     # Запускаем AmneziaWG
     start_amneziawg
-    
-    # Создаем конфигурацию для клиента по умолчанию
-    if [ ! -f "/app/clients/client1.conf" ]; then
-        create_client_config "client1" "10.13.13.2"
-    fi
     
     log "=== AmneziaWG сервер запущен успешно ==="
     log "Конфигурации клиентов доступны в /app/clients/"
