@@ -1,0 +1,146 @@
+name: Validate Documentation Links
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - '**.md'
+      - 'scripts/setup-repo.sh'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.md'
+      - 'scripts/setup-repo.sh'
+
+jobs:
+  validate-links:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Check for template placeholders
+      run: |
+        echo "🔍 Checking for unresolved template placeholders..."
+        
+        # Check for template placeholders that should have been replaced
+        PLACEHOLDERS_FOUND=false
+        
+        for file in README.md docs/**/*.md; do
+          if [ -f "$file" ]; then
+            if grep -q "{{" "$file"; then
+              echo "❌ Found unresolved placeholders in $file:"
+              grep -n "{{" "$file" || true
+              PLACEHOLDERS_FOUND=true
+            fi
+          fi
+        done
+        
+        if [ "$PLACEHOLDERS_FOUND" = true ]; then
+          echo ""
+          echo "🍴 If this is a fork, run './scripts/setup-repo.sh' to fix these placeholders"
+          echo "📖 See FORK-SETUP.md for more information"
+          exit 1
+        else
+          echo "✅ No template placeholders found - all links should be properly configured"
+        fi
+        
+    - name: Validate internal links
+      run: |
+        echo "🔗 Validating internal documentation links..."
+        
+        # Check that all referenced files exist
+        for file in README.md docs/**/*.md; do
+          if [ -f "$file" ]; then
+            echo "Checking $file..."
+            
+            # Extract markdown links [text](path) that are relative paths
+            grep -oE '\[([^\]]+)\]\(([^)]+)\)' "$file" | grep -E '\]\([^)]*\.(md|MD)' | while read -r link; do
+              # Extract the path part
+              path=$(echo "$link" | sed -E 's/.*\]\(([^)]+)\).*/\1/')
+              
+              # Skip external links (http/https)
+              if [[ "$path" =~ ^https?:// ]]; then
+                continue
+              fi
+              
+              # Convert relative path to absolute path
+              if [[ "$path" == /* ]]; then
+                # Absolute path from repository root
+                full_path=".$path"
+              else
+                # Relative path from current file directory
+                file_dir=$(dirname "$file")
+                full_path="$file_dir/$path"
+              fi
+              
+              # Normalize path (remove ./ and ../)
+              full_path=$(realpath -m "$full_path" 2>/dev/null || echo "$full_path")
+              
+              if [ ! -f "$full_path" ]; then
+                echo "❌ Broken link in $file: $path -> $full_path"
+                exit 1
+              fi
+            done
+          fi
+        done
+        
+        echo "✅ All internal links are valid"
+        
+    - name: Check repository consistency
+      run: |
+        echo "🏷️ Checking repository name consistency..."
+        
+        # Get current repository info
+        REPO_OWNER="${GITHUB_REPOSITORY%/*}"
+        REPO_NAME="${GITHUB_REPOSITORY#*/}"
+        
+        echo "Repository: $GITHUB_REPOSITORY"
+        echo "Owner: $REPO_OWNER"
+        echo "Name: $REPO_NAME"
+        
+        # Check that all GitHub links point to current repository
+        INCONSISTENT_LINKS=false
+        
+        for file in README.md docs/**/*.md; do
+          if [ -f "$file" ]; then
+            # Look for github.com links that don't match current repo
+            if grep -q "github\.com/" "$file"; then
+              while IFS= read -r line; do
+                if [[ "$line" =~ github\.com/([^/]+)/([^/\)]+) ]]; then
+                  link_owner="${BASH_REMATCH[1]}"
+                  link_repo="${BASH_REMATCH[2]}"
+                  
+                  # Skip if it's the correct repository or external repository (like amnezia-vpn)
+                  if [ "$link_owner" = "$REPO_OWNER" ] && [ "$link_repo" = "$REPO_NAME" ]; then
+                    continue
+                  fi
+                  
+                  # Allow links to amnezia-vpn (external project)
+                  if [ "$link_owner" = "amnezia-vpn" ]; then
+                    continue
+                  fi
+                  
+                  # Allow users.noreply.github.com emails
+                  if [[ "$line" =~ users\.noreply\.github\.com ]]; then
+                    continue
+                  fi
+                  
+                  echo "⚠️ Potentially incorrect GitHub link in $file: $line"
+                  echo "   Expected: github.com/$REPO_OWNER/$REPO_NAME"
+                  echo "   Found: github.com/$link_owner/$link_repo"
+                  INCONSISTENT_LINKS=true
+                fi
+              done < <(grep "github\.com/" "$file")
+            fi
+          fi
+        done
+        
+        if [ "$INCONSISTENT_LINKS" = true ]; then
+          echo ""
+          echo "🍴 If this is a fork, run './scripts/setup-repo.sh' to fix repository links"
+          # Don't fail the build for this, just warn
+        else
+          echo "✅ All GitHub links point to the correct repository"
+        fi

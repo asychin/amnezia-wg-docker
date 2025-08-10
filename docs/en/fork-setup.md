@@ -2,7 +2,7 @@
 
 This guide helps you set up the CI/CD pipeline when forking this repository for your own projects.
 
-**🌍 Languages: [🇺🇸 English](../en/fork-setup.md) | [🇷🇺 Русский](../ru/fork-setup.md) | [🇨🇳 中文](../zh/fork-setup.md)**
+**🌍 Languages: [🇷🇺 Russian](../ru/README.md) | [🇨🇳 Chinese](../zh/README.md)**
 
 ---
 
@@ -296,8 +296,6 @@ Always test your pipeline:
 ## 🔗 Related Documentation
 
 - [🚀 CI/CD Pipeline](pipeline.md) - Complete pipeline documentation
-- [🏗️ Development Setup](development.md) - Local development environment
-- [🐛 Troubleshooting](troubleshooting.md) - Common issues and solutions
 
 ---
 
@@ -305,6 +303,6 @@ Always test your pipeline:
 
 If you encounter issues:
 
-1. **Check existing issues:** [GitHub Issues](https://github.com/asychin/amneziawg-docker/issues)
+1. **Check existing issues:** [GitHub Issues](https://github.com/asychin/amnezia-wg-docker/issues)
 2. **Create new issue:** Include your configuration and error logs
-3. **Join discussions:** [GitHub Discussions](https://github.com/asychin/amneziawg-docker/discussions)
+3. **Join discussions:** [GitHub Discussions](https://github.com/asychin/amnezia-wg-docker/discussions)

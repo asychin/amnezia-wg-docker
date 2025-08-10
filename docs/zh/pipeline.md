@@ -2,7 +2,7 @@
 
 用于自动构建、测试和发布 AmneziaWG Docker Server 镜像的综合性 CI/CD 流水线。
 
-**🌍 语言: [🇺🇸 English](../en/pipeline.md) | [🇷🇺 Русский](../ru/pipeline.md) | [🇨🇳 中文](../zh/pipeline.md)**
+**🌍 Languages: [🇺🇸 English](../en/pipeline.md) | [🇷🇺 Russian](../ru/pipeline.md)**
 
 ---
 
@@ -20,16 +20,16 @@
 
 ```bash
 # GitHub Container Registry - 默认 (无需设置)
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
 
 # Docker Hub - 可选 (需要 DOCKERHUB_ENABLED=true + secrets)
-docker pull asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # 开发构建
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 📋 工作流程
@@ -133,25 +133,25 @@ SECURITY_SCAN_ENABLED=true                     # 启用 Trivy 安全扫描
 
 ```bash
 # 最新稳定发布
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:latest
 
 # 特定版本
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # 最新预发布
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0-rc1
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0-rc1
 ```
 
 ### 开发镜像
 
 ```bash
 # 最新开发构建
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
 
 # 特定提交构建
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 🔧 流水线配置
@@ -261,6 +261,4 @@ build-args: |
 
 ## 🔗 相关文档
 
-- [🍴 分叉设置指南](fork-setup.md) - 为您的分叉设置流水线
-- [🏗️ 开发设置](development.md) - 本地开发环境
-- [🐛 故障排除](troubleshooting.md) - 常见问题和解决方案
+- [🍴 分叉设置指南](../en/fork-setup.md) - 为您的分叉设置流水线 (English only)

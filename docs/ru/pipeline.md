@@ -2,7 +2,7 @@
 
 Комплексный CI/CD пайплайн для автоматизированной сборки, тестирования и публикации образов AmneziaWG Docker Server.
 
-**🌍 Языки: [🇺🇸 English](../en/pipeline.md) | [🇷🇺 Русский](../ru/pipeline.md) | [🇨🇳 中文](../zh/pipeline.md)**
+**🌍 Languages: [🇺🇸 English](../en/pipeline.md) | [🇨🇳 Chinese](../zh/pipeline.md)**
 
 ---
 
@@ -20,16 +20,16 @@
 
 ```bash
 # GitHub Container Registry - По умолчанию (настройка не требуется)
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
 
 # Docker Hub - Опционально (требует DOCKERHUB_ENABLED=true + секреты)
-docker pull asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # Сборки для разработки
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 📋 Рабочие процессы
@@ -133,25 +133,25 @@ SECURITY_SCAN_ENABLED=true                     # Включить сканиро
 
 ```bash
 # Последний стабильный релиз
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:latest
 
 # Конкретная версия
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # Последний pre-release
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0-rc1
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0-rc1
 ```
 
 ### Образы для разработки
 
 ```bash
 # Последняя сборка разработки
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
 
 # Сборка конкретного коммита
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 🔧 Конфигурация пайплайна
@@ -261,6 +261,4 @@ build-args: |
 
 ## 🔗 Связанная документация
 
-- [🍴 Руководство по настройке форка](fork-setup.md) - Настройка пайплайна для вашего форка
-- [🏗️ Настройка разработки](development.md) - Локальная среда разработки
-- [🐛 Устранение неполадок](troubleshooting.md) - Распространенные проблемы и решения
+- [🍴 Руководство по настройке форка](../en/fork-setup.md) - Настройка пайплайна для вашего форка (English only)
