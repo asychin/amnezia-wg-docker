@@ -155,7 +155,7 @@ Development images are built only for `linux/amd64` for speed.
 
 ### Build Tracking
 - [GitHub Actions](https://github.com/asychin/amnezia-wg-docker/actions)
-- [Docker Hub](https://hub.docker.com/r/asychin/amneziawg-docker)
+- [GHCR Package](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amneziawg-docker)
 - [GitHub Packages](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amneziawg-docker)
 
 ### Useful Commands
