@@ -155,22 +155,22 @@ v1.0.0-alpha - alpha version
 ### From Docker Hub
 ```bash
 # Latest stable version
-docker pull asychin/amneziawg-docker:latest
+docker pull asychin/amnezia-wg-docker:latest
 
 # Specific version
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # Development version
-docker pull asychin/amneziawg-docker:dev-latest
+docker pull asychin/amnezia-wg-docker:dev-latest
 ```
 
 ### From GitHub Container Registry
 ```bash
 # Latest stable version
-docker pull ghcr.io/asychin/amneziawg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
 
 # Specific version
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
 ```
 
 ## 🔧 Workflows
@@ -193,7 +193,7 @@ Workflows use these variables:
 env:
   REGISTRY_DOCKERHUB: docker.io
   REGISTRY_GHCR: ghcr.io
-  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amneziawg-docker' }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amnezia-wg-docker' }}
   BUILD_PLATFORMS: linux/amd64,linux/arm64
 ```
 

@@ -29,7 +29,7 @@ on:
 
 env:
   REGISTRY_GHCR: ghcr.io
-  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amneziawg-docker' }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amnezia-wg-docker' }}
 
 # Permissions required for this workflow
 permissions:

@@ -165,8 +165,8 @@ generate_changelog() {
 $commits
 
 ### 🐳 Docker Images
-- \`docker.io/${IMAGE_NAME:-asychin/amneziawg-docker}:${new_version}\`
-- \`ghcr.io/${IMAGE_NAME:-asychin/amneziawg-docker}:${new_version}\`
+- \`docker.io/${IMAGE_NAME:-asychin/amnezia-wg-docker}:${new_version}\`
+- \`ghcr.io/${IMAGE_NAME:-asychin/amnezia-wg-docker}:${new_version}\`
 
 EOF
 }
@@ -367,8 +367,8 @@ main() {
     echo -e "${GREEN}╚══════════════════════════════════════════════════════════════╝${NC}"
     echo -e "${CYAN}🏷️ Version:${NC} $new_version"
     echo -e "${CYAN}🐳 Images will be available after GitHub Actions completes:${NC}"
-    echo -e "   • docker.io/${IMAGE_NAME:-asychin/amneziawg-docker}:$new_version"
-    echo -e "   • ghcr.io/${IMAGE_NAME:-asychin/amneziawg-docker}:$new_version"
+    echo -e "   • docker.io/${IMAGE_NAME:-asychin/amnezia-wg-docker}:$new_version"
+    echo -e "   • ghcr.io/${IMAGE_NAME:-asychin/amnezia-wg-docker}:$new_version"
     echo -e "${CYAN}🔗 Track progress:${NC} https://github.com/$(git config --get remote.origin.url | sed 's/.*github.com[\/:]//; s/.git$//')/actions"
 }
 

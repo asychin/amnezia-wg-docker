@@ -16,16 +16,16 @@ Comprehensive CI/CD pipeline for automated building, testing, and publishing of 
 
 ```bash
 # GitHub Container Registry - Default (no setup required)
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
 
 # Docker Hub - Optional (requires DOCKERHUB_ENABLED=true + secrets)
-docker pull asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # Development builds
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 📋 Workflows
@@ -155,8 +155,8 @@ Development images are built only for `linux/amd64` for speed.
 
 ### Build Tracking
 - [GitHub Actions](https://github.com/asychin/amnezia-wg-docker/actions)
-- [GHCR Package](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amneziawg-docker)
-- [GitHub Packages](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amneziawg-docker)
+- [GHCR Package](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amnezia-wg-docker)
+- [GitHub Packages](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amnezia-wg-docker)
 
 ### Useful Commands
 
@@ -165,10 +165,10 @@ Development images are built only for `linux/amd64` for speed.
 curl -s https://api.github.com/repos/asychin/amnezia-wg-docker/releases/latest | jq -r .tag_name
 
 # Check available Docker Hub tags
-curl -s https://registry.hub.docker.com/v2/repositories/asychin/amneziawg-docker/tags/ | jq -r '.results[].name'
+curl -s https://registry.hub.docker.com/v2/repositories/asychin/amnezia-wg-docker/tags/ | jq -r '.results[].name'
 
 # Local image check
-docker run --rm asychin/amneziawg-docker:latest amneziawg-go --version
+docker run --rm asychin/amnezia-wg-docker:latest amneziawg-go --version
 ```
 
 ## 🔧 Pipeline Customization
@@ -182,7 +182,7 @@ env:
   REGISTRY_DOCKERHUB: docker.io
   REGISTRY_GHCR: ghcr.io
   REGISTRY_CUSTOM: your-registry.com
-  IMAGE_NAME: asychin/amneziawg-docker
+  IMAGE_NAME: asychin/amnezia-wg-docker
 ```
 
 ### Changing Build Platforms

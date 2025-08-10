@@ -26,7 +26,7 @@ on:
 env:
   # Registry configuration - modify for your fork
   REGISTRY_GHCR: ghcr.io
-  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amneziawg-docker' }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amnezia-wg-docker' }}
   TEST_TAG: test
 
 # Permissions required for this workflow

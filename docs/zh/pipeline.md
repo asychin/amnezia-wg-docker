@@ -27,16 +27,16 @@
 
 ```bash
 # GitHub Container Registry - 默认 (无需设置)
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
 
 # Docker Hub - 可选 (需要 DOCKERHUB_ENABLED=true + secrets)
-docker pull asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # 开发构建
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 📋 工作流程
@@ -97,7 +97,7 @@ TELEGRAM_CHAT_ID=your-telegram-chat-id
 
 ```bash
 # 控制流水线功能
-IMAGE_NAME=your-username/your-image-name        # 您的 Docker 镜像名称
+IMAGE_NAME=your-username/amnezia-wg-docker        # 您的 Docker 镜像名称
 DOCKERHUB_ENABLED=false                         # 启用 Docker Hub 发布
 GHCR_ENABLED=true                              # 启用 GitHub Container Registry
 CREATE_GITHUB_RELEASE=true                     # 创建 GitHub 发布
@@ -140,25 +140,25 @@ SECURITY_SCAN_ENABLED=true                     # 启用 Trivy 安全扫描
 
 ```bash
 # 最新稳定发布
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:latest
 
 # 特定版本
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # 最新预发布
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0-rc1
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0-rc1
 ```
 
 ### 开发镜像
 
 ```bash
 # 最新开发构建
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
 
 # 特定提交构建
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 🔧 流水线配置
@@ -189,7 +189,7 @@ build-args: |
 
 | 变量 | 默认值 | 描述 |
 |------|--------|------|
-| `IMAGE_NAME` | `your-username/amneziawg-docker` | Docker 镜像名称 |
+| `IMAGE_NAME` | `your-username/amnezia-wg-docker` | Docker 镜像名称 |
 | `DOCKERHUB_ENABLED` | `false` | 启用 Docker Hub 发布 |
 | `GHCR_ENABLED` | `true` | 启用 GitHub Container Registry |
 | `CREATE_GITHUB_RELEASE` | `true` | 创建 GitHub 发布 |
@@ -209,8 +209,8 @@ build-args: |
 添加到您的 README.md:
 
 ```markdown
-[![CI](https://github.com/your-username/amneziawg-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/amneziawg-docker/actions/workflows/ci.yml)
-[![Release](https://github.com/your-username/amneziawg-docker/actions/workflows/release.yml/badge.svg)](https://github.com/your-username/amneziawg-docker/actions/workflows/release.yml)
+[![CI](https://github.com/your-username/amnezia-wg-docker/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/amnezia-wg-docker/actions/workflows/ci.yml)
+[![Release](https://github.com/your-username/amnezia-wg-docker/actions/workflows/release.yml/badge.svg)](https://github.com/your-username/amnezia-wg-docker/actions/workflows/release.yml)
 ```
 
 ## 🚨 故障排除

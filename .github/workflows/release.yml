@@ -25,7 +25,7 @@ env:
   REGISTRY_GHCR: ghcr.io
   
   # Image configuration - CHANGE THIS when forking
-  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amneziawg-docker' }}
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amnezia-wg-docker' }}
   
   # Build configuration
   BUILD_PLATFORMS: linux/amd64,linux/arm64
