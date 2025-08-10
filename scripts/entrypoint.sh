@@ -388,6 +388,10 @@ EOF
         ip link set ${AWG_INTERFACE} up
         ip addr add ${AWG_SERVER_IP}/${AWG_NET##*/} dev ${AWG_INTERFACE}
         
+        # Синхронизируем конфигурацию с peer'ами (клиентами)
+        log "Применяем конфигурацию с клиентами..."
+        awg syncconf ${AWG_INTERFACE} ${CONFIG_FILE}
+        
         log "AmneziaWG интерфейс настроен"
     else
         error "Ошибка запуска AmneziaWG userspace"
@@ -434,7 +438,7 @@ H4 = ${AWG_H4}
 
 [Peer]
 PublicKey = ${SERVER_PUBLIC_KEY}
-Endpoint = ${PUBLIC_IP}:${AWG_PORT}
+Endpoint = ${SERVER_PUBLIC_IP}:${AWG_PORT}
 AllowedIPs = ${ALLOWED_IPS:-0.0.0.0/0}
 PersistentKeepalive = 25
 EOF
