@@ -4,11 +4,11 @@
 
 **Production-ready solution for running AmneziaWG VPN server in Docker container with DPI bypass support**
 
-[![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](../../releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amnezia-wg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amnezia-wg-docker)
-[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-asychin/amnezia-wg-docker-blue?style=flat-square&logo=docker)](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amnezia-wg-docker)
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/stargazers)
-[![License](https://img.shields.io/github/license/asychin/amnezia-wg-docker?style=flat-square)](https://github.com/asychin/amnezia-wg-docker/blob/main/LICENSE)
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-asychin/amnezia--wg--docker-blue?style=flat-square&logo=docker)](../../pkgs/container/amnezia-wg-docker)
+[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](../../stargazers)
+[![License](https://img.shields.io/github/license/asychin/amnezia-wg-docker?style=flat-square)](LICENSE)
 
 </div>
 
@@ -39,8 +39,6 @@
 ```bash
 git clone --recursive https://github.com/asychin/amnezia-wg-docker.git && cd amnezia-wg-docker && make build && make up
 ```
-
-> 🍴 **Forked this repository?** Run `./scripts/setup-repo.sh` to automatically update all links and badges for your fork. See [FORK-SETUP.md](FORK-SETUP.md) for details.
 
 </div>
 
@@ -103,7 +101,7 @@ git clone --recursive https://github.com/asychin/amnezia-wg-docker.git && cd amn
 
 **🌟 If this project helped you, please consider giving it a star!**
 
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=for-the-badge&logo=github)](https://github.com/asychin/amnezia-wg-docker/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=for-the-badge&logo=github)](../../stargazers)
 
 </div>
 
@@ -115,8 +113,8 @@ git clone --recursive https://github.com/asychin/amnezia-wg-docker.git && cd amn
 
 | Platform | Link |
 |----------|------|
-| 🐛 **Issues** | [GitHub Issues](https://github.com/asychin/amnezia-wg-docker/issues) |
-| 💬 **Discussions** | [GitHub Discussions](https://github.com/asychin/amnezia-wg-docker/discussions) |
+| 🐛 **Issues** | [GitHub Issues](../../issues) |
+| 💬 **Discussions** | [GitHub Discussions](../../discussions) |
 | 📧 **Contact** | [Email](mailto:asychin@users.noreply.github.com) |
 
 </div>
