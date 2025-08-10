@@ -29,6 +29,11 @@ env:
   IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amneziawg-docker' }}
   TEST_TAG: test
 
+# Permissions required for this workflow
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   # ============================================================================
   # CODE AND STRUCTURE VALIDATION

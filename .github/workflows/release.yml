@@ -30,6 +30,11 @@ env:
   # Build configuration
   BUILD_PLATFORMS: linux/amd64,linux/arm64
 
+# Permissions required for this workflow
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   # ============================================================================
   # METADATA PREPARATION
