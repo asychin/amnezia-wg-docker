@@ -296,8 +296,6 @@ Always test your pipeline:
 ## 🔗 Related Documentation
 
 - [🚀 CI/CD Pipeline](pipeline.md) - Complete pipeline documentation
-- [🏗️ Development Setup](development.md) - Local development environment
-- [🐛 Troubleshooting](troubleshooting.md) - Common issues and solutions
 
 ---
 

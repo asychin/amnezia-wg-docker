@@ -262,5 +262,3 @@ Add to your README.md:
 ## 🔗 Related Documentation
 
 - [🍴 Fork Setup Guide](fork-setup.md) - Set up pipeline for your fork
-- [🏗️ Development Setup](development.md) - Local development environment
-- [🐛 Troubleshooting](troubleshooting.md) - Common issues and solutions
