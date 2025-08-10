@@ -178,6 +178,6 @@ make client-config name=laptop > laptop.conf
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-**Copyright © 2024 [asychin](https://github.com/asychin)**
+**Copyright © 2025 [asychin](https://github.com/asychin)**
 
 </div>

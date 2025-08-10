@@ -174,6 +174,6 @@ make client-config name=laptop > laptop.conf
 
 Этот проект распространяется под лицензией **MIT** - смотрите файл [LICENSE](../../LICENSE) для деталей.
 
-**Copyright © 2024 [asychin](https://github.com/asychin)**
+**Copyright © 2025 [asychin](https://github.com/asychin)**
 
 </div>
