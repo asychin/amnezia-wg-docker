@@ -100,8 +100,8 @@ git clone --recursive https://github.com/asychin/amnezia-wg-docker.git && cd amn
 
 | Platform | Link |
 |----------|------|
-| 🐛 **Issues** | [GitHub Issues](https://github.com/asychin/amnezia-wg-docker/issues) |
-| 💬 **Discussions** | [GitHub Discussions](https://github.com/asychin/amnezia-wg-docker/discussions) |
+| 🐛 **Issues** | [GitHub Issues](../../issues) |
+| 💬 **Discussions** | [GitHub Discussions](../../discussions) |
 | 📧 **Contact** | [Email](mailto:asychin@example.com) |
 
 </div>
