@@ -77,8 +77,13 @@ replace_variables() {
         -e "s|{{DOCKER_REPOSITORY}}|${DOCKER_REPOSITORY}|g" \
         -e "s|{{MAINTAINER_EMAIL}}|${MAINTAINER_EMAIL}|g" \
         -e "s|asychin/amneziawg-docker|${DOCKER_REPOSITORY}|g" \
+        -e "s|asychin/amnezia-wg-docker|${DOCKER_REPOSITORY}|g" \
         -e "s|ghcr\.io/asychin/amneziawg-docker|ghcr.io/${DOCKER_REPOSITORY}|g" \
+        -e "s|ghcr\.io/asychin/amnezia-wg-docker|ghcr.io/${DOCKER_REPOSITORY}|g" \
         -e "s|https://github\.com/asychin/amneziawg-docker|https://github.com/${GITHUB_REPOSITORY}|g" \
+        -e "s|https://github\.com/asychin/amnezia-wg-docker|https://github.com/${GITHUB_REPOSITORY}|g" \
+        -e "s|cd amneziawg-docker|cd ${REPO_NAME}|g" \
+        -e "s|cd amnezia-wg-docker|cd ${REPO_NAME}|g" \
         "$file" > "$temp_file"
     
     mv "$temp_file" "$file"

@@ -4,11 +4,11 @@
 
 **Production-ready solution for running AmneziaWG VPN server in Docker container with DPI bypass support**
 
-[![GitHub Release](https://img.shields.io/github/v/release/{{GITHUB_REPOSITORY}}?style=flat-square&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/{{DOCKER_REPOSITORY}}?style=flat-square&logo=docker)](https://hub.docker.com/r/{{DOCKER_REPOSITORY}})
-[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-{{DOCKER_REPOSITORY}}-blue?style=flat-square&logo=docker)](https://github.com/{{GITHUB_REPOSITORY}}/pkgs/container/amneziawg-docker)
-[![GitHub Stars](https://img.shields.io/github/stars/{{GITHUB_REPOSITORY}}?style=flat-square&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/stargazers)
-[![License](https://img.shields.io/github/license/{{GITHUB_REPOSITORY}}?style=flat-square)](https://github.com/{{GITHUB_REPOSITORY}}/blob/main/LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amnezia-wg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amnezia-wg-docker)
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-asychin/amnezia-wg-docker-blue?style=flat-square&logo=docker)](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amnezia-wg-docker)
+[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/stargazers)
+[![License](https://img.shields.io/github/license/asychin/amnezia-wg-docker?style=flat-square)](https://github.com/asychin/amnezia-wg-docker/blob/main/LICENSE)
 
 </div>
 
@@ -37,8 +37,10 @@
 ### 🐳 One-line installation
 
 ```bash
-git clone --recursive https://github.com/{{GITHUB_REPOSITORY}}.git && cd amneziawg-docker && make build && make up
+git clone --recursive https://github.com/asychin/amnezia-wg-docker.git && cd amnezia-wg-docker && make build && make up
 ```
+
+> 🍴 **Forked this repository?** Run `./scripts/setup-repo.sh` to automatically update all links and badges for your fork. See [FORK-SETUP.md](FORK-SETUP.md) for details.
 
 </div>
 
@@ -97,11 +99,11 @@ git clone --recursive https://github.com/{{GITHUB_REPOSITORY}}.git && cd amnezia
 
 <div align="center">
 
-> 💡 **Docker Implementation**: [@{{GITHUB_OWNER}}](https://github.com/{{GITHUB_OWNER}}) | **Original VPN Server**: [AmneziaWG Team](https://github.com/amnezia-vpn)
+> 💡 **Docker Implementation**: [@asychin](https://github.com/asychin) | **Original VPN Server**: [AmneziaWG Team](https://github.com/amnezia-vpn)
 
 **🌟 If this project helped you, please consider giving it a star!**
 
-[![GitHub Stars](https://img.shields.io/github/stars/{{GITHUB_REPOSITORY}}?style=for-the-badge&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=for-the-badge&logo=github)](https://github.com/asychin/amnezia-wg-docker/stargazers)
 
 </div>
 
@@ -113,9 +115,9 @@ git clone --recursive https://github.com/{{GITHUB_REPOSITORY}}.git && cd amnezia
 
 | Platform | Link |
 |----------|------|
-| 🐛 **Issues** | [GitHub Issues](https://github.com/{{GITHUB_REPOSITORY}}/issues) |
-| 💬 **Discussions** | [GitHub Discussions](https://github.com/{{GITHUB_REPOSITORY}}/discussions) |
-| 📧 **Contact** | [Email](mailto:{{MAINTAINER_EMAIL}}) |
+| 🐛 **Issues** | [GitHub Issues](https://github.com/asychin/amnezia-wg-docker/issues) |
+| 💬 **Discussions** | [GitHub Discussions](https://github.com/asychin/amnezia-wg-docker/discussions) |
+| 📧 **Contact** | [Email](mailto:asychin@users.noreply.github.com) |
 
 </div>
 
@@ -127,6 +129,6 @@ git clone --recursive https://github.com/{{GITHUB_REPOSITORY}}.git && cd amnezia
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-**Copyright © 2024 [{{GITHUB_OWNER}}](https://github.com/{{GITHUB_OWNER}})**
+**Copyright © 2024 [asychin](https://github.com/asychin)**
 
 </div>

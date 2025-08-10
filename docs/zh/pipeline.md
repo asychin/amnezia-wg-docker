@@ -20,16 +20,16 @@
 
 ```bash
 # GitHub Container Registry - 默认 (无需设置)
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
 
 # Docker Hub - 可选 (需要 DOCKERHUB_ENABLED=true + secrets)
-docker pull asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # 开发构建
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 📋 工作流程
@@ -133,25 +133,25 @@ SECURITY_SCAN_ENABLED=true                     # 启用 Trivy 安全扫描
 
 ```bash
 # 最新稳定发布
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:latest
 
 # 特定版本
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # 最新预发布
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0-rc1
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0-rc1
 ```
 
 ### 开发镜像
 
 ```bash
 # 最新开发构建
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
 
 # 特定提交构建
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 🔧 流水线配置

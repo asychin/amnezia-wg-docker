@@ -20,16 +20,16 @@ Comprehensive CI/CD pipeline for automated building, testing, and publishing of 
 
 ```bash
 # GitHub Container Registry - Default (no setup required)
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
 
 # Docker Hub - Optional (requires DOCKERHUB_ENABLED=true + secrets)
-docker pull asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # Development builds
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 📋 Workflows
@@ -133,25 +133,25 @@ SECURITY_SCAN_ENABLED=true                     # Enable Trivy security scans
 
 ```bash
 # Latest stable release
-docker pull ghcr.io/asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:latest
+docker pull asychin/amnezia-wg-docker:latest
 
 # Specific version
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
-docker pull asychin/amneziawg-docker:1.0.0
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0
+docker pull asychin/amnezia-wg-docker:1.0.0
 
 # Latest pre-release
-docker pull ghcr.io/asychin/amneziawg-docker:1.0.0-rc1
+docker pull ghcr.io/asychin/amnezia-wg-docker:1.0.0-rc1
 ```
 
 ### Development Images
 
 ```bash
 # Latest development build
-docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-latest
 
 # Specific commit build
-docker pull ghcr.io/asychin/amneziawg-docker:dev-main-abc1234
+docker pull ghcr.io/asychin/amnezia-wg-docker:dev-main-abc1234
 ```
 
 ## 🔧 Pipeline Configuration
