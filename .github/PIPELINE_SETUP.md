@@ -50,11 +50,12 @@ The pipeline consists of several workflows:
 
 Go to your repository → `Settings` → `Secrets and variables` → `Actions` and add:
 
-#### Required secrets for Docker Hub:
+#### Required secrets for Docker Hub (optional):
 ```
 DOCKERHUB_USERNAME - your Docker Hub username
 DOCKERHUB_TOKEN - Docker Hub access token (not password!)
 ```
+> **Note**: Docker Hub publishing is **disabled by default**. Set `DOCKERHUB_ENABLED=true` to enable it.
 
 #### Creating Docker Hub Token:
 1. Log in to [Docker Hub](https://hub.docker.com/)
@@ -75,10 +76,10 @@ Go to `Settings` → `Secrets and variables` → `Actions` → `Variables` tab:
 ```bash
 # Customize for your fork
 IMAGE_NAME=your-username/your-image-name
-DOCKERHUB_ENABLED=true
-GHCR_ENABLED=true
-CREATE_GITHUB_RELEASE=true
-SECURITY_SCAN_ENABLED=true
+DOCKERHUB_ENABLED=false         # Default: false (requires additional setup)
+GHCR_ENABLED=true              # Default: true (no additional setup needed)
+CREATE_GITHUB_RELEASE=true     # Default: true
+SECURITY_SCAN_ENABLED=true     # Default: true
 ```
 
 ### 4. Optional Secrets

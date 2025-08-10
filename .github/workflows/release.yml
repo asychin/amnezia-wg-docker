@@ -74,30 +74,45 @@ jobs:
           VCS_REF=${GITHUB_SHA::8}
           
           # Docker tags
-          DOCKER_TAGS=""
-          DOCKER_TAGS="$DOCKER_TAGS,${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:${VERSION#v}"
-          DOCKER_TAGS="$DOCKER_TAGS,${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:${VERSION#v}"
+          DOCKERHUB_REGISTRY="${{ env.REGISTRY_DOCKERHUB }}"
+          GHCR_REGISTRY="${{ env.REGISTRY_GHCR }}"
+          IMAGE_NAME="${{ env.IMAGE_NAME }}"
           
-          # Add latest tag if not prerelease
-          if [[ "$IS_PRERELEASE" == "false" ]]; then
-            DOCKER_TAGS="$DOCKER_TAGS,${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:latest"
-            DOCKER_TAGS="$DOCKER_TAGS,${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest"
+          DOCKER_TAGS=""
+          
+          # Add Docker Hub tags only if enabled (disabled by default)
+          if [[ "${{ vars.DOCKERHUB_ENABLED }}" == "true" ]]; then
+            DOCKER_TAGS="$DOCKER_TAGS,${DOCKERHUB_REGISTRY}/${IMAGE_NAME}:${VERSION#v}"
+            if [[ "$IS_PRERELEASE" == "false" ]]; then
+              DOCKER_TAGS="$DOCKER_TAGS,${DOCKERHUB_REGISTRY}/${IMAGE_NAME}:latest"
+            fi
+          fi
+          
+          # Add GHCR tags (enabled by default)
+          if [[ "${{ vars.GHCR_ENABLED }}" != "false" ]]; then
+            DOCKER_TAGS="$DOCKER_TAGS,${GHCR_REGISTRY}/${IMAGE_NAME}:${VERSION#v}"
+            if [[ "$IS_PRERELEASE" == "false" ]]; then
+              DOCKER_TAGS="$DOCKER_TAGS,${GHCR_REGISTRY}/${IMAGE_NAME}:latest"
+            fi
           fi
           
           # Remove leading comma
           DOCKER_TAGS=${DOCKER_TAGS#,}
           
           # Docker labels
+          GITHUB_REPO="${{ github.repository }}"
+          GITHUB_OWNER="${{ github.repository_owner }}"
+          
           DOCKER_LABELS=""
           DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.title=AmneziaWG Docker Server"
           DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.description=Ready-to-use AmneziaWG VPN server in Docker with DPI bypass capabilities"
-          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.url=https://github.com/${{ github.repository }}"
-          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.source=https://github.com/${{ github.repository }}"
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.url=https://github.com/${GITHUB_REPO}"
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.source=https://github.com/${GITHUB_REPO}"
           DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.version=${VERSION#v}"
           DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.created=${BUILD_DATE}"
           DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.revision=${GITHUB_SHA}"
           DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.licenses=MIT"
-          DOCKER_LABELS="$DOCKER_LABELS,maintainer=${{ github.repository_owner }}"
+          DOCKER_LABELS="$DOCKER_LABELS,maintainer=${GITHUB_OWNER}"
           
           # Remove leading comma
           DOCKER_LABELS=${DOCKER_LABELS#,}
@@ -137,7 +152,7 @@ jobs:
           platforms: ${{ env.BUILD_PLATFORMS }}
       
       - name: 🔑 Login to Docker Hub
-        if: vars.DOCKERHUB_ENABLED != 'false'
+        if: vars.DOCKERHUB_ENABLED == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY_DOCKERHUB }}
@@ -191,78 +206,11 @@ jobs:
       - name: 📝 Generate changelog
         id: changelog
         run: |
-          VERSION=${{ needs.metadata.outputs.version }}
-          
-          # Find previous tag
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
-          
-          if [[ -n "$PREVIOUS_TAG" ]]; then
-            echo "📊 Changes since $PREVIOUS_TAG:"
-            CHANGELOG=$(git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
-          else
-            echo "📊 First release"
-            CHANGELOG="🎉 First release of AmneziaWG Docker Server!"
-          fi
-          
-          # Generate full changelog
-          FULL_CHANGELOG="## 🚀 AmneziaWG Docker Server ${VERSION#v}
-
-### 🔥 What's New:
-$CHANGELOG
-
-### 🐳 Docker Images:
-- \`${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:${VERSION#v}\`
-- \`${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:${VERSION#v}\`"
-
-          if [[ "${{ needs.metadata.outputs.is_prerelease }}" == "false" ]]; then
-            FULL_CHANGELOG="$FULL_CHANGELOG
-- \`${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:latest\`
-- \`${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest\`"
-          fi
-
-          FULL_CHANGELOG="$FULL_CHANGELOG
-
-### 📋 Supported Platforms:
-- Linux AMD64 (x86_64)
-- Linux ARM64 (aarch64)
-
-### 🚀 Quick Start:
-\`\`\`bash
-# Clone the project
-git clone --recursive https://github.com/${{ github.repository }}.git
-cd $(basename ${{ github.repository }})
-
-# Use pre-built image
-docker run -d --name amneziawg-server \\
-  --privileged \\
-  --cap-add=NET_ADMIN \\
-  --cap-add=SYS_MODULE \\
-  --device=/dev/net/tun \\
-  -p 51820:51820/udp \\
-  -v ./config:/app/config \\
-  -v ./clients:/app/clients \\
-  -e SERVER_PUBLIC_IP=YOUR_SERVER_IP \\
-  ${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:${VERSION#v}
-
-# Or use docker-compose
-wget https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml
-docker compose up -d
-\`\`\`
-
-### 📚 Documentation:
-- [README](https://github.com/${{ github.repository }}/blob/main/README.md)
-- [Docker Hub](https://hub.docker.com/r/${{ env.IMAGE_NAME }})
-- [Pipeline Setup](.github/PIPELINE_SETUP.md)
-
----
-**Author:** [${{ github.repository_owner }}](https://github.com/${{ github.repository_owner }}) | **Based on:** [AmneziaWG](https://github.com/amnezia-vpn)"
-          
-          # Save for next step
-          {
-            echo 'changelog<<EOF'
-            echo "$FULL_CHANGELOG"
-            echo 'EOF'
-          } >> $GITHUB_OUTPUT
+          echo "Generated simple changelog for release ${{ needs.metadata.outputs.version }}"
+          echo 'changelog<<EOF' >> $GITHUB_OUTPUT
+          echo "## Release ${{ needs.metadata.outputs.version }}" >> $GITHUB_OUTPUT  
+          echo "Auto-generated release notes." >> $GITHUB_OUTPUT
+          echo 'EOF' >> $GITHUB_OUTPUT
       
       - name: 🏷️ Create or update tag
         if: github.event_name == 'workflow_dispatch'
@@ -300,27 +248,44 @@ docker compose up -d
     steps:
       - name: 📊 Release report
         run: |
+          DOCKERHUB_REGISTRY="${{ env.REGISTRY_DOCKERHUB }}"
+          GHCR_REGISTRY="${{ env.REGISTRY_GHCR }}"
+          IMAGE_NAME="${{ env.IMAGE_NAME }}"
+          VERSION="${{ needs.metadata.outputs.version }}"
+          IS_PRERELEASE="${{ needs.metadata.outputs.is_prerelease }}"
+          DOCKER_BUILD_RESULT="${{ needs.docker-build.result }}"
+          GITHUB_RELEASE_RESULT="${{ needs.github-release.result }}"
+          
           echo "🎉 RELEASE COMPLETED!"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🏷️ Version: ${{ needs.metadata.outputs.version }}"
-          echo "🏗️ Docker Build: ${{ needs.docker-build.result }}"
-          echo "📦 GitHub Release: ${{ needs.github-release.result }}"
+          echo "🏷️ Version: ${VERSION}"
+          echo "🏗️ Docker Build: ${DOCKER_BUILD_RESULT}"
+          echo "📦 GitHub Release: ${GITHUB_RELEASE_RESULT}"
           echo "🐳 Docker Images Available:"
-          echo "   • ${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:${{ needs.metadata.outputs.version }}"
-          echo "   • ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:${{ needs.metadata.outputs.version }}"
-          if [[ "${{ needs.metadata.outputs.is_prerelease }}" == "false" ]]; then
-            echo "   • ${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:latest"
-            echo "   • ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest"
+          if [[ "${{ vars.DOCKERHUB_ENABLED }}" == "true" ]]; then
+            echo "   • ${DOCKERHUB_REGISTRY}/${IMAGE_NAME}:${VERSION}"
+            if [[ "${IS_PRERELEASE}" == "false" ]]; then
+              echo "   • ${DOCKERHUB_REGISTRY}/${IMAGE_NAME}:latest"
+            fi
+          fi
+          if [[ "${{ vars.GHCR_ENABLED }}" != "false" ]]; then
+            echo "   • ${GHCR_REGISTRY}/${IMAGE_NAME}:${VERSION}"
+            if [[ "${IS_PRERELEASE}" == "false" ]]; then
+              echo "   • ${GHCR_REGISTRY}/${IMAGE_NAME}:latest"
+            fi
           fi
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
       
       - name: ❌ Failure report
         if: failure()
         run: |
+          DOCKER_BUILD_RESULT="${{ needs.docker-build.result }}"
+          GITHUB_RELEASE_RESULT="${{ needs.github-release.result }}"
+          
           echo "❌ RELEASE FAILED!"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "🏗️ Docker Build: ${{ needs.docker-build.result }}"
-          echo "📦 GitHub Release: ${{ needs.github-release.result }}"
+          echo "🏗️ Docker Build: ${DOCKER_BUILD_RESULT}"
+          echo "📦 GitHub Release: ${GITHUB_RELEASE_RESULT}"
           echo "🔍 Check logs for detailed information"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           exit 1

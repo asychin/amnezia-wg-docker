@@ -15,13 +15,13 @@ Comprehensive CI/CD pipeline for automated building, testing, and publishing of 
 ### 🏗️ Available Images
 
 ```bash
-# Docker Hub - Stable releases
-docker pull asychin/amneziawg-docker:latest
-docker pull asychin/amneziawg-docker:1.0.0
-
-# GitHub Container Registry - All images
+# GitHub Container Registry - Default (no setup required)
 docker pull ghcr.io/asychin/amneziawg-docker:latest
 docker pull ghcr.io/asychin/amneziawg-docker:1.0.0
+
+# Docker Hub - Optional (requires DOCKERHUB_ENABLED=true + secrets)
+docker pull asychin/amneziawg-docker:latest
+docker pull asychin/amneziawg-docker:1.0.0
 
 # Development builds
 docker pull ghcr.io/asychin/amneziawg-docker:dev-latest
@@ -134,7 +134,7 @@ Versions containing `alpha`, `beta`, `rc`, `dev` are automatically marked as pre
 For full pipeline functionality, configure these secrets in GitHub:
 
 ```bash
-# Required for Docker Hub
+# Required for Docker Hub (if DOCKERHUB_ENABLED=true)
 DOCKERHUB_USERNAME=your_dockerhub_username
 DOCKERHUB_TOKEN=your_dockerhub_access_token
 

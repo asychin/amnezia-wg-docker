@@ -17,8 +17,8 @@ Go to your forked repository → `Settings` → `Secrets and variables` → `Act
 IMAGE_NAME=your-username/your-image-name
 
 # Optional: Control pipeline features
-DOCKERHUB_ENABLED=true          # Enable Docker Hub publishing
-GHCR_ENABLED=true              # Enable GitHub Container Registry
+DOCKERHUB_ENABLED=false         # Enable Docker Hub publishing (disabled by default)
+GHCR_ENABLED=true              # Enable GitHub Container Registry (enabled by default)
 CREATE_GITHUB_RELEASE=true     # Create GitHub releases
 SECURITY_SCAN_ENABLED=true     # Enable Trivy security scans
 ```
@@ -28,7 +28,7 @@ SECURITY_SCAN_ENABLED=true     # Enable Trivy security scans
 Go to your forked repository → `Settings` → `Secrets and variables` → `Actions` → `Secrets` tab:
 
 ```bash
-# Required for Docker Hub (if enabled)
+# Required for Docker Hub (if DOCKERHUB_ENABLED=true)
 DOCKERHUB_USERNAME=your-dockerhub-username
 DOCKERHUB_TOKEN=your-dockerhub-access-token
 
@@ -51,6 +51,8 @@ TELEGRAM_CHAT_ID=your-telegram-chat-id
 #### Option A: Use Environment Variables (Recommended)
 
 Just set the `IMAGE_NAME` variable in GitHub repository settings. The workflows will automatically use your repository owner and image name.
+
+> **Note**: Docker Hub is **disabled by default**. Only GHCR will be used unless you explicitly enable Docker Hub.
 
 #### Option B: Edit Configuration File
 
