@@ -9,25 +9,19 @@
 [![GitHub Stars](https://img.shields.io/github/stars/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/stargazers)
 [![License](https://img.shields.io/github/license/asychin/amneziawg-docker?style=flat-square)](https://github.com/asychin/amneziawg-docker/blob/main/LICENSE)
 
-</div>
-
----
-
-## 🌍 Language / Язык / 语言
-
-<div align="center">
-
-**📖 Choose your preferred language for documentation:**
-
-| Language | Documentation | Status |
-|----------|---------------|--------|
-| 🇺🇸 **English** | **[English Documentation](docs/en/README.md)** | ✅ Complete |
-| 🇷🇺 **Русский** | **[Русская документация](docs/ru/README.md)** | ✅ Полная |
-| 🇨🇳 **中文** | **[中文文档](docs/zh/README.md)** | ✅ 完整 |
+<details>
+  <summary>🌍 Language: English</summary>
+  <p>
+    <a href="docs/en/README.md">🇺🇸 English</a> •
+    <a href="docs/ru/README.md">🇷🇺 Русский</a> •
+    <a href="docs/zh/README.md">🇨🇳 中文</a>
+  </p>
+</details>
 
 </div>
 
 ---
+
 
 ## 🚀 Quick Start | Быстрый старт | 快速开始
 
