@@ -4,16 +4,17 @@
 
 **Production-ready solution for running AmneziaWG VPN server in Docker container with DPI bypass support**
 
-[![GitHub Release](https://img.shields.io/github/v/release/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amneziawg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amneziawg-docker)
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/stargazers)
-[![License](https://img.shields.io/github/license/asychin/amneziawg-docker?style=flat-square)](https://github.com/asychin/amneziawg-docker/blob/main/LICENSE)
+[![GitHub Release](https://img.shields.io/github/v/release/{{GITHUB_REPOSITORY}}?style=flat-square&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/{{DOCKER_REPOSITORY}}?style=flat-square&logo=docker)](https://hub.docker.com/r/{{DOCKER_REPOSITORY}})
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-{{DOCKER_REPOSITORY}}-blue?style=flat-square&logo=docker)](https://github.com/{{GITHUB_REPOSITORY}}/pkgs/container/amneziawg-docker)
+[![GitHub Stars](https://img.shields.io/github/stars/{{GITHUB_REPOSITORY}}?style=flat-square&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/stargazers)
+[![License](https://img.shields.io/github/license/{{GITHUB_REPOSITORY}}?style=flat-square)](https://github.com/{{GITHUB_REPOSITORY}}/blob/main/LICENSE)
 
 </div>
 
 ---
 
-## 🌍 Language / Язык / 语言
+## 🌍 Documentation Languages
 
 <div align="center">
 
@@ -22,30 +23,30 @@
 | Language | Documentation | Status |
 |----------|---------------|--------|
 | 🇺🇸 **English** | **[English Documentation](docs/en/README.md)** | ✅ Complete |
-| 🇷🇺 **Русский** | **[Русская документация](docs/ru/README.md)** | ✅ Полная |
-| 🇨🇳 **中文** | **[中文文档](docs/zh/README.md)** | ✅ 完整 |
+| 🇷🇺 **Русский** | **[Русская документация](docs/ru/README.md)** | ✅ Complete |
+| 🇨🇳 **中文** | **[中文文档](docs/zh/README.md)** | ✅ Complete |
 
 </div>
 
 ---
 
-## 🚀 Quick Start | Быстрый старт | 快速开始
+## 🚀 Quick Start
 
 <div align="center">
 
 ### 🐳 One-line installation
 
 ```bash
-git clone --recursive https://github.com/asychin/amneziawg-docker.git && cd amneziawg-docker && make build && make up
+git clone --recursive https://github.com/{{GITHUB_REPOSITORY}}.git && cd amneziawg-docker && make build && make up
 ```
 
 </div>
 
 ---
 
-## 📚 Documentation Index | Индекс документации | 文档索引
+## 📚 Documentation Index
 
-### 📖 Main Documentation | Основная документация | 主要文档
+### 📖 Main Documentation
 
 | Document | English | Русский | 中文 |
 |----------|---------|---------|------|
@@ -54,7 +55,7 @@ git clone --recursive https://github.com/asychin/amneziawg-docker.git && cd amne
 | **⚙️ Installation** | [⚙️ Install](docs/en/installation.md) | [⚙️ Установка](docs/ru/installation.md) | [⚙️ 安装](docs/zh/installation.md) |
 | **🔧 Configuration** | [🔧 Config](docs/en/configuration.md) | [🔧 Настройка](docs/ru/configuration.md) | [🔧 配置](docs/zh/configuration.md) |
 
-### 🛠️ Advanced Topics | Продвинутые темы | 高级主题
+### 🛠️ Advanced Topics
 
 | Document | English | Русский | 中文 |
 |----------|---------|---------|------|
@@ -63,7 +64,7 @@ git clone --recursive https://github.com/asychin/amneziawg-docker.git && cd amne
 | **🐛 Troubleshooting** | [🐛 Debug](docs/en/troubleshooting.md) | [🐛 Отладка](docs/ru/troubleshooting.md) | [🐛 故障排除](docs/zh/troubleshooting.md) |
 | **🔒 Security** | [🔒 Security](docs/en/security.md) | [🔒 Безопасность](docs/ru/security.md) | [🔒 安全](docs/zh/security.md) |
 
-### 👥 Development | Разработка | 开发
+### 👥 Development
 
 | Document | English | Русский | 中文 |
 |----------|---------|---------|------|
@@ -73,7 +74,7 @@ git clone --recursive https://github.com/asychin/amneziawg-docker.git && cd amne
 
 ---
 
-## ✨ Key Features | Ключевые особенности | 主要功能
+## ✨ Key Features
 
 <div align="center">
 
@@ -92,40 +93,40 @@ git clone --recursive https://github.com/asychin/amneziawg-docker.git && cd amne
 
 ---
 
-## 🏆 Project Info | Информация о проекте | 项目信息
+## 🏆 Project Info
 
 <div align="center">
 
-> 💡 **Docker Implementation**: [@asychin](https://github.com/asychin) | **Original VPN Server**: [AmneziaWG Team](https://github.com/amnezia-vpn)
+> 💡 **Docker Implementation**: [@{{GITHUB_OWNER}}](https://github.com/{{GITHUB_OWNER}}) | **Original VPN Server**: [AmneziaWG Team](https://github.com/amnezia-vpn)
 
 **🌟 If this project helped you, please consider giving it a star!**
 
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amneziawg-docker?style=for-the-badge&logo=github)](https://github.com/asychin/amneziawg-docker/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/{{GITHUB_REPOSITORY}}?style=for-the-badge&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/stargazers)
 
 </div>
 
 ---
 
-## 📞 Support | Поддержка | 支持
+## 📞 Support
 
 <div align="center">
 
 | Platform | Link |
 |----------|------|
-| 🐛 **Issues** | [GitHub Issues](https://github.com/asychin/amneziawg-docker/issues) |
-| 💬 **Discussions** | [GitHub Discussions](https://github.com/asychin/amneziawg-docker/discussions) |
-| 📧 **Contact** | [Email](mailto:asychin@example.com) |
+| 🐛 **Issues** | [GitHub Issues](https://github.com/{{GITHUB_REPOSITORY}}/issues) |
+| 💬 **Discussions** | [GitHub Discussions](https://github.com/{{GITHUB_REPOSITORY}}/discussions) |
+| 📧 **Contact** | [Email](mailto:{{MAINTAINER_EMAIL}}) |
 
 </div>
 
 ---
 
-## 📄 License | Лицензия | 许可证
+## 📄 License
 
 <div align="center">
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-**Copyright © 2024 [asychin](https://github.com/asychin)**
+**Copyright © 2024 [{{GITHUB_OWNER}}](https://github.com/{{GITHUB_OWNER}})**
 
 </div>

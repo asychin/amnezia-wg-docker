@@ -4,9 +4,10 @@
 
 **生产就绪的 AmneziaWG VPN 服务器 Docker 解决方案，支持 DPI 绕过功能**
 
-[![GitHub Release](https://img.shields.io/github/v/release/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amneziawg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amneziawg-docker)
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/stargazers)
+[![GitHub Release](https://img.shields.io/github/v/release/{{GITHUB_REPOSITORY}}?style=flat-square&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/{{DOCKER_REPOSITORY}}?style=flat-square&logo=docker)](https://hub.docker.com/r/{{DOCKER_REPOSITORY}})
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-{{DOCKER_REPOSITORY}}-blue?style=flat-square&logo=docker)](https://github.com/{{GITHUB_REPOSITORY}}/pkgs/container/amneziawg-docker)
+[![GitHub Stars](https://img.shields.io/github/stars/{{GITHUB_REPOSITORY}}?style=flat-square&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/stargazers)
 
 **🌍 语言: [🇺🇸 English](../en/README.md) | [🇷🇺 Русский](../ru/README.md) | [🇨🇳 中文](../zh/README.md)**
 
@@ -32,7 +33,7 @@
 ### 1. 克隆并包含子模块
 
 ```bash
-git clone --recursive https://github.com/asychin/amneziawg-docker.git
+git clone --recursive https://github.com/{{GITHUB_REPOSITORY}}.git
 cd amneziawg-docker
 
 # 如果忘记了 --recursive:
@@ -685,7 +686,7 @@ git submodule update --remote amneziawg-go
 
 ## 📄 许可证
 
-此项目在 MIT 许可证下分发。详情请参见 LICENSE 文件。
+此项目在 MIT 许可证下分发。详情请参见 [LICENSE](../../LICENSE) 文件。
 
 **注意:** AmneziaWG 组件可能有自己的许可证:
 - amneziawg-go: MIT License

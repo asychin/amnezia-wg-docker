@@ -4,9 +4,10 @@
 
 **Production-ready Docker solution for AmneziaWG VPN server with DPI bypass capabilities**
 
-[![GitHub Release](https://img.shields.io/github/v/release/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/releases)
-[![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amneziawg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amneziawg-docker)
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/stargazers)
+[![GitHub Release](https://img.shields.io/github/v/release/{{GITHUB_REPOSITORY}}?style=flat-square&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/releases)
+[![Docker Pulls](https://img.shields.io/docker/pulls/{{DOCKER_REPOSITORY}}?style=flat-square&logo=docker)](https://hub.docker.com/r/{{DOCKER_REPOSITORY}})
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-{{DOCKER_REPOSITORY}}-blue?style=flat-square&logo=docker)](https://github.com/{{GITHUB_REPOSITORY}}/pkgs/container/amneziawg-docker)
+[![GitHub Stars](https://img.shields.io/github/stars/{{GITHUB_REPOSITORY}}?style=flat-square&logo=github)](https://github.com/{{GITHUB_REPOSITORY}}/stargazers)
 
 **🌍 Languages: [🇺🇸 English](../en/README.md) | [🇷🇺 Русский](../ru/README.md) | [🇨🇳 中文](../zh/README.md)**
 
@@ -32,7 +33,7 @@
 ### 1. Clone with Submodules
 
 ```bash
-git clone --recursive https://github.com/asychin/amneziawg-docker.git
+git clone --recursive https://github.com/{{GITHUB_REPOSITORY}}.git
 cd amneziawg-docker
 
 # If you forgot --recursive:
@@ -685,7 +686,7 @@ git submodule update --remote amneziawg-go
 
 ## 📄 License
 
-This project is distributed under the MIT License. See LICENSE file for details.
+This project is distributed under the MIT License. See [LICENSE](../../LICENSE) file for details.
 
 **Notice:** AmneziaWG components may have their own licenses:
 - amneziawg-go: MIT License
