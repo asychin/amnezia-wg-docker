@@ -6,7 +6,7 @@
 
 [![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](../../releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amnezia-wg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amnezia-wg-docker)
-[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-asychin/amnezia--wg--docker-blue?style=flat-square&logo=docker)](../../pkgs/container/amnezia-wg-docker)
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-asychin%2Famnezia--wg--docker-blue?style=flat-square&logo=docker)](https://ghcr.io/asychin/amnezia-wg-docker)
 [![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](../../stargazers)
 
 > 🍴 **分叉了此仓库？** 将上面徽章中的 `asychin/amnezia-wg-docker` 替换为 `yourusername/amnezia-wg-docker`。
