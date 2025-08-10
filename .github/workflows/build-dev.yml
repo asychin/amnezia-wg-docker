@@ -1,0 +1,149 @@
+name: 🛠️ Development Build
+
+on:
+  # Run on push to development branches
+  push:
+    branches: [ develop, feature/*, hotfix/* ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+  
+  # Manual trigger for testing
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'Build platforms'
+        required: false
+        default: 'linux/amd64'
+        type: choice
+        options:
+          - 'linux/amd64'
+          - 'linux/amd64,linux/arm64'
+      push_image:
+        description: 'Push image to registry?'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY_GHCR: ghcr.io
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amneziawg-docker' }}
+
+jobs:
+  # ============================================================================
+  # FAST DEVELOPMENT BUILD
+  # ============================================================================
+  dev-build:
+    name: 🚀 Development Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: 🔑 Login to GitHub Container Registry
+        if: github.event.inputs.push_image == 'true' || github.ref == 'refs/heads/develop'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 📊 Extract metadata
+        id: meta
+        run: |
+          # Determine platforms
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            PLATFORMS="${{ github.event.inputs.platforms }}"
+          else
+            PLATFORMS="linux/amd64"
+          fi
+          
+          # Generate tags
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          BRANCH_NAME=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9._-]/-/g')
+          SHORT_SHA=${GITHUB_SHA::8}
+          
+          TAGS=""
+          TAGS="$TAGS,${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:dev-${BRANCH_NAME}"
+          TAGS="$TAGS,${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:dev-${BRANCH_NAME}-${SHORT_SHA}"
+          
+          # If develop branch, add dev-latest tag
+          if [[ "$BRANCH_NAME" == "develop" ]]; then
+            TAGS="$TAGS,${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:dev-latest"
+          fi
+          
+          # Remove leading comma
+          TAGS=${TAGS#,}
+          
+          echo "platforms=${PLATFORMS}" >> $GITHUB_OUTPUT
+          echo "tags=${TAGS}" >> $GITHUB_OUTPUT
+          
+          echo "🏗️ Platforms: ${PLATFORMS}"
+          echo "🏷️ Tags: ${TAGS}"
+      
+      - name: 🏗️ Build development image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ steps.meta.outputs.platforms }}
+          push: ${{ github.event.inputs.push_image == 'true' || github.ref == 'refs/heads/develop' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.title=AmneziaWG Docker Server (Development)
+            org.opencontainers.image.description=Development build of AmneziaWG VPN server
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            maintainer=${{ github.repository_owner }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            VCS_REF=${{ github.sha }}
+            VERSION=dev-${{ github.sha }}
+      
+      - name: 🧪 Quick image test
+        run: |
+          echo "🧪 Quick test of built image..."
+          
+          # Get first tag for testing
+          FIRST_TAG=$(echo "${{ steps.meta.outputs.tags }}" | cut -d',' -f1)
+          
+          # Skip test if image wasn't pushed
+          if [[ "${{ github.event.inputs.push_image }}" != "true" ]] && [[ "${{ github.ref }}" != "refs/heads/develop" ]]; then
+            echo "⏭️ Skipping test - image not pushed"
+            exit 0
+          fi
+          
+          # Simple image check
+          docker run --rm \
+            -e AWG_INTERFACE=awg0 \
+            -e AWG_PORT=51820 \
+            "$FIRST_TAG" \
+            amneziawg-go --version
+          
+          echo "✅ Quick test passed successfully"
+      
+      - name: 📊 Build report
+        run: |
+          echo "🛠️ DEVELOPMENT BUILD COMPLETED!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🌿 Branch: ${GITHUB_REF#refs/heads/}"
+          echo "🔗 Commit: ${{ github.sha }}"
+          echo "🏗️ Platforms: ${{ steps.meta.outputs.platforms }}"
+          echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
+          
+          if [[ "${{ github.event.inputs.push_image }}" == "true" ]] || [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "✅ Images published to GHCR"
+          else
+            echo "ℹ️ Images built locally (not published)"
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

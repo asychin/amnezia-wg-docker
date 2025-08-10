@@ -1,0 +1,348 @@
+name: 🔄 Continuous Integration
+
+on:
+  # Run on push to main branches
+  push:
+    branches: [ main, master, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+  
+  # Run on Pull Request creation
+  pull_request:
+    branches: [ main, master ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.gitignore'
+      - 'LICENSE'
+  
+  # Weekly schedule for dependency checks
+  schedule:
+    - cron: '0 2 * * 1' # Every Monday at 02:00 UTC
+
+env:
+  # Registry configuration - modify for your fork
+  REGISTRY_GHCR: ghcr.io
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amneziawg-docker' }}
+  TEST_TAG: test
+
+jobs:
+  # ============================================================================
+  # CODE AND STRUCTURE VALIDATION
+  # ============================================================================
+  validate:
+    name: 🔍 Code Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: 🔍 Check project structure
+        run: |
+          echo "📋 Checking required files..."
+          
+          # Check for essential files
+          REQUIRED_FILES=(
+            "Dockerfile"
+            "docker-compose.yml"
+            "Makefile"
+            "README.md"
+            "scripts/entrypoint.sh"
+            "scripts/healthcheck.sh"
+            "scripts/manage-clients.sh"
+            ".gitmodules"
+          )
+          
+          MISSING_FILES=()
+          for file in "${REQUIRED_FILES[@]}"; do
+            if [[ ! -f "$file" ]]; then
+              MISSING_FILES+=("$file")
+            fi
+          done
+          
+          if [[ ${#MISSING_FILES[@]} -gt 0 ]]; then
+            echo "❌ Missing required files:"
+            printf '   - %s\n' "${MISSING_FILES[@]}"
+            exit 1
+          fi
+          
+          echo "✅ All required files are present"
+      
+      - name: 🔍 Check submodules
+        run: |
+          echo "📦 Checking submodules..."
+          
+          # Check if submodules are initialized
+          if [[ ! -d "amneziawg-go/.git" ]] || [[ ! -d "amneziawg-tools/.git" ]]; then
+            echo "❌ Submodules are not initialized"
+            exit 1
+          fi
+          
+          echo "✅ Submodules are properly initialized"
+      
+      - name: 🔍 Validate Dockerfile
+        run: |
+          echo "🐳 Checking Dockerfile..."
+          
+          # Check Dockerfile syntax with hadolint (if available)
+          if command -v hadolint &> /dev/null; then
+            hadolint Dockerfile || {
+              echo "⚠️ Hadolint found issues in Dockerfile (continuing...)"
+            }
+          else
+            echo "ℹ️ Hadolint not available, skipping detailed checks"
+          fi
+          
+          # Basic checks
+          if ! grep -q "FROM.*alpine.*AS.*builder" Dockerfile; then
+            echo "❌ Builder stage not found"
+            exit 1
+          fi
+          
+          if ! grep -q "FROM ubuntu" Dockerfile; then
+            echo "❌ Main Ubuntu base image not found"
+            exit 1
+          fi
+          
+          echo "✅ Dockerfile passed basic validation"
+      
+      - name: 🔍 Validate docker-compose.yml
+        run: |
+          echo "🐳 Checking docker-compose.yml..."
+          
+          # Check syntax
+          docker compose config --quiet
+          
+          # Check for main service
+          if ! docker compose config | grep -q "amneziawg:"; then
+            echo "❌ amneziawg service not found"
+            exit 1
+          fi
+          
+          echo "✅ docker-compose.yml is syntactically correct"
+
+  # ============================================================================
+  # DOCKER BUILD TEST
+  # ============================================================================
+  docker-test:
+    name: 🐳 Docker Build Test
+    runs-on: ubuntu-latest
+    needs: validate
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: 🔑 Login to GitHub Container Registry (for cache)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 📊 Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha,prefix={{branch}}-
+      
+      - name: 🏗️ Build test image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            VCS_REF=${{ github.sha }}
+            VERSION=ci-${{ github.sha }}
+      
+      - name: 📋 Image information
+        run: |
+          echo "✅ Docker test build completed successfully!"
+          echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
+          echo "🏗️ Platform: linux/amd64"
+
+  # ============================================================================
+  # INTEGRATION TESTS
+  # ============================================================================
+  integration-test:
+    name: 🧪 Integration Tests
+    runs-on: ubuntu-latest
+    needs: docker-test
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: 🏗️ Build image for testing
+        run: |
+          docker build -t amneziawg-test:latest .
+      
+      - name: 🧪 Test container startup
+        run: |
+          echo "🚀 Testing container startup..."
+          
+          # Start container in test mode
+          docker run -d \
+            --name amneziawg-test \
+            --privileged \
+            --cap-add=NET_ADMIN \
+            --cap-add=SYS_MODULE \
+            -e AWG_INTERFACE=awg0 \
+            -e AWG_PORT=51820 \
+            -e AWG_NET=10.13.13.0/24 \
+            -e AWG_SERVER_IP=10.13.13.1 \
+            -e SERVER_PUBLIC_IP=127.0.0.1 \
+            amneziawg-test:latest
+          
+          # Wait for initialization
+          sleep 30
+          
+          # Check container status
+          if ! docker ps | grep -q amneziawg-test; then
+            echo "❌ Container is not running"
+            docker logs amneziawg-test
+            exit 1
+          fi
+          
+          echo "✅ Container started successfully"
+      
+      - name: 🔍 Test healthcheck
+        run: |
+          echo "🏥 Testing healthcheck..."
+          
+          # Test healthcheck
+          for i in {1..10}; do
+            if docker exec amneziawg-test /app/scripts/healthcheck.sh; then
+              echo "✅ Healthcheck passed successfully"
+              break
+            fi
+            
+            if [[ $i -eq 10 ]]; then
+              echo "❌ Healthcheck failed after 10 attempts"
+              docker logs amneziawg-test
+              exit 1
+            fi
+            
+            echo "⏳ Attempt $i/10, waiting..."
+            sleep 10
+          done
+      
+      - name: 🔧 Test basic commands
+        run: |
+          echo "⚙️ Testing basic commands..."
+          
+          # Check installed software versions
+          docker exec amneziawg-test amneziawg-go --version
+          docker exec amneziawg-test awg --version
+          
+          # Check network interfaces
+          docker exec amneziawg-test ip link show
+          
+          # Check script availability
+          docker exec amneziawg-test ls -la /app/scripts/
+          
+          echo "✅ Basic commands work correctly"
+      
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          docker stop amneziawg-test || true
+          docker rm amneziawg-test || true
+          docker rmi amneziawg-test:latest || true
+
+  # ============================================================================
+  # SECURITY SCANNING
+  # ============================================================================
+  security-scan:
+    name: 🔒 Security Scanning
+    runs-on: ubuntu-latest
+    needs: docker-test
+    if: vars.SECURITY_SCAN_ENABLED != 'false'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: 🏗️ Build image for scanning
+        run: |
+          docker build -t amneziawg-security:latest .
+      
+      - name: 🔍 Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'amneziawg-security:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: 📤 Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: 🔍 Check for critical vulnerabilities
+        run: |
+          echo "🔒 Checking for critical vulnerabilities..."
+          
+          # Run Trivy and check for critical vulnerabilities
+          trivy image --severity HIGH,CRITICAL --exit-code 1 amneziawg-security:latest || {
+            echo "⚠️ High/Critical vulnerabilities found"
+            echo "📋 Detailed information available in Security section"
+          }
+
+  # ============================================================================
+  # FINAL REPORT
+  # ============================================================================
+  report:
+    name: 📊 Final Report
+    runs-on: ubuntu-latest
+    needs: [validate, docker-test, integration-test, security-scan]
+    if: always()
+    
+    steps:
+      - name: 📊 CI Report
+        run: |
+          echo "🔄 CONTINUOUS INTEGRATION REPORT"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "✅ Code Validation: ${{ needs.validate.result }}"
+          echo "🐳 Docker Build Test: ${{ needs.docker-test.result }}"
+          echo "🧪 Integration Tests: ${{ needs.integration-test.result }}"
+          echo "🔒 Security Scanning: ${{ needs.security-scan.result }}"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          
+          # Check overall status
+          if [[ "${{ needs.validate.result }}" == "success" ]] && \
+             [[ "${{ needs.docker-test.result }}" == "success" ]] && \
+             [[ "${{ needs.integration-test.result }}" == "success" ]]; then
+            echo "🎉 All checks passed successfully!"
+            echo "✅ Code is ready for merge and release"
+          else
+            echo "❌ Some checks failed"
+            echo "🔍 Check details in corresponding sections"
+          fi

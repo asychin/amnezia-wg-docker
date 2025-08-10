@@ -1,0 +1,326 @@
+name: 🚀 Release and Build Docker Images
+
+on:
+  # Automatic trigger on tag push
+  push:
+    tags:
+      - 'v*'
+  
+  # Manual trigger via GitHub UI
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a prerelease?'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  # Registry configuration - modify these for your fork
+  REGISTRY_DOCKERHUB: docker.io
+  REGISTRY_GHCR: ghcr.io
+  
+  # Image configuration - CHANGE THIS when forking
+  IMAGE_NAME: ${{ vars.IMAGE_NAME || 'asychin/amneziawg-docker' }}
+  
+  # Build configuration
+  BUILD_PLATFORMS: linux/amd64,linux/arm64
+
+jobs:
+  # ============================================================================
+  # METADATA PREPARATION
+  # ============================================================================
+  metadata:
+    name: 📋 Prepare Metadata
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      tags: ${{ steps.meta.outputs.tags }}
+      labels: ${{ steps.meta.outputs.labels }}
+      is_prerelease: ${{ steps.meta.outputs.is_prerelease }}
+      build_date: ${{ steps.meta.outputs.build_date }}
+      vcs_ref: ${{ steps.meta.outputs.vcs_ref }}
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      
+      - name: 📊 Extract metadata
+        id: meta
+        run: |
+          # Determine version
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+            IS_PRERELEASE="${{ github.event.inputs.prerelease }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+            # Auto-detect prerelease by version pattern
+            if [[ "$VERSION" =~ (alpha|beta|rc|dev) ]]; then
+              IS_PRERELEASE="true"
+            else
+              IS_PRERELEASE="false"
+            fi
+          fi
+          
+          # Build metadata
+          BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          VCS_REF=${GITHUB_SHA::8}
+          
+          # Docker tags
+          DOCKER_TAGS=""
+          DOCKER_TAGS="$DOCKER_TAGS,${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:${VERSION#v}"
+          DOCKER_TAGS="$DOCKER_TAGS,${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:${VERSION#v}"
+          
+          # Add latest tag if not prerelease
+          if [[ "$IS_PRERELEASE" == "false" ]]; then
+            DOCKER_TAGS="$DOCKER_TAGS,${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:latest"
+            DOCKER_TAGS="$DOCKER_TAGS,${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest"
+          fi
+          
+          # Remove leading comma
+          DOCKER_TAGS=${DOCKER_TAGS#,}
+          
+          # Docker labels
+          DOCKER_LABELS=""
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.title=AmneziaWG Docker Server"
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.description=Ready-to-use AmneziaWG VPN server in Docker with DPI bypass capabilities"
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.url=https://github.com/${{ github.repository }}"
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.source=https://github.com/${{ github.repository }}"
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.version=${VERSION#v}"
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.created=${BUILD_DATE}"
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.revision=${GITHUB_SHA}"
+          DOCKER_LABELS="$DOCKER_LABELS,org.opencontainers.image.licenses=MIT"
+          DOCKER_LABELS="$DOCKER_LABELS,maintainer=${{ github.repository_owner }}"
+          
+          # Remove leading comma
+          DOCKER_LABELS=${DOCKER_LABELS#,}
+          
+          # Set outputs
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "tags=${DOCKER_TAGS}" >> $GITHUB_OUTPUT
+          echo "labels=${DOCKER_LABELS}" >> $GITHUB_OUTPUT
+          echo "is_prerelease=${IS_PRERELEASE}" >> $GITHUB_OUTPUT
+          echo "build_date=${BUILD_DATE}" >> $GITHUB_OUTPUT
+          echo "vcs_ref=${VCS_REF}" >> $GITHUB_OUTPUT
+          
+          # Debug output
+          echo "🏷️ Version: ${VERSION}"
+          echo "🏗️ Build Date: ${BUILD_DATE}"
+          echo "🔗 VCS Ref: ${VCS_REF}"
+          echo "🚀 Prerelease: ${IS_PRERELEASE}"
+          echo "🐳 Docker Tags: ${DOCKER_TAGS}"
+
+  # ============================================================================
+  # DOCKER BUILD AND PUBLISH
+  # ============================================================================
+  docker-build:
+    name: 🐳 Build Docker Images
+    runs-on: ubuntu-latest
+    needs: metadata
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: 🏗️ Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          platforms: ${{ env.BUILD_PLATFORMS }}
+      
+      - name: 🔑 Login to Docker Hub
+        if: vars.DOCKERHUB_ENABLED != 'false'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_DOCKERHUB }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      
+      - name: 🔑 Login to GitHub Container Registry
+        if: vars.GHCR_ENABLED != 'false'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY_GHCR }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 🏗️ Build and push images
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: ${{ env.BUILD_PLATFORMS }}
+          push: true
+          tags: ${{ needs.metadata.outputs.tags }}
+          labels: ${{ needs.metadata.outputs.labels }}
+          build-args: |
+            BUILD_DATE=${{ needs.metadata.outputs.build_date }}
+            VCS_REF=${{ needs.metadata.outputs.vcs_ref }}
+            VERSION=${{ needs.metadata.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      
+      - name: 📊 Build report
+        run: |
+          echo "✅ Docker images built and published successfully!"
+          echo "🏷️ Tags: ${{ needs.metadata.outputs.tags }}"
+          echo "🏗️ Platforms: ${{ env.BUILD_PLATFORMS }}"
+
+  # ============================================================================
+  # GITHUB RELEASE CREATION
+  # ============================================================================
+  github-release:
+    name: 📦 Create GitHub Release
+    runs-on: ubuntu-latest
+    needs: [metadata, docker-build]
+    if: vars.CREATE_GITHUB_RELEASE != 'false'
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: 📝 Generate changelog
+        id: changelog
+        run: |
+          VERSION=${{ needs.metadata.outputs.version }}
+          
+          # Find previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo "")
+          
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            echo "📊 Changes since $PREVIOUS_TAG:"
+            CHANGELOG=$(git log $PREVIOUS_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          else
+            echo "📊 First release"
+            CHANGELOG="🎉 First release of AmneziaWG Docker Server!"
+          fi
+          
+          # Generate full changelog
+          FULL_CHANGELOG="## 🚀 AmneziaWG Docker Server ${VERSION#v}
+
+### 🔥 What's New:
+$CHANGELOG
+
+### 🐳 Docker Images:
+- \`${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:${VERSION#v}\`
+- \`${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:${VERSION#v}\`"
+
+          if [[ "${{ needs.metadata.outputs.is_prerelease }}" == "false" ]]; then
+            FULL_CHANGELOG="$FULL_CHANGELOG
+- \`${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:latest\`
+- \`${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest\`"
+          fi
+
+          FULL_CHANGELOG="$FULL_CHANGELOG
+
+### 📋 Supported Platforms:
+- Linux AMD64 (x86_64)
+- Linux ARM64 (aarch64)
+
+### 🚀 Quick Start:
+\`\`\`bash
+# Clone the project
+git clone --recursive https://github.com/${{ github.repository }}.git
+cd $(basename ${{ github.repository }})
+
+# Use pre-built image
+docker run -d --name amneziawg-server \\
+  --privileged \\
+  --cap-add=NET_ADMIN \\
+  --cap-add=SYS_MODULE \\
+  --device=/dev/net/tun \\
+  -p 51820:51820/udp \\
+  -v ./config:/app/config \\
+  -v ./clients:/app/clients \\
+  -e SERVER_PUBLIC_IP=YOUR_SERVER_IP \\
+  ${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:${VERSION#v}
+
+# Or use docker-compose
+wget https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yml
+docker compose up -d
+\`\`\`
+
+### 📚 Documentation:
+- [README](https://github.com/${{ github.repository }}/blob/main/README.md)
+- [Docker Hub](https://hub.docker.com/r/${{ env.IMAGE_NAME }})
+- [Pipeline Setup](.github/PIPELINE_SETUP.md)
+
+---
+**Author:** [${{ github.repository_owner }}](https://github.com/${{ github.repository_owner }}) | **Based on:** [AmneziaWG](https://github.com/amnezia-vpn)"
+          
+          # Save for next step
+          {
+            echo 'changelog<<EOF'
+            echo "$FULL_CHANGELOG"
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
+      
+      - name: 🏷️ Create or update tag
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          VERSION=${{ needs.metadata.outputs.version }}
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Create tag if it doesn't exist
+          if ! git rev-parse "$VERSION" >/dev/null 2>&1; then
+            git tag -a "$VERSION" -m "🚀 Release $VERSION"
+            git push origin "$VERSION"
+          fi
+      
+      - name: 📦 Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.metadata.outputs.version }}
+          name: 🚀 AmneziaWG Docker Server ${{ needs.metadata.outputs.version }}
+          body: ${{ steps.changelog.outputs.changelog }}
+          prerelease: ${{ needs.metadata.outputs.is_prerelease == 'true' }}
+          generate_release_notes: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================================
+  # NOTIFICATIONS AND STATUS
+  # ============================================================================
+  notify:
+    name: 📢 Notifications
+    runs-on: ubuntu-latest
+    needs: [metadata, docker-build, github-release]
+    if: always()
+    
+    steps:
+      - name: 📊 Release report
+        run: |
+          echo "🎉 RELEASE COMPLETED!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🏷️ Version: ${{ needs.metadata.outputs.version }}"
+          echo "🏗️ Docker Build: ${{ needs.docker-build.result }}"
+          echo "📦 GitHub Release: ${{ needs.github-release.result }}"
+          echo "🐳 Docker Images Available:"
+          echo "   • ${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:${{ needs.metadata.outputs.version }}"
+          echo "   • ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:${{ needs.metadata.outputs.version }}"
+          if [[ "${{ needs.metadata.outputs.is_prerelease }}" == "false" ]]; then
+            echo "   • ${{ env.REGISTRY_DOCKERHUB }}/${{ env.IMAGE_NAME }}:latest"
+            echo "   • ${{ env.REGISTRY_GHCR }}/${{ env.IMAGE_NAME }}:latest"
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      
+      - name: ❌ Failure report
+        if: failure()
+        run: |
+          echo "❌ RELEASE FAILED!"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "🏗️ Docker Build: ${{ needs.docker-build.result }}"
+          echo "📦 GitHub Release: ${{ needs.github-release.result }}"
+          echo "🔍 Check logs for detailed information"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          exit 1

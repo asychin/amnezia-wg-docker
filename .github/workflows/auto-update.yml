@@ -1,0 +1,162 @@
+name: 🔄 Auto Update Dependencies
+
+on:
+  # Weekly submodule updates
+  schedule:
+    - cron: '0 3 * * 1' # Every Monday at 03:00 UTC
+  
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      update_submodules:
+        description: 'Update submodules'
+        type: boolean
+        default: true
+      create_pr:
+        description: 'Create Pull Request with updates'
+        type: boolean
+        default: true
+
+jobs:
+  update-dependencies:
+    name: 📦 Update Dependencies
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: recursive
+      
+      - name: 🔧 Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      
+      - name: 📦 Check for submodule updates
+        id: check_updates
+        run: |
+          echo "🔍 Checking for submodule updates..."
+          
+          # Save current commits
+          AWG_GO_CURRENT=$(cd amneziawg-go && git rev-parse HEAD)
+          AWG_TOOLS_CURRENT=$(cd amneziawg-tools && git rev-parse HEAD)
+          
+          # Update submodules
+          git submodule update --remote --recursive
+          
+          # Check for new commits
+          AWG_GO_NEW=$(cd amneziawg-go && git rev-parse HEAD)
+          AWG_TOOLS_NEW=$(cd amneziawg-tools && git rev-parse HEAD)
+          
+          UPDATES_FOUND=false
+          CHANGELOG=""
+          
+          if [[ "$AWG_GO_CURRENT" != "$AWG_GO_NEW" ]]; then
+            echo "📦 amneziawg-go update: $AWG_GO_CURRENT -> $AWG_GO_NEW"
+            UPDATES_FOUND=true
+            CHANGELOG="$CHANGELOG- 📦 Update amneziawg-go to commit ${AWG_GO_NEW:0:8}\n"
+            
+            # Get changes list
+            cd amneziawg-go
+            CHANGES=$(git log --oneline $AWG_GO_CURRENT..$AWG_GO_NEW | head -5)
+            if [[ -n "$CHANGES" ]]; then
+              CHANGELOG="$CHANGELOG  Changes in amneziawg-go:\n"
+              while IFS= read -r line; do
+                CHANGELOG="$CHANGELOG  - $line\n"
+              done <<< "$CHANGES"
+            fi
+            cd ..
+          fi
+          
+          if [[ "$AWG_TOOLS_CURRENT" != "$AWG_TOOLS_NEW" ]]; then
+            echo "📦 amneziawg-tools update: $AWG_TOOLS_CURRENT -> $AWG_TOOLS_NEW"
+            UPDATES_FOUND=true
+            CHANGELOG="$CHANGELOG- 📦 Update amneziawg-tools to commit ${AWG_TOOLS_NEW:0:8}\n"
+            
+            # Get changes list
+            cd amneziawg-tools
+            CHANGES=$(git log --oneline $AWG_TOOLS_CURRENT..$AWG_TOOLS_NEW | head -5)
+            if [[ -n "$CHANGES" ]]; then
+              CHANGELOG="$CHANGELOG  Changes in amneziawg-tools:\n"
+              while IFS= read -r line; do
+                CHANGELOG="$CHANGELOG  - $line\n"
+              done <<< "$CHANGES"
+            fi
+            cd ..
+          fi
+          
+          echo "updates_found=$UPDATES_FOUND" >> $GITHUB_OUTPUT
+          echo "changelog<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          if [[ "$UPDATES_FOUND" == "true" ]]; then
+            echo "✅ Dependency updates found"
+          else
+            echo "ℹ️ No updates found"
+          fi
+      
+      - name: 🧪 Test after updates
+        if: steps.check_updates.outputs.updates_found == 'true'
+        run: |
+          echo "🧪 Testing project after updates..."
+          
+          # Test build
+          docker build -t amneziawg-update-test .
+          
+          # Quick test
+          docker run --rm amneziawg-update-test amneziawg-go --version
+          docker run --rm amneziawg-update-test awg --version
+          
+          echo "✅ Tests passed successfully"
+      
+      - name: 📝 Create Pull Request
+        if: steps.check_updates.outputs.updates_found == 'true' && (github.event.inputs.create_pr != 'false')
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: |
+            🔄 Automatic dependency updates
+            
+            ${{ steps.check_updates.outputs.changelog }}
+          title: '🔄 Automatic dependency updates'
+          body: |
+            ## 🔄 Automatic Dependency Updates
+            
+            This PR contains automatic updates of AmneziaWG submodules.
+            
+            ### 📦 Updates:
+            ${{ steps.check_updates.outputs.changelog }}
+            
+            ### ✅ Checks:
+            - [x] Docker image builds successfully
+            - [x] Basic tests completed
+            - [x] Component versions verified
+            
+            ### 🚀 Next Steps:
+            1. Review changes in submodules
+            2. Run additional tests if needed
+            3. Merge PR to apply updates
+            
+            ---
+            🤖 *This PR was created automatically by GitHub Actions*
+          branch: auto-update/dependencies
+          delete-branch: true
+          draft: false
+      
+      - name: 📊 Update report
+        run: |
+          echo "🔄 AUTOMATIC UPDATE REPORT"
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+          echo "📦 Updates found: ${{ steps.check_updates.outputs.updates_found }}"
+          
+          if [[ "${{ steps.check_updates.outputs.updates_found }}" == "true" ]]; then
+            echo "📝 Changelog:"
+            echo -e "${{ steps.check_updates.outputs.changelog }}"
+            echo "🔧 Pull Request will be created automatically"
+          else
+            echo "ℹ️ All dependencies are up to date"
+          fi
+          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

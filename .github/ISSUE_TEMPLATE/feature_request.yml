@@ -1,0 +1,168 @@
+name: ✨ Feature Request
+description: Suggest a new feature for the project
+title: "[FEATURE] "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## ✨ Feature Request
+        
+        Thank you for your ideas to improve AmneziaWG Docker Server! 
+        Please describe your idea in as much detail as possible.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 📋 Pre-submission Checklist
+      description: Please ensure you have completed the following steps
+      options:
+        - label: I searched for similar feature requests in issues
+          required: true
+        - label: This feature is not implemented in the current version
+          required: true
+        - label: This feature relates to AmneziaWG Docker Server, not AmneziaWG itself
+          required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 📂 Request Category
+      description: Which area does your request relate to?
+      options:
+        - "🐳 Docker configuration"
+        - "🛠️ Management scripts"
+        - "🌐 Network features"
+        - "🔒 Security"
+        - "📊 Monitoring and logs"
+        - "⚙️ Automation"
+        - "📱 Client utilities"
+        - "🔧 CI/CD"
+        - "📝 Documentation"
+        - "🎯 Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 🔍 Problem Description
+      description: Describe the problem this feature should solve
+      placeholder: |
+        e.g., "Currently it's difficult to manage a large number of clients..."
+        "There's no way to automatically backup configuration..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 💡 Proposed Solution
+      description: Detailed description of how the new feature should work
+      placeholder: |
+        Describe:
+        - How the feature should work
+        - What commands/interfaces to add
+        - How it should integrate with existing code
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 🔄 Alternative Solutions
+      description: Are there other ways to solve this problem?
+      placeholder: |
+        - Considered alternatives
+        - Existing workarounds
+        - Why the proposed solution is better
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: ⚡ Priority
+      description: How important is this feature?
+      options:
+        - "🔥 Critical (blocks work)"
+        - "🚀 High (significantly improves experience)"
+        - "📈 Medium (useful feature)"
+        - "🎯 Low (nice to have)"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: complexity
+    attributes:
+      label: 🏗️ Implementation Complexity (your estimate)
+      description: How do you assess the implementation complexity?
+      options:
+        - label: "🟢 Simple (script/configuration changes)"
+        - label: "🟡 Medium (new scripts/functions)"
+        - label: "🟠 Complex (Dockerfile/architecture changes)"
+        - label: "🔴 Very complex (major architectural changes)"
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: 🛠️ Implementation Details
+      description: If you have implementation ideas, describe them
+      placeholder: |
+        - Which files need to be changed
+        - New dependencies
+        - Interface changes
+        - Potential issues
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: 📋 Usage Examples
+      description: Show how the new feature would be used
+      placeholder: |
+        ```bash
+        # Example command
+        make new-feature option=value
+        
+        # Example configuration
+        NEW_FEATURE_ENABLED=true
+        ```
+      render: bash
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: 🤝 Contribution Readiness
+      description: Are you ready to help with implementation?
+      options:
+        - label: "Ready to help with testing"
+        - label: "Ready to help with documentation"
+        - label: "Ready to write code (partially)"
+        - label: "Ready to implement completely"
+        - label: "Can only provide the idea"
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 📎 Additional Information
+      description: Any other useful information
+      placeholder: |
+        - Links to similar implementations
+        - Screenshots/diagrams
+        - Related issues
+        - Additional considerations
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        
+        ### 🎯 What Happens Next?
+        
+        1. **Triage**: We'll review your request and assign appropriate labels
+        2. **Discussion**: Implementation details may need to be discussed
+        3. **Planning**: If accepted, the feature will be added to the backlog
+        4. **Implementation**: The feature will be implemented according to priority
+        
+        ### 💡 Tip
+        The more detailed your request, the faster we can review and implement it!

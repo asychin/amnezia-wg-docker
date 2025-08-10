@@ -339,5 +339,36 @@ monitor: check-compose ## Мониторинг в реальном времен�
 # НАСТРОЙКИ ПО УМОЛЧАНИЮ
 # ============================================================================
 
+# ============================================================================
+# RELEASE MANAGEMENT
+# ============================================================================
+
+.PHONY: release-patch release-minor release-major release-prerelease release-custom
+release-patch: ## Создать patch релиз (x.x.X)
+	@./.github/scripts/release.sh patch
+
+release-minor: ## Создать minor релиз (x.X.x)
+	@./.github/scripts/release.sh minor
+
+release-major: ## Создать major релиз (X.x.x)
+	@./.github/scripts/release.sh major
+
+release-prerelease: ## Создать prerelease (x.x.x-rc.x)
+	@./.github/scripts/release.sh prerelease
+
+release-custom: ## Создать кастомный релиз (version=x.x.x)
+	@if [ -z "$(version)" ]; then \
+		echo "$(RED)❌ Укажите версию: make release-custom version=1.0.0$(NC)"; \
+		exit 1; \
+	fi
+	@./.github/scripts/release.sh $(version)
+
+.PHONY: release-test release-current
+release-test: ## Тестирование релизной сборки
+	@./.github/scripts/release.sh --test
+
+release-current: ## Показать текущую версию
+	@./.github/scripts/release.sh --current
+
 # По умолчанию показываем справку
 .DEFAULT_GOAL := help

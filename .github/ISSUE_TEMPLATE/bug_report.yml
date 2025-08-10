@@ -1,0 +1,168 @@
+name: 🐛 Bug Report
+description: Create a bug report to help us improve the project
+title: "[BUG] "
+labels: ["bug", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 🐛 Bug Report
+        
+        Thank you for helping improve AmneziaWG Docker Server! 
+        Please fill out the form below with as much detail as possible.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: 📋 Pre-submission Checklist
+      description: Please ensure you have completed the following steps
+      options:
+        - label: I searched for similar issues in the repository
+          required: true
+        - label: I have read the documentation and README
+          required: true
+        - label: I am using the latest version
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 🔍 Bug Description
+      description: A clear and concise description of the bug
+      placeholder: Describe what is happening...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 🔄 Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Run command '...'
+        2. Go to '...'
+        3. Click on '...'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: ✅ Expected Behavior
+      description: What should have happened
+      placeholder: Describe the expected result...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 📝 Logs and Errors
+      description: Copy and paste any relevant logs
+      placeholder: |
+        Paste logs here:
+        ```
+        docker logs amneziawg-server
+        ```
+      render: shell
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 💻 Operating System
+      description: Which OS are you running?
+      options:
+        - Ubuntu 20.04
+        - Ubuntu 22.04
+        - Ubuntu 24.04
+        - Debian 11
+        - Debian 12
+        - CentOS 7
+        - CentOS 8/9
+        - Rocky Linux
+        - Fedora
+        - Arch Linux
+        - Docker Desktop (Windows)
+        - Docker Desktop (macOS)
+        - Other (specify in comments)
+    validations:
+      required: true
+
+  - type: input
+    id: docker-version
+    attributes:
+      label: 🐳 Docker Version
+      description: Run `docker --version` and `docker compose version`
+      placeholder: "e.g., Docker 24.0.7, Docker Compose 2.21.0"
+    validations:
+      required: true
+
+  - type: input
+    id: image-version
+    attributes:
+      label: 🏷️ AmneziaWG Image Version
+      description: Which image version are you using?
+      placeholder: "e.g., latest, v1.0.0, dev-main"
+    validations:
+      required: true
+
+  - type: textarea
+    id: config
+    attributes:
+      label: ⚙️ Configuration
+      description: Your docker-compose.yml or docker run command (remove secrets!)
+      placeholder: |
+        ```yaml
+        # Paste your configuration (without secrets!)
+        ```
+      render: yaml
+
+  - type: textarea
+    id: network
+    attributes:
+      label: 🌐 Network Configuration
+      description: Network information (if relevant)
+      placeholder: |
+        - Network type (bridge, host, etc.)
+        - Ports
+        - Firewall/iptables rules
+        - NAT configuration
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 📎 Additional Information
+      description: Any other information that might help
+      placeholder: |
+        - Screenshots
+        - Additional logs
+        - Possible causes
+        - Temporary workarounds
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        
+        ### 🛠️ Useful Diagnostic Commands:
+        
+        ```bash
+        # Check container status
+        docker ps -a
+        
+        # Container logs
+        docker logs amneziawg-server --tail 50
+        
+        # Enter container for diagnosis
+        docker exec -it amneziawg-server /bin/bash
+        
+        # Check network in container
+        docker exec amneziawg-server ip addr show
+        docker exec amneziawg-server iptables -L -n
+        
+        # Use built-in diagnostics
+        docker exec amneziawg-server /app/scripts/diagnose.sh
+        ```
