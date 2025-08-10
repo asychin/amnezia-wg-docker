@@ -6,7 +6,7 @@
 
 ---
 
-**Production-ready solution for running AmneziaWG VPN server in Docker container with DPI bypass support**
+**Production-ready Docker solution for AmneziaWG VPN server with userspace implementation and DPI bypass**
 
 [![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amnezia-wg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amnezia-wg-docker)
@@ -20,88 +20,98 @@
 
 ---
 
-## 📖 What is AmneziaWG?
+## 📖 About
 
-**AmneziaWG** is a modern VPN protocol based on WireGuard that adds **DPI (Deep Packet Inspection) bypass capabilities**. Unlike traditional VPN protocols that can be easily detected and blocked by firewalls, AmneziaWG disguises VPN traffic as regular HTTPS connections, making it virtually undetectable.
+This project provides a **containerized AmneziaWG VPN server** with userspace implementation. AmneziaWG is a protocol based on WireGuard that adds obfuscation capabilities to bypass DPI (Deep Packet Inspection) systems.
 
-### 🎯 Why This Docker Implementation?
-
-This project provides a **complete containerized solution** for running your own AmneziaWG VPN server with zero configuration headaches:
-
-- **🔒 Privacy-First**: Run your own VPN server, no third-party trust required
-- **🌐 Bypass Censorship**: Works in countries with strict internet censorship 
-- **🐳 Docker-Ready**: One command deployment with automatic configuration
-- **📱 Multi-Device**: Generate QR codes for instant client setup
-- **⚡ High Performance**: Userspace implementation, no kernel modules needed
-- **🛡️ Secure by Default**: Modern cryptography with traffic obfuscation
-
-### 🌍 Perfect For:
-
-- **Developers** who need secure connections while working remotely
-- **Digital Nomads** accessing geo-restricted content while traveling  
-- **Privacy Enthusiasts** wanting full control over their VPN infrastructure
-- **Organizations** needing to bypass corporate/government firewalls
-- **Anyone** in countries with internet restrictions (China, Iran, Russia, etc.)
+### Key Components:
+- **amneziawg-go**: Userspace implementation (no kernel modules required)
+- **amneziawg-tools**: Configuration and management utilities  
+- **Docker containerization**: Easy deployment and management
+- **Makefile automation**: Simple commands for all operations
 
 ---
 
-## 💡 Use Cases & Examples
+## 🌟 Features
 
-### 🌏 Bypass Internet Censorship
-```bash
-# Set up VPN server in a free country
-make up
-# Connect from restricted location
-make client-add name=phone
-# Scan QR code - browse freely!
-```
-
-### 🏢 Secure Remote Work
-```bash
-# Company server setup
-make up EXTERNAL_IP=your-office-ip
-# Add employee devices
-make client-add name=employee1
-make client-add name=laptop-employee1
-```
-
-### 🌍 Travel & Geo-Restrictions
-```bash
-# Deploy on cloud server in target country
-make up
-# Access local content from anywhere
-make client-show name=travel-device
-```
-
-### 🔒 Privacy-Focused Browsing
-```bash
-# Personal privacy server
-make up
-# Route all traffic through VPN
-make client-add name=personal-laptop
-```
+- ✅ **AmneziaWG Userspace** - Works without kernel modules
+- ✅ **DPI Bypass** - Camouflages VPN traffic as HTTPS  
+- ✅ **Docker Container** - Simple deployment with docker-compose
+- ✅ **Auto IP Detection** - Smart public IP discovery through multiple services
+- ✅ **Automatic Setup** - iptables, routing, DNS configuration
+- ✅ **QR Codes** - Quick mobile client connection
+- ✅ **Client Management** - Add/remove clients via Makefile commands
+- ✅ **Monitoring** - Real-time logs and connection status
+- ✅ **Backup/Restore** - Configuration management
+- ✅ **Healthcheck** - Built-in service monitoring
 
 ---
 
 ## 🚀 Quick Start
 
-<div align="center">
-
-### 🐳 One-line installation
+### 1. Clone and Initialize
 
 ```bash
-git clone --recursive https://github.com/asychin/amnezia-wg-docker.git && cd amnezia-wg-docker && make build && make up
+git clone --recursive https://github.com/asychin/amnezia-wg-docker.git
+cd amnezia-wg-docker
+
+# If you forgot --recursive:
+git submodule update --init --recursive
 ```
 
-**That's it! Your VPN server is running.** Get client configs with: `make client-add name=myphone`
+### 2. Build and Start
 
-</div>
+```bash
+# Build Docker image
+make build
+
+# Start VPN server
+make up
+
+# Check status
+make status
+```
+
+### 3. Add Clients
+
+```bash
+# Add client with automatic IP assignment
+make client-add name=myphone
+
+# Add client with specific IP
+make client-add name=laptop ip=10.13.13.15
+
+# Show QR code for mobile setup
+make client-qr name=myphone
+
+# Export configuration file
+make client-config name=laptop > laptop.conf
+```
+
+---
+
+## 📋 Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `make help` | Show all available commands |
+| `make build` | Build Docker image |
+| `make up` | Start VPN server |
+| `make down` | Stop VPN server |
+| `make restart` | Restart VPN server |
+| `make status` | Show server status and connections |
+| `make logs` | View real-time logs |
+| `make client-add name=X` | Add new client |
+| `make client-rm name=X` | Remove client |
+| `make client-qr name=X` | Show client QR code |
+| `make client-config name=X` | Show client configuration |
+| `make client-list` | List all clients |
+| `make backup` | Create configuration backup |
+| `make clean` | Full cleanup (stop + remove data) |
 
 ---
 
 ## 📚 Documentation
-
-### 📖 Documentation
 
 | Document | Link |
 |----------|------|
@@ -111,42 +121,26 @@ git clone --recursive https://github.com/asychin/amnezia-wg-docker.git && cd amn
 
 ---
 
-## ✨ Key Features & Capabilities
+## 🛠️ Technical Details
 
-### 🛡️ Advanced Security
-- **🔐 AmneziaWG Protocol**: Next-generation WireGuard with traffic obfuscation
-- **🌐 DPI Evasion**: Disguises VPN traffic as regular HTTPS to bypass firewalls
-- **🔒 Userspace Implementation**: No kernel modules required, safer and more portable
-- **🛡️ Modern Cryptography**: ChaCha20, Poly1305, Curve25519, BLAKE2s
-- **🚫 No Logs**: Your traffic and connection data are never stored
+### Network Configuration
+- **VPN Network**: `10.13.13.0/24`
+- **Server IP**: `10.13.13.1`
+- **Port**: `51820/udp`
+- **DNS**: `8.8.8.8, 8.8.4.4`
 
-### 🚀 Easy Deployment
-- **🐳 Full Docker Stack**: Everything containerized with docker-compose
-- **⚡ One-Command Setup**: `make up` and you're running in under 2 minutes
-- **🎯 Auto Configuration**: Automatically detects your server's public IP
-- **🔧 Smart Networking**: Handles iptables, routing, and DNS automatically
-- **📦 All-in-One**: Server + web interface + client configs in one package
+### AmneziaWG Obfuscation Parameters
+- **Junk Packet Count (Jc)**: 7
+- **Junk Packet Min Size (Jmin)**: 50
+- **Junk Packet Max Size (Jmax)**: 1000
+- **Init Packet Junk Size**: 86
+- **Response Packet Junk Size**: 574
+- **Header fields**: H1=1, H2=2, H3=3, H4=4
 
-### 📱 Client Management
-- **📱 QR Code Generation**: Instant mobile device setup
-- **👥 Multi-Client Support**: Add unlimited devices with unique configs
-- **🎛️ Easy Management**: Simple Makefile commands for all operations
-- **📋 Config Export**: Download .conf files for any WireGuard client
-- **🔄 Bulk Operations**: Add/remove multiple clients efficiently
-
-### 📊 Monitoring & Control
-- **📈 Real-time Status**: Live connection monitoring and bandwidth stats
-- **📋 Connection Logs**: See who's connected and data usage
-- **🌐 Web Interface**: Browser-based management (optional)
-- **🔍 Debug Tools**: Built-in diagnostics and troubleshooting
-- **📊 Bandwidth Monitoring**: Track data usage per client
-
-### 🌍 Global Compatibility
-- **🌏 Works Everywhere**: Tested in China, Iran, Russia, UAE, and more
-- **📡 Multiple Ports**: Supports custom ports and protocols
-- **🔀 Protocol Flexibility**: HTTP/HTTPS masquerading options
-- **🌐 IPv4/IPv6 Support**: Dual-stack networking ready
-- **⚡ High Performance**: Optimized for speed and low latency
+### Requirements
+- Docker with Docker Compose
+- Git (for submodules)
+- Root privileges (for network configuration)
 
 ---
 
