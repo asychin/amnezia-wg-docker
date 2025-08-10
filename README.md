@@ -23,7 +23,7 @@
 ---
 
 
-## 🚀 Quick Start | Быстрый старт | 快速开始
+## 🚀 Quick Start
 
 <div align="center">
 
@@ -37,37 +37,31 @@ git clone --recursive https://github.com/asychin/amneziawg-docker.git && cd amne
 
 ---
 
-## 📚 Documentation Index | Индекс документации | 文档索引
+## 📚 Documentation Index
 
-### 📖 Main Documentation | Основная документация | 主要文档
+### 📖 Main Documentation
 
-| Document | English | Русский | 中文 |
-|----------|---------|---------|------|
-| **📋 Main README** | [📖 Read](docs/en/README.md) | [📖 Читать](docs/ru/README.md) | [📖 阅读](docs/zh/README.md) |
-| **🚀 Quick Start Guide** | [🚀 Start](docs/en/quick-start.md) | [🚀 Старт](docs/ru/quick-start.md) | [🚀 开始](docs/zh/quick-start.md) |
-| **⚙️ Installation** | [⚙️ Install](docs/en/installation.md) | [⚙️ Установка](docs/ru/installation.md) | [⚙️ 安装](docs/zh/installation.md) |
-| **🔧 Configuration** | [🔧 Config](docs/en/configuration.md) | [🔧 Настройка](docs/ru/configuration.md) | [🔧 配置](docs/zh/configuration.md) |
+- [📋 Main README](docs/en/README.md)
+- [🚀 Quick Start Guide](docs/en/quick-start.md)
+- [⚙️ Installation](docs/en/installation.md)
+- [🔧 Configuration](docs/en/configuration.md)
 
-### 🛠️ Advanced Topics | Продвинутые темы | 高级主题
+### 🛠️ Advanced Topics
 
-| Document | English | Русский | 中文 |
-|----------|---------|---------|------|
-| **🔄 CI/CD Pipeline** | [🔄 Pipeline](docs/en/pipeline.md) | [🔄 Пайплайн](docs/ru/pipeline.md) | [🔄 流水线](docs/zh/pipeline.md) |
-| **🍴 Fork Setup** | [🍴 Fork](docs/en/fork-setup.md) | [🍴 Форк](docs/ru/fork-setup.md) | [🍴 分叉](docs/zh/fork-setup.md) |
-| **🐛 Troubleshooting** | [🐛 Debug](docs/en/troubleshooting.md) | [🐛 Отладка](docs/ru/troubleshooting.md) | [🐛 故障排除](docs/zh/troubleshooting.md) |
-| **🔒 Security** | [🔒 Security](docs/en/security.md) | [🔒 Безопасность](docs/ru/security.md) | [🔒 安全](docs/zh/security.md) |
+- [🔄 CI/CD Pipeline](docs/en/pipeline.md)
+- [🍴 Fork Setup](docs/en/fork-setup.md)
+- [🐛 Troubleshooting](docs/en/troubleshooting.md)
+- [🔒 Security](docs/en/security.md)
 
-### 👥 Development | Разработка | 开发
+### 👥 Development
 
-| Document | English | Русский | 中文 |
-|----------|---------|---------|------|
-| **🤝 Contributing** | [🤝 Contribute](docs/en/contributing.md) | [🤝 Участие](docs/ru/contributing.md) | [🤝 贡献](docs/zh/contributing.md) |
-| **🏗️ Development Setup** | [🏗️ Dev Setup](docs/en/development.md) | [🏗️ Настройка разработки](docs/ru/development.md) | [🏗️ 开发设置](docs/zh/development.md) |
-| **📊 API Reference** | [📊 API](docs/en/api.md) | [📊 API справочник](docs/ru/api.md) | [📊 API参考](docs/zh/api.md) |
+- [🤝 Contributing](docs/en/contributing.md)
+- [🏗️ Development Setup](docs/en/development.md)
+- [📊 API Reference](docs/en/api.md)
 
 ---
 
-## ✨ Key Features | Ключевые особенности | 主要功能
+## ✨ Key Features
 
 <div align="center">
 
@@ -86,7 +80,7 @@ git clone --recursive https://github.com/asychin/amneziawg-docker.git && cd amne
 
 ---
 
-## 🏆 Project Info | Информация о проекте | 项目信息
+## 🏆 Project Info
 
 <div align="center">
 
@@ -100,7 +94,7 @@ git clone --recursive https://github.com/asychin/amneziawg-docker.git && cd amne
 
 ---
 
-## 📞 Support | Поддержка | 支持
+## 📞 Support
 
 <div align="center">
 
@@ -114,7 +108,7 @@ git clone --recursive https://github.com/asychin/amneziawg-docker.git && cd amne
 
 ---
 
-## 📄 License | Лицензия | 许可证
+## 📄 License
 
 <div align="center">
 
