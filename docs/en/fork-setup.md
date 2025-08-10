@@ -305,6 +305,6 @@ Always test your pipeline:
 
 If you encounter issues:
 
-1. **Check existing issues:** [GitHub Issues](https://github.com/asychin/amnezia-wg-docker/issues)
+1. **Check existing issues:** [GitHub Issues](../../issues)
 2. **Create new issue:** Include your configuration and error logs
-3. **Join discussions:** [GitHub Discussions](https://github.com/asychin/amnezia-wg-docker/discussions)
+3. **Join discussions:** [GitHub Discussions](../../discussions)

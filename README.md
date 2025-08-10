@@ -10,6 +10,8 @@
 [![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](../../stargazers)
 [![License](https://img.shields.io/github/license/asychin/amnezia-wg-docker?style=flat-square)](LICENSE)
 
+> 🍴 **Forked this repository?** Update the badges above by replacing `asychin/amnezia-wg-docker` with `yourusername/amnezia-wg-docker` in documentation files.
+
 </div>
 
 ---

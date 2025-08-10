@@ -4,10 +4,12 @@
 
 **Production-ready Docker solution for AmneziaWG VPN server with DPI bypass capabilities**
 
-[![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](../../releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amnezia-wg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amnezia-wg-docker)
-[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-asychin/amnezia-wg-docker-blue?style=flat-square&logo=docker)](https://github.com/asychin/amnezia-wg-docker/pkgs/container/amnezia-wg-docker)
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/stargazers)
+[![GitHub Container Registry](https://img.shields.io/badge/ghcr.io-asychin/amnezia--wg--docker-blue?style=flat-square&logo=docker)](../../pkgs/container/amnezia-wg-docker)
+[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](../../stargazers)
+
+> 🍴 **Forked this repository?** Update the badges above by replacing `asychin/amnezia-wg-docker` with `yourusername/amnezia-wg-docker` in documentation files.
 
 **🌍 Languages: [🇺🇸 English](../en/README.md) | [🇷🇺 Русский](../ru/README.md) | [🇨🇳 中文](../zh/README.md)**
 
