@@ -78,9 +78,15 @@ jobs:
         run: |
           echo "📦 Checking submodules..."
           
-          # Check if submodules are initialized
-          if [[ ! -d "amneziawg-go/.git" ]] || [[ ! -d "amneziawg-tools/.git" ]]; then
+          # Check if submodules are initialized (use -e for files, not -d for directories)
+          if [[ ! -e "amneziawg-go/.git" ]] || [[ ! -e "amneziawg-tools/.git" ]]; then
             echo "❌ Submodules are not initialized"
+            exit 1
+          fi
+          
+          # Additional check using git submodule status
+          if ! git submodule status | grep -q "amneziawg-go" || ! git submodule status | grep -q "amneziawg-tools"; then
+            echo "❌ Submodules are not properly configured"
             exit 1
           fi
           
