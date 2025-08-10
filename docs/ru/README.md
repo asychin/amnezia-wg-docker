@@ -4,9 +4,9 @@
 
 **Готовое к продакшену Docker решение для AmneziaWG VPN сервера с поддержкой обхода DPI**
 
-[![GitHub Release](https://img.shields.io/github/v/release/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amneziawg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amneziawg-docker)
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/stargazers)
 
 <details>
   <summary>🌍 Язык: Русский</summary>
@@ -39,8 +39,8 @@
 ### 1. Клонирование с сабмодулями
 
 ```bash
-git clone --recursive https://github.com/asychin/amneziawg-docker.git
-cd amneziawg-docker
+git clone --recursive https://github.com/asychin/amnezia-wg-docker.git
+cd amnezia-wg-docker
 
 # Если забыли --recursive:
 git submodule update --init --recursive

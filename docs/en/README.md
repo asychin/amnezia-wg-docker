@@ -4,9 +4,9 @@
 
 **Production-ready Docker solution for AmneziaWG VPN server with DPI bypass capabilities**
 
-[![GitHub Release](https://img.shields.io/github/v/release/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/releases)
+[![GitHub Release](https://img.shields.io/github/v/release/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/releases)
 [![Docker Pulls](https://img.shields.io/docker/pulls/asychin/amneziawg-docker?style=flat-square&logo=docker)](https://hub.docker.com/r/asychin/amneziawg-docker)
-[![GitHub Stars](https://img.shields.io/github/stars/asychin/amneziawg-docker?style=flat-square&logo=github)](https://github.com/asychin/amneziawg-docker/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/asychin/amnezia-wg-docker?style=flat-square&logo=github)](https://github.com/asychin/amnezia-wg-docker/stargazers)
 
 <details>
   <summary>🌍 Language: English</summary>
@@ -39,8 +39,8 @@
 ### 1. Clone with Submodules
 
 ```bash
-git clone --recursive https://github.com/asychin/amneziawg-docker.git
-cd amneziawg-docker
+git clone --recursive https://github.com/asychin/amnezia-wg-docker.git
+cd amnezia-wg-docker
 
 # If you forgot --recursive:
 git submodule update --init --recursive
