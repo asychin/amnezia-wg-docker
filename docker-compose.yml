@@ -1,0 +1,67 @@
+services:
+  amneziawg:
+    build: .
+    container_name: amneziawg-server
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.src_valid_mark=1
+    devices:
+      - /dev/net/tun
+    networks:
+      - amneziawg-net
+    ports:
+      - "51820:51820/udp"
+    volumes:
+      - ./config:/app/config
+      - ./clients:/app/clients
+      - /lib/modules:/lib/modules:ro
+    environment:
+      # Основные настройки
+      - AWG_INTERFACE=awg0
+      - AWG_PORT=51820
+      - AWG_NET=10.13.13.0/24
+      - AWG_SERVER_IP=10.13.13.1
+      - AWG_DNS=8.8.8.8,8.8.4.4
+      
+      # Параметры обфускации AmneziaWG
+      - AWG_JC=7
+      - AWG_JMIN=50
+      - AWG_JMAX=1000
+      - AWG_S1=86
+      - AWG_S2=574
+      - AWG_H1=1
+      - AWG_H2=2
+      - AWG_H3=3
+      - AWG_H4=4
+      
+      # Настройки сервера
+      - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP:-auto}
+      - CLIENTS_SUBNET=10.13.13.0/24
+      - ALLOWED_IPS=0.0.0.0/0
+      
+      # Настройки хелсчека
+      - HEALTHCHECK_TIMEOUT=${HEALTHCHECK_TIMEOUT:-5}
+      - HEALTHCHECK_VERBOSE=${HEALTHCHECK_VERBOSE:-false}
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "/app/scripts/healthcheck.sh"]
+      interval: 30s
+      timeout: 15s
+      start_period: 60s
+      retries: 3
+
+networks:
+  amneziawg-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
