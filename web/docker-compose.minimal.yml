@@ -1,0 +1,102 @@
+# AmneziaWG Web Interface - Минимальная конфигурация для слабых серверов
+# Оптимизировано для 1vCPU, 1GB RAM
+version: '3.8'
+
+services:
+  # Backend API с ограничениями ресурсов
+  amneziawg-web-api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.minimal
+    container_name: amneziawg-web-api
+    restart: unless-stopped
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=warn  # Уменьшенный уровень логирования
+      - SERVER_ADDRESS=:8080
+      - CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:80,http://localhost
+      - AWG_CONFIG_PATH=/app/config
+      - AWG_CLIENTS_PATH=/app/clients
+      - AWG_SCRIPTS_PATH=/app/scripts
+      - AWG_SERVICE_NAME=amneziawg-server
+      # Ограничения памяти для Go приложения
+      - GOMEMLIMIT=128MiB
+      - GOGC=200
+    volumes:
+      # Монтируем конфигурацию AmneziaWG (только чтение)
+      - ../config:/app/config:ro
+      - ../clients:/app/clients:ro
+      - ../scripts:/app/scripts:ro
+      # Доступ к Docker socket (только чтение)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Доступ к проекту (только чтение)
+      - ..:/home/blacksazha/amnezia-wg-docker:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - amneziawg-web
+    depends_on:
+      - amneziawg-server
+    
+    # Ограничения ресурсов
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.2'
+    
+    # Убираем health check для экономии ресурсов
+    # healthcheck: NONE
+
+  # Frontend (React App) с ограничениями ресурсов
+  amneziawg-web-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.minimal
+    container_name: amneziawg-web-frontend
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    ports:
+      - "3000:80"
+    networks:
+      - amneziawg-web
+    depends_on:
+      - amneziawg-web-api
+    
+    # Ограничения ресурсов
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.3'
+        reservations:
+          memory: 64M
+          cpus: '0.1'
+
+  # AmneziaWG Server (ссылка на основной сервис)
+  amneziawg-server:
+    extends:
+      file: ../docker-compose.yml
+      service: amneziawg
+    networks:
+      - amneziawg-web
+      - amneziawg-net
+
+networks:
+  amneziawg-web:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
+  
+  # Используем существующую сеть AmneziaWG
+  amneziawg-net:
+    external: true
+
+# Убираем volumes для экономии места
+# volumes:
+#   amneziawg-web-data:
