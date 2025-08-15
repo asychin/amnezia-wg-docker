@@ -8,7 +8,14 @@ import {
   HStack,
   IconButton,
   Input,
-  Modal,
+  DialogRoot,
+
+  DialogContent,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
+  DialogTitle,
+
   Stack,
   Table,
   Text,
@@ -39,9 +46,9 @@ const Clients: React.FC = () => {
   const [newClientName, setNewClientName] = useState('');
   const [newClientIp, setNewClientIp] = useState('');
   
-  const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
-  const { isOpen: isQrOpen, onOpen: onQrOpen, onClose: onQrClose } = useDisclosure();
-  const { isOpen: isConfigOpen, onOpen: onConfigOpen, onClose: onConfigClose } = useDisclosure();
+  const { open: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure();
+  const { open: isQrOpen, onOpen: onQrOpen, onClose: onQrClose } = useDisclosure();
+  const { open: isConfigOpen, onOpen: onConfigOpen, onClose: onConfigClose } = useDisclosure();
 
   const { data: clientConfig } = useClientConfig(selectedClient || '', !!selectedClient && isConfigOpen);
   const { data: qrCode } = useClientQrCode(selectedClient || '', !!selectedClient && isQrOpen);
@@ -129,7 +136,7 @@ const Clients: React.FC = () => {
       </Flex>
 
       {/* Stats */}
-      <HStack spacing="6" mb="6">
+      <HStack gap="6" mb="6">
         <Card.Root>
           <Card.Body>
             <HStack>
@@ -196,7 +203,7 @@ const Clients: React.FC = () => {
               ) : clients?.length === 0 ? (
                 <Table.Row>
                   <Table.Cell colSpan={6}>
-                    <VStack p="8" spacing="3">
+                    <VStack p="8" gap="3">
                       <LuUsers size="48" color="var(--chakra-colors-fg-muted)" />
                       <Text color="fg.muted">No clients found</Text>
                       <Button size="sm" onClick={onCreateOpen}>
@@ -216,7 +223,7 @@ const Clients: React.FC = () => {
                       <Text fontFamily="mono" fontSize="sm">{client.ip}</Text>
                     </Table.Cell>
                     <Table.Cell>
-                      <HStack spacing="2">
+                      <HStack gap="2">
                         {client.connected ? (
                           <LuWifi size="16" color="var(--chakra-colors-green-solid)" />
                         ) : (
@@ -242,7 +249,7 @@ const Clients: React.FC = () => {
                       </Text>
                     </Table.Cell>
                     <Table.Cell>
-                      <VStack align="start" spacing="0">
+                      <VStack align="start" gap="0">
                         <Text fontSize="xs" color="fg.muted">
                           ↑ {formatBytes(client.traffic.sent)}
                         </Text>
@@ -252,7 +259,7 @@ const Clients: React.FC = () => {
                       </VStack>
                     </Table.Cell>
                     <Table.Cell>
-                      <HStack spacing="1">
+                      <HStack gap="1">
                         <IconButton
                           size="sm"
                           variant="ghost"
@@ -289,13 +296,13 @@ const Clients: React.FC = () => {
       </Card.Root>
 
       {/* Create Client Modal */}
-      <Modal.Root open={isCreateOpen} onOpenChange={onCreateClose}>
-        <Modal.Content>
-          <Modal.Header>
-            <Modal.Title>Add New Client</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <Stack spacing="4">
+      <DialogRoot open={isCreateOpen} onOpenChange={onCreateClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Client</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <Stack gap="4">
               <Field.Root>
                 <Field.Label>Client Name</Field.Label>
                 <Input
@@ -303,9 +310,9 @@ const Clients: React.FC = () => {
                   onChange={(e) => setNewClientName(e.target.value)}
                   placeholder="Enter client name"
                 />
-                <Field.HelpText>
+                <Field.HelperText>
                   Choose a unique name for this client
-                </Field.HelpText>
+                </Field.HelperText>
               </Field.Root>
               
               <Field.Root>
@@ -315,36 +322,36 @@ const Clients: React.FC = () => {
                   onChange={(e) => setNewClientIp(e.target.value)}
                   placeholder="e.g., 10.13.13.15"
                 />
-                <Field.HelpText>
+                <Field.HelperText>
                   Leave empty for automatic IP assignment
-                </Field.HelpText>
+                </Field.HelperText>
               </Field.Root>
             </Stack>
-          </Modal.Body>
-          <Modal.Footer>
+          </DialogBody>
+          <DialogFooter>
             <Button variant="outline" onClick={onCreateClose}>
               Cancel
             </Button>
             <Button
               colorPalette="blue"
               onClick={handleCreateClient}
-              isLoading={createClient.isLoading}
-              isDisabled={!newClientName.trim()}
+              loading={createClient.isLoading}
+              disabled={!newClientName.trim()}
             >
               Add Client
             </Button>
-          </Modal.Footer>
-        </Modal.Content>
-      </Modal.Root>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
 
       {/* QR Code Modal */}
-      <Modal.Root open={isQrOpen} onOpenChange={onQrClose}>
-        <Modal.Content>
-          <Modal.Header>
-            <Modal.Title>QR Code - {selectedClient}</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <VStack spacing="4">
+      <DialogRoot open={isQrOpen} onOpenChange={onQrClose}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>QR Code - {selectedClient}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <VStack gap="4">
               {qrCode ? (
                 <Box
                   p="4"
@@ -364,21 +371,21 @@ const Clients: React.FC = () => {
                 Scan this QR code with your AmneziaWG client app
               </Text>
             </VStack>
-          </Modal.Body>
-          <Modal.Footer>
+          </DialogBody>
+          <DialogFooter>
             <Button onClick={onQrClose}>Close</Button>
-          </Modal.Footer>
-        </Modal.Content>
-      </Modal.Root>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
 
       {/* Config Modal */}
-      <Modal.Root open={isConfigOpen} onOpenChange={onConfigClose}>
-        <Modal.Content maxW="2xl">
-          <Modal.Header>
-            <Modal.Title>Client Configuration - {selectedClient}</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            <VStack spacing="4" align="stretch">
+      <DialogRoot open={isConfigOpen} onOpenChange={onConfigClose}>
+        <DialogContent maxW="2xl">
+          <DialogHeader>
+            <DialogTitle>Client Configuration - {selectedClient}</DialogTitle>
+          </DialogHeader>
+          <DialogBody>
+            <VStack gap="4" align="stretch">
               {clientConfig ? (
                 <>
                   <Textarea
@@ -411,12 +418,12 @@ const Clients: React.FC = () => {
                 <Text>Loading configuration...</Text>
               )}
             </VStack>
-          </Modal.Body>
-          <Modal.Footer>
+          </DialogBody>
+          <DialogFooter>
             <Button onClick={onConfigClose}>Close</Button>
-          </Modal.Footer>
-        </Modal.Content>
-      </Modal.Root>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
     </Box>
   );
 };

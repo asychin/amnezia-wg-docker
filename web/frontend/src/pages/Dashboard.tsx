@@ -6,11 +6,11 @@ import {
   Grid,
   Heading,
   HStack,
-  Stack,
+
   Text,
   Badge,
   Button,
-  Stat,
+
   SimpleGrid,
 } from '@chakra-ui/react';
 import { Chart, useChart } from '@chakra-ui/charts';
@@ -18,12 +18,12 @@ import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, AreaChart 
 import { useServerStatus, useServerControl } from '@/hooks/useServerStatus';
 import { useClients } from '@/hooks/useClients';
 import { LuPlay, LuSquare, LuRotateCcw, LuUsers, LuActivity, LuHardDrive } from 'react-icons/lu';
-import { formatDistanceToNow, format } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 const Dashboard: React.FC = () => {
   const { data: serverStatus, isLoading: statusLoading } = useServerStatus();
-  const { data: clients, isLoading: clientsLoading } = useClients();
+  const { isLoading: clientsLoading } = useClients();
   const { startServer, stopServer, restartServer } = useServerControl();
 
   // Моковые данные для графиков (позже заменим на реальные данные)
@@ -80,14 +80,14 @@ const Dashboard: React.FC = () => {
         </Box>
         
         {/* Server Controls */}
-        <HStack spacing="2">
+        <HStack gap="2">
           <Button
             size="sm"
             variant="outline"
             colorPalette="green"
             onClick={() => startServer.mutate()}
-            isLoading={startServer.isLoading}
-            isDisabled={serverStatus?.running}
+            loading={startServer.isLoading}
+            disabled={serverStatus?.running}
           >
             <LuPlay />
             Start
@@ -97,8 +97,8 @@ const Dashboard: React.FC = () => {
             variant="outline"
             colorPalette="red"
             onClick={() => stopServer.mutate()}
-            isLoading={stopServer.isLoading}
-            isDisabled={!serverStatus?.running}
+            loading={stopServer.isLoading}
+            disabled={!serverStatus?.running}
           >
             <LuSquare />
             Stop
@@ -108,8 +108,8 @@ const Dashboard: React.FC = () => {
             variant="outline"
             colorPalette="orange"
             onClick={() => restartServer.mutate()}
-            isLoading={restartServer.isLoading}
-            isDisabled={!serverStatus?.running}
+            loading={restartServer.isLoading}
+            disabled={!serverStatus?.running}
           >
             <LuRotateCcw />
             Restart
@@ -118,7 +118,7 @@ const Dashboard: React.FC = () => {
       </Flex>
 
       {/* Status Cards */}
-      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing="6" mb="8">
+      <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="6" mb="8">
         {/* Server Status Card */}
         <Card.Root>
           <Card.Body>

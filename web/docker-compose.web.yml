@@ -31,8 +31,6 @@ services:
       - "8080:8080"
     networks:
       - amneziawg-web
-    depends_on:
-      - amneziawg-server
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -72,14 +70,6 @@ services:
       - amneziawg-web-frontend
       - amneziawg-web-api
 
-  # AmneziaWG Server (ссылка на основной сервис)
-  amneziawg-server:
-    extends:
-      file: ../docker-compose.yml
-      service: amneziawg
-    networks:
-      - amneziawg-web
-      - amneziawg-net
 
 networks:
   amneziawg-web:

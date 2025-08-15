@@ -66,6 +66,7 @@ services:
 networks:
   amneziawg-net:
     driver: bridge
+    name: amneziawg-net
     ipam:
       config:
         - subnet: 172.20.0.0/16

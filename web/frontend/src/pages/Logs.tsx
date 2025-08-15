@@ -13,6 +13,7 @@ import {
   Input,
   Select,
   IconButton,
+  createListCollection,
 } from '@chakra-ui/react';
 import { 
   LuPlay, 
@@ -36,6 +37,16 @@ const Logs: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+
+  const logLevels = createListCollection({
+    items: [
+      { label: 'All levels', value: 'all' },
+      { label: 'Error', value: 'error' },
+      { label: 'Warning', value: 'warn' },
+      { label: 'Info', value: 'info' },
+      { label: 'Debug', value: 'debug' }
+    ]
+  });
 
   const { data: initialLogs, refetch } = useQuery({
     queryKey: ['logs'],
@@ -175,13 +186,13 @@ const Logs: React.FC = () => {
           </Text>
         </Box>
         
-        <HStack spacing="2">
+        <HStack gap="2">
           <IconButton
             size="sm"
             variant="outline"
             onClick={() => refetch()}
             title="Refresh logs"
-            isDisabled={isLiveMode}
+            disabled={isLiveMode}
           >
             <LuRefreshCw />
           </IconButton>
@@ -212,12 +223,16 @@ const Logs: React.FC = () => {
         <Card.Body>
           <Flex wrap="wrap" gap="4" align="center">
             {/* Live Mode Toggle */}
-            <HStack spacing="3">
-              <Switch
+            <HStack gap="3">
+              <Switch.Root
                 checked={isLiveMode}
-                onCheckedChange={setIsLiveMode}
-              />
-              <HStack spacing="2">
+                onCheckedChange={(details) => setIsLiveMode(details.checked)}
+              >
+                <Switch.Control>
+                  <Switch.Thumb />
+                </Switch.Control>
+              </Switch.Root>
+              <HStack gap="2">
                 {isLiveMode ? <LuPause /> : <LuPlay />}
                 <Text fontSize="sm" fontWeight="medium">
                   {isLiveMode ? 'Live Mode' : 'Static Mode'}
@@ -231,30 +246,31 @@ const Logs: React.FC = () => {
             </HStack>
 
             {/* Level Filter */}
-            <HStack spacing="2">
+            <HStack gap="2">
               <LuFilter size="16" />
               <Text fontSize="sm">Level:</Text>
               <Select.Root
-                value={filterLevel}
-                onValueChange={(e) => setFilterLevel(e.value)}
+                value={[filterLevel]}
+                onValueChange={(details) => setFilterLevel(details.value[0])}
                 size="sm"
                 minW="120px"
+                collection={logLevels}
               >
                 <Select.Trigger>
                   <Select.ValueText placeholder="All levels" />
                 </Select.Trigger>
                 <Select.Content>
-                  <Select.Item value="all">All levels</Select.Item>
-                  <Select.Item value="error">Error</Select.Item>
-                  <Select.Item value="warn">Warning</Select.Item>
-                  <Select.Item value="info">Info</Select.Item>
-                  <Select.Item value="debug">Debug</Select.Item>
+                  <Select.Item item="all">All levels</Select.Item>
+                  <Select.Item item="error">Error</Select.Item>
+                  <Select.Item item="warn">Warning</Select.Item>
+                  <Select.Item item="info">Info</Select.Item>
+                  <Select.Item item="debug">Debug</Select.Item>
                 </Select.Content>
               </Select.Root>
             </HStack>
 
             {/* Search */}
-            <HStack spacing="2" flex="1" maxW="300px">
+            <HStack gap="2" flex="1" maxW="300px">
               <LuSearch size="16" />
               <Input
                 placeholder="Search logs..."
@@ -286,7 +302,7 @@ const Logs: React.FC = () => {
             borderColor="border.muted"
           >
             {filteredLogs.length === 0 ? (
-              <VStack p="8" spacing="3">
+              <VStack p="8" gap="3">
                 <Text color="fg.muted" fontSize="lg">
                   📝
                 </Text>
@@ -300,7 +316,7 @@ const Logs: React.FC = () => {
                 )}
               </VStack>
             ) : (
-              <VStack spacing="0" align="stretch">
+              <VStack gap="0" align="stretch">
                 {filteredLogs.map((log, index) => (
                   <Box
                     key={index}

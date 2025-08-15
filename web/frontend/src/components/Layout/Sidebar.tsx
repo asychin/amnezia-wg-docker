@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, VStack, HStack, Text, Link as ChakraLink } from '@chakra-ui/react';
+import { Box, VStack, HStack, Text } from '@chakra-ui/react';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { 
   LuActivity, 
@@ -18,12 +18,7 @@ interface NavItemProps {
 
 const NavItem: React.FC<NavItemProps> = ({ icon: Icon, label, href, isActive }) => {
   return (
-    <ChakraLink
-      as={RouterLink}
-      to={href}
-      w="full"
-      _hover={{ textDecoration: 'none' }}
-    >
+    <RouterLink to={href} style={{ width: '100%', textDecoration: 'none' }}>
       <HStack
         w="full"
         px="4"
@@ -42,7 +37,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon: Icon, label, href, isActive }) 
           {label}
         </Text>
       </HStack>
-    </ChakraLink>
+    </RouterLink>
   );
 };
 
@@ -77,7 +72,7 @@ const Sidebar: React.FC = () => {
       {/* Logo */}
       <HStack mb="8" px="2">
         <LuShield size="24" color="var(--chakra-colors-blue-solid)" />
-        <VStack align="start" spacing="0">
+        <VStack align="start" gap="0">
           <Text fontSize="lg" fontWeight="bold" color="fg">
             AmneziaWG
           </Text>
@@ -88,7 +83,7 @@ const Sidebar: React.FC = () => {
       </HStack>
 
       {/* Navigation */}
-      <VStack spacing="1" align="stretch">
+      <VStack gap="1" align="stretch">
         {navItems.map((item) => (
           <NavItem
             key={item.href}

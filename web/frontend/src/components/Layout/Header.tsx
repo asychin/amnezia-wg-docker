@@ -15,8 +15,8 @@ const Header: React.FC = () => {
       px="6"
     >
       {/* Status indicator */}
-      <HStack spacing="4">
-        <HStack spacing="2">
+      <HStack gap="4">
+        <HStack gap="2">
           <Box color={serverStatus?.running ? 'green.solid' : 'red.solid'}>
             {serverStatus?.running ? <LuWifi size="18" /> : <LuWifiOff size="18" />}
           </Box>
@@ -32,7 +32,7 @@ const Header: React.FC = () => {
         </HStack>
 
         {serverStatus?.running && (
-          <HStack spacing="4" color="fg.muted" fontSize="sm">
+          <HStack gap="4" color="fg.muted" fontSize="sm">
             <Text>
               Clients: {serverStatus.clients.connected}/{serverStatus.clients.total}
             </Text>
@@ -44,7 +44,7 @@ const Header: React.FC = () => {
       </HStack>
 
       {/* Controls */}
-      <HStack spacing="2">
+      <HStack gap="2">
         <ColorModeButton />
       </HStack>
     </Flex>

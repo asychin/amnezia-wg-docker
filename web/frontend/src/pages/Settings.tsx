@@ -12,8 +12,7 @@ import {
   VStack,
   HStack,
   Field,
-  Textarea,
-  Switch,
+
   Separator,
   Alert,
 } from '@chakra-ui/react';
@@ -147,11 +146,11 @@ const Settings: React.FC = () => {
           </Text>
         </Box>
         
-        <HStack spacing="2">
+        <HStack gap="2">
           <Button
             variant="outline"
             onClick={handleReset}
-            isDisabled={!hasChanges}
+            disabled={!hasChanges}
           >
             <LuRotateCcw />
             Reset
@@ -159,8 +158,8 @@ const Settings: React.FC = () => {
           <Button
             colorPalette="blue"
             onClick={handleSave}
-            isLoading={updateConfig.isLoading}
-            isDisabled={!hasChanges}
+            loading={updateConfig.isLoading}
+            disabled={!hasChanges}
           >
             <LuSave />
             Save Changes
@@ -170,7 +169,7 @@ const Settings: React.FC = () => {
 
       {hasChanges && (
         <Alert.Root status="warning" mb="6">
-          <Alert.Icon />
+          <Alert.Indicator />
           <Alert.Title>Unsaved Changes</Alert.Title>
           <Alert.Description>
             You have unsaved changes. Save them to apply the new configuration.
@@ -178,7 +177,7 @@ const Settings: React.FC = () => {
         </Alert.Root>
       )}
 
-      <VStack spacing="6" align="stretch">
+      <VStack gap="6" align="stretch">
         {/* Basic Settings */}
         <Card.Root>
           <Card.Header>
@@ -193,15 +192,15 @@ const Settings: React.FC = () => {
             </Card.Description>
           </Card.Header>
           <Card.Body>
-            <Stack spacing="4">
-              <HStack spacing="4">
+            <Stack gap="4">
+              <HStack gap="4">
                 <Field.Root flex="1">
                   <Field.Label>Interface Name</Field.Label>
                   <Input
                     value={formData.interface}
                     onChange={(e) => handleInputChange('interface', e.target.value)}
                   />
-                  <Field.HelpText>Network interface name (e.g., awg0)</Field.HelpText>
+                  <Field.HelperText>Network interface name (e.g., awg0)</Field.HelperText>
                 </Field.Root>
                 
                 <Field.Root flex="1">
@@ -212,13 +211,13 @@ const Settings: React.FC = () => {
                     min={1}
                     max={65535}
                   >
-                    <NumberInput.Field />
+                    <NumberInput.Control />
                   </NumberInput.Root>
-                  <Field.HelpText>UDP port for VPN connections</Field.HelpText>
+                  <Field.HelperText>UDP port for VPN connections</Field.HelperText>
                 </Field.Root>
               </HStack>
 
-              <HStack spacing="4">
+              <HStack gap="4">
                 <Field.Root flex="1">
                   <Field.Label>Network Range</Field.Label>
                   <Input
@@ -226,7 +225,7 @@ const Settings: React.FC = () => {
                     onChange={(e) => handleInputChange('network', e.target.value)}
                     placeholder="10.13.13.0/24"
                   />
-                  <Field.HelpText>VPN network CIDR range</Field.HelpText>
+                  <Field.HelperText>VPN network CIDR range</Field.HelperText>
                 </Field.Root>
                 
                 <Field.Root flex="1">
@@ -236,11 +235,11 @@ const Settings: React.FC = () => {
                     onChange={(e) => handleInputChange('serverIp', e.target.value)}
                     placeholder="10.13.13.1"
                   />
-                  <Field.HelpText>Server IP within VPN network</Field.HelpText>
+                  <Field.HelperText>Server IP within VPN network</Field.HelperText>
                 </Field.Root>
               </HStack>
 
-              <HStack spacing="4">
+              <HStack gap="4">
                 <Field.Root flex="1">
                   <Field.Label>Public IP</Field.Label>
                   <Input
@@ -248,7 +247,7 @@ const Settings: React.FC = () => {
                     onChange={(e) => handleInputChange('publicIp', e.target.value)}
                     placeholder="auto"
                   />
-                  <Field.HelpText>Public IP address (auto-detect if 'auto')</Field.HelpText>
+                  <Field.HelperText>Public IP address (auto-detect if 'auto')</Field.HelperText>
                 </Field.Root>
                 
                 <Field.Root flex="1">
@@ -258,7 +257,7 @@ const Settings: React.FC = () => {
                     onChange={(e) => handleDnsChange(e.target.value)}
                     placeholder="8.8.8.8, 8.8.4.4"
                   />
-                  <Field.HelpText>Comma-separated DNS servers</Field.HelpText>
+                  <Field.HelperText>Comma-separated DNS servers</Field.HelperText>
                 </Field.Root>
               </HStack>
             </Stack>
@@ -279,13 +278,13 @@ const Settings: React.FC = () => {
             </Card.Description>
           </Card.Header>
           <Card.Body>
-            <VStack spacing="6" align="stretch">
+            <VStack gap="6" align="stretch">
               {/* Presets */}
               <Box>
                 <Text fontSize="sm" fontWeight="medium" mb="3">
                   Quick Presets
                 </Text>
-                <HStack spacing="3">
+                <HStack gap="3">
                   {obfuscationProfiles.map((profile) => (
                     <Button
                       key={profile.name}
@@ -309,8 +308,8 @@ const Settings: React.FC = () => {
                 <Text fontSize="sm" fontWeight="medium" mb="4">
                   Manual Configuration
                 </Text>
-                <Stack spacing="4">
-                  <HStack spacing="4">
+                <Stack gap="4">
+                  <HStack gap="4">
                     <Field.Root flex="1">
                       <Field.Label>Junk Count (Jc)</Field.Label>
                       <NumberInput.Root
@@ -319,13 +318,13 @@ const Settings: React.FC = () => {
                         min={3}
                         max={15}
                       >
-                        <NumberInput.Field />
+                        <NumberInput.Control />
                         <NumberInput.Control>
                           <NumberInput.IncrementTrigger />
                           <NumberInput.DecrementTrigger />
                         </NumberInput.Control>
                       </NumberInput.Root>
-                      <Field.HelpText>Number of junk packets (3-15)</Field.HelpText>
+                      <Field.HelperText>Number of junk packets (3-15)</Field.HelperText>
                     </Field.Root>
                     
                     <Field.Root flex="1">
@@ -336,17 +335,17 @@ const Settings: React.FC = () => {
                         min={20}
                         max={200}
                       >
-                        <NumberInput.Field />
+                        <NumberInput.Control />
                         <NumberInput.Control>
                           <NumberInput.IncrementTrigger />
                           <NumberInput.DecrementTrigger />
                         </NumberInput.Control>
                       </NumberInput.Root>
-                      <Field.HelpText>Minimum junk packet size</Field.HelpText>
+                      <Field.HelperText>Minimum junk packet size</Field.HelperText>
                     </Field.Root>
                   </HStack>
 
-                  <HStack spacing="4">
+                  <HStack gap="4">
                     <Field.Root flex="1">
                       <Field.Label>Max Junk Size (Jmax)</Field.Label>
                       <NumberInput.Root
@@ -355,13 +354,13 @@ const Settings: React.FC = () => {
                         min={500}
                         max={2000}
                       >
-                        <NumberInput.Field />
+                        <NumberInput.Control />
                         <NumberInput.Control>
                           <NumberInput.IncrementTrigger />
                           <NumberInput.DecrementTrigger />
                         </NumberInput.Control>
                       </NumberInput.Root>
-                      <Field.HelpText>Maximum junk packet size</Field.HelpText>
+                      <Field.HelperText>Maximum junk packet size</Field.HelperText>
                     </Field.Root>
                     
                     <Field.Root flex="1">
@@ -372,17 +371,17 @@ const Settings: React.FC = () => {
                         min={50}
                         max={200}
                       >
-                        <NumberInput.Field />
+                        <NumberInput.Control />
                         <NumberInput.Control>
                           <NumberInput.IncrementTrigger />
                           <NumberInput.DecrementTrigger />
                         </NumberInput.Control>
                       </NumberInput.Root>
-                      <Field.HelpText>First header modification size</Field.HelpText>
+                      <Field.HelperText>First header modification size</Field.HelperText>
                     </Field.Root>
                   </HStack>
 
-                  <HStack spacing="4">
+                  <HStack gap="4">
                     <Field.Root flex="1">
                       <Field.Label>Header Size 2 (S2)</Field.Label>
                       <NumberInput.Root
@@ -391,13 +390,13 @@ const Settings: React.FC = () => {
                         min={200}
                         max={800}
                       >
-                        <NumberInput.Field />
+                        <NumberInput.Control />
                         <NumberInput.Control>
                           <NumberInput.IncrementTrigger />
                           <NumberInput.DecrementTrigger />
                         </NumberInput.Control>
                       </NumberInput.Root>
-                      <Field.HelpText>Second header modification size</Field.HelpText>
+                      <Field.HelperText>Second header modification size</Field.HelperText>
                     </Field.Root>
                     
                     <Field.Root flex="1">
@@ -409,7 +408,7 @@ const Settings: React.FC = () => {
                     <Text fontSize="sm" fontWeight="medium" mb="3">
                       Hash Functions (H1-H4)
                     </Text>
-                    <HStack spacing="4">
+                    <HStack gap="4">
                       {[1, 2, 3, 4].map((num) => (
                         <Field.Root key={num} flex="1">
                           <Field.Label>H{num}</Field.Label>
@@ -419,7 +418,7 @@ const Settings: React.FC = () => {
                             min={1}
                             max={10}
                           >
-                            <NumberInput.Field />
+                            <NumberInput.Control />
                             <NumberInput.Control>
                               <NumberInput.IncrementTrigger />
                               <NumberInput.DecrementTrigger />
