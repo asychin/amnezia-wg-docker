@@ -1,70 +1,73 @@
 # AmneziaWG Docker Server - Git Ignore
 
 # ============================================================================
-# КОНФИГУРАЦИИ И СЕКРЕТЫ
+# CONFIGURATIONS AND SECRETS
 # ============================================================================
 
-# Файл окружения с настройками
+# Environment file with settings
 .env
 .env.local
 .env.production
 
-# Приватные ключи и сертификаты
+# Private keys and certificates
 *.key
 *.pem
 *.crt
 *.p12
 *.pfx
 
-# Конфигурационные файлы клиентов (содержат приватные ключи)
+# Client configuration files (contain private keys)
 config/
 clients/
 *.conf
 
-# Резервные копии
+# Backups
 *.backup
 *.bak
 amneziawg-backup-*.tar.gz
 amneziawg-auto-backup-*.tar.gz
 
 # ============================================================================
-# DOCKER И КОНТЕЙНЕРЫ
+# DOCKER AND CONTAINERS
 # ============================================================================
 
-# Docker volumes и данные
+# Docker volumes and data
 volumes/
 data/
 
-# Docker compose override файлы
+# Docker compose override files
 docker-compose.override.yml
 docker-compose.local.yml
 
 # ============================================================================
-# ЛОГИ И ВРЕМЕННЫЕ ФАЙЛЫ
+# LOGS AND TEMPORARY FILES
 # ============================================================================
 
-# Логи
+# Logs
 *.log
 logs/
 
-# Временные файлы
+# Temporary files
 *.tmp
 *.temp
 .DS_Store
 Thumbs.db
 
-# Swap файлы
+# Swap files
 *.swp
 *.swo
 *~
 
 # ============================================================================
-# IDE И РЕДАКТОРЫ
+# IDE AND EDITORS
 # ============================================================================
 
 # Visual Studio Code
 .vscode/
 *.code-workspace
+
+# Cursor
+.cursor/
 
 # IntelliJ IDEA
 .idea/
@@ -82,7 +85,7 @@ Thumbs.db
 .\#*
 
 # ============================================================================
-# ОПЕРАЦИОННЫЕ СИСТЕМЫ
+# OPERATING SYSTEMS
 # ============================================================================
 
 # macOS
@@ -102,97 +105,97 @@ $RECYCLE.BIN/
 .nfs*
 
 # ============================================================================
-# РАЗРАБОТКА И ТЕСТИРОВАНИЕ
+# DEVELOPMENT AND TESTING
 # ============================================================================
 
-# Тестовые конфигурации
+# Test configurations
 test/
 testing/
 *.test
 
-# Отладочные файлы
+# Debug files
 debug/
 *.debug
 
-# Временные скрипты
+# Temporary scripts
 temp_*.sh
 test_*.sh
 
 # ============================================================================
-# СБОРКА И РАЗВЕРТЫВАНИЕ
+# BUILD AND DEPLOYMENT
 # ============================================================================
 
-# Артефакты сборки
+# Build artifacts
 build/
 dist/
 target/
 
-# Зависимости (если используются)
+# Dependencies (if used)
 node_modules/
 vendor/
 
 # ============================================================================
-# ДОКУМЕНТАЦИЯ (ГЕНЕРИРУЕМАЯ)
+# DOCUMENTATION (GENERATED)
 # ============================================================================
 
-# Автоматически генерируемая документация
+# Automatically generated documentation
 docs/generated/
 *.html
 *.pdf
 
 # ============================================================================
-# БЕЗОПАСНОСТЬ
+# SECURITY
 # ============================================================================
 
-# Файлы с токенами и паролями
+# Files with tokens and passwords
 secrets/
 credentials/
 .secrets
 .credentials
 
-# SSH ключи
+# SSH keys
 ssh/
 *.pub
 id_rsa*
 id_ed25519*
 known_hosts
 
-# GPG ключи
+# GPG keys
 *.gpg
 *.asc
 
 # ============================================================================
-# МОНИТОРИНГ И СТАТИСТИКА
+# MONITORING AND STATISTICS
 # ============================================================================
 
-# Метрики и статистика
+# Metrics and statistics
 metrics/
 stats/
 monitoring/
 
 # ============================================================================
-# ЛОКАЛЬНЫЕ НАСТРОЙКИ РАЗРАБОТЧИКА
+# DEVELOPER LOCAL SETTINGS
 # ============================================================================
 
-# Локальные конфигурации разработчика
+# Developer local configurations
 .local/
 local/
 personal/
 
-# Персональные скрипты
+# Personal scripts
 my_*.sh
 personal_*.sh
 
-# Заметки разработчика
+# Developer notes
 NOTES.md
 TODO.personal
 TASKS.md
 
 # ============================================================================
-# ИСКЛЮЧЕНИЯ (НЕ ИГНОРИРОВАТЬ)
+# EXCEPTIONS (DO NOT IGNORE)
 # ============================================================================
 
-# Важные файлы которые НЕ должны игнорироваться
+# Important files that should NOT be ignored
 !env.example
 !README.md
 !Makefile
@@ -200,14 +203,14 @@ TASKS.md
 !Dockerfile
 !.gitmodules
 
-# Примеры конфигураций
+# Configuration examples
 !examples/
 !templates/
 
-# Скрипты установки
+# Installation scripts
 !install.sh
 !quick-start.sh
 
-# Документация
+# Documentation
 !docs/README.md
 !docs/*.md
