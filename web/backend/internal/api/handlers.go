@@ -3,10 +3,13 @@ package api
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
+	"amneziawg-web-api/internal/auth"
+	"amneziawg-web-api/internal/database"
 	"amneziawg-web-api/internal/models"
-	"amneziawg-web-api/internal/service"
+	"amneziawg-web-api/internal/vpn"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
@@ -14,17 +17,23 @@ import (
 )
 
 type Handler struct {
-	amneziawg *service.AmneziaWGService
-	logs      *service.LogService
-	logger    *logrus.Logger
-	upgrader  websocket.Upgrader
+	vpnService *vpn.VPNService
+	authService *auth.JWTService
+	db         *database.SQLiteDB
+	logger     *logrus.Logger
+	upgrader   websocket.Upgrader
+	authMiddleware *auth.AuthMiddleware
 }
 
-func NewHandler(amneziawg *service.AmneziaWGService, logs *service.LogService) *Handler {
+func NewHandler(vpnService *vpn.VPNService, authService *auth.JWTService, db *database.SQLiteDB, logger *logrus.Logger) *Handler {
+	authMiddleware := auth.NewAuthMiddleware(authService, logger)
+	
 	return &Handler{
-		amneziawg: amneziawg,
-		logs:      logs,
-		logger:    logrus.New(),
+		vpnService: vpnService,
+		authService: authService,
+		db:         db,
+		logger:     logger,
+		authMiddleware: authMiddleware,
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
 				// В продакшене добавить проверку домена
@@ -38,47 +47,74 @@ func (h *Handler) SetupRoutes(router *gin.Engine) {
 	// API v1 группа
 	v1 := router.Group("/api/v1")
 	{
-		// Server management
-		server := v1.Group("/server")
+		// Public endpoints (no auth required)
+		auth := v1.Group("/auth")
 		{
-			server.GET("/status", h.GetServerStatus)
-			server.POST("/start", h.StartServer)
-			server.POST("/stop", h.StopServer)
-			server.POST("/restart", h.RestartServer)
-			server.GET("/config", h.GetServerConfig)
-			server.PUT("/config", h.UpdateServerConfig)
+			auth.POST("/login", h.Login)
+			auth.POST("/refresh", h.RefreshToken)
 		}
 
-		// Client management
-		clients := v1.Group("/clients")
-		{
-			clients.GET("", h.GetClients)
-			clients.POST("", h.CreateClient)
-			clients.DELETE("/:name", h.DeleteClient)
-			clients.GET("/:name/config", h.GetClientConfig)
-			clients.GET("/:name/qr", h.GetClientQRCode)
-		}
+		// Server discovery (public)
+		v1.GET("/server/info", h.GetServerInfo)
 
-		// Logs
-		logs := v1.Group("/logs")
+		// Protected endpoints
+		protected := v1.Group("")
+		protected.Use(h.authMiddleware.RequireAuth())
 		{
-			logs.GET("", h.GetLogs)
-			logs.GET("/stream", h.StreamLogs)
-		}
+			// Server management
+			server := protected.Group("/server")
+			{
+				server.GET("/status", h.authMiddleware.RequireCapability("stats"), h.GetServerStatus)
+				server.GET("/config", h.authMiddleware.RequireCapability("config"), h.GetServerConfig)
+				server.PUT("/config", h.authMiddleware.RequireCapability("config"), h.UpdateServerConfig)
+			}
 
-		// Statistics (placeholder)
-		stats := v1.Group("/stats")
-		{
-			stats.GET("/connections", h.GetConnectionStats)
-			stats.GET("/traffic", h.GetTrafficStats)
+			// Client management
+			clients := protected.Group("/clients")
+			{
+				clients.GET("", h.authMiddleware.RequireCapability("clients"), h.GetClients)
+				clients.POST("", h.authMiddleware.RequireCapability("clients"), h.CreateClient)
+				clients.DELETE("/:name", h.authMiddleware.RequireCapability("clients"), h.DeleteClient)
+				clients.GET("/:name/config", h.authMiddleware.RequireCapability("clients"), h.GetClientConfig)
+				clients.GET("/:name/qr", h.authMiddleware.RequireCapability("clients"), h.GetClientQRCode)
+			}
+
+			// Logs
+			logs := protected.Group("/logs")
+			{
+				logs.GET("", h.authMiddleware.RequireCapability("logs"), h.GetLogs)
+				logs.GET("/stream", h.authMiddleware.RequireCapability("logs"), h.StreamLogs)
+			}
+
+			// Statistics
+			stats := protected.Group("/stats")
+			{
+				stats.GET("/connections", h.authMiddleware.RequireCapability("stats"), h.GetConnectionStats)
+				stats.GET("/traffic", h.authMiddleware.RequireCapability("stats"), h.GetTrafficStats)
+			}
+
+			// Connection strings management (admin only)
+			connections := protected.Group("/connections")
+			connections.Use(h.authMiddleware.RequireAdminRole())
+			{
+				connections.POST("/generate", h.GenerateConnectionString)
+				connections.GET("", h.ListConnectionStrings)
+				connections.POST("/:id/revoke", h.RevokeConnectionString)
+				connections.POST("/test", h.TestConnectionString)
+			}
+
+			// User management (admin only)
+			users := protected.Group("/users")
+			users.Use(h.authMiddleware.RequireAdminRole())
+			{
+				users.POST("", h.CreateUser)
+				users.GET("", h.ListUsers)
+			}
 		}
 	}
 
-	// Health check
+	// Health check (public)
 	router.GET("/health", h.HealthCheck)
-
-	// Запускаем потоковое чтение логов
-	h.logs.StartLogStreaming()
 }
 
 // Helper functions
@@ -106,7 +142,8 @@ func (h *Handler) HealthCheck(c *gin.Context) {
 
 // Server handlers
 func (h *Handler) GetServerStatus(c *gin.Context) {
-	status, err := h.amneziawg.GetServerStatus()
+	ctx := c.Request.Context()
+	status, err := h.vpnService.GetServerStatus(ctx)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get server status")
 		h.sendError(c, http.StatusInternalServerError, "Failed to get server status")
@@ -116,38 +153,9 @@ func (h *Handler) GetServerStatus(c *gin.Context) {
 	h.sendSuccess(c, status)
 }
 
-func (h *Handler) StartServer(c *gin.Context) {
-	if err := h.amneziawg.StartServer(); err != nil {
-		h.logger.WithError(err).Error("Failed to start server")
-		h.sendError(c, http.StatusInternalServerError, "Failed to start server")
-		return
-	}
-
-	h.sendSuccess(c, nil)
-}
-
-func (h *Handler) StopServer(c *gin.Context) {
-	if err := h.amneziawg.StopServer(); err != nil {
-		h.logger.WithError(err).Error("Failed to stop server")
-		h.sendError(c, http.StatusInternalServerError, "Failed to stop server")
-		return
-	}
-
-	h.sendSuccess(c, nil)
-}
-
-func (h *Handler) RestartServer(c *gin.Context) {
-	if err := h.amneziawg.RestartServer(); err != nil {
-		h.logger.WithError(err).Error("Failed to restart server")
-		h.sendError(c, http.StatusInternalServerError, "Failed to restart server")
-		return
-	}
-
-	h.sendSuccess(c, nil)
-}
-
 func (h *Handler) GetServerConfig(c *gin.Context) {
-	config, err := h.amneziawg.GetServerConfig()
+	ctx := c.Request.Context()
+	config, err := h.vpnService.GetServerConfig(ctx)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get server config")
 		h.sendError(c, http.StatusInternalServerError, "Failed to get server config")
@@ -158,13 +166,14 @@ func (h *Handler) GetServerConfig(c *gin.Context) {
 }
 
 func (h *Handler) UpdateServerConfig(c *gin.Context) {
-	var config models.ServerConfig
+	var config models.VPNServerConfig
 	if err := c.ShouldBindJSON(&config); err != nil {
 		h.sendError(c, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	if err := h.amneziawg.UpdateServerConfig(config); err != nil {
+	ctx := c.Request.Context()
+	if err := h.vpnService.UpdateServerConfig(ctx, &config); err != nil {
 		h.logger.WithError(err).Error("Failed to update server config")
 		h.sendError(c, http.StatusInternalServerError, "Failed to update server config")
 		return
@@ -175,7 +184,8 @@ func (h *Handler) UpdateServerConfig(c *gin.Context) {
 
 // Client handlers
 func (h *Handler) GetClients(c *gin.Context) {
-	clients, err := h.amneziawg.GetClients()
+	ctx := c.Request.Context()
+	clients, err := h.vpnService.GetClients(ctx)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get clients")
 		h.sendError(c, http.StatusInternalServerError, "Failed to get clients")
@@ -186,13 +196,14 @@ func (h *Handler) GetClients(c *gin.Context) {
 }
 
 func (h *Handler) CreateClient(c *gin.Context) {
-	var req models.CreateClientRequest
+	var req models.CreateVPNClientRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		h.sendError(c, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	client, err := h.amneziawg.CreateClient(req)
+	ctx := c.Request.Context()
+	client, err := h.vpnService.CreateClient(ctx, &req)
 	if err != nil {
 		h.logger.WithError(err).WithField("client", req.Name).Error("Failed to create client")
 		h.sendError(c, http.StatusInternalServerError, "Failed to create client")
@@ -209,7 +220,8 @@ func (h *Handler) DeleteClient(c *gin.Context) {
 		return
 	}
 
-	if err := h.amneziawg.DeleteClient(name); err != nil {
+	ctx := c.Request.Context()
+	if err := h.vpnService.DeleteClient(ctx, name); err != nil {
 		h.logger.WithError(err).WithField("client", name).Error("Failed to delete client")
 		h.sendError(c, http.StatusInternalServerError, "Failed to delete client")
 		return
@@ -225,7 +237,8 @@ func (h *Handler) GetClientConfig(c *gin.Context) {
 		return
 	}
 
-	config, err := h.amneziawg.GetClientConfig(name)
+	ctx := c.Request.Context()
+	config, err := h.vpnService.GetClientConfig(ctx, name)
 	if err != nil {
 		h.logger.WithError(err).WithField("client", name).Error("Failed to get client config")
 		h.sendError(c, http.StatusInternalServerError, "Failed to get client config")
@@ -242,7 +255,8 @@ func (h *Handler) GetClientQRCode(c *gin.Context) {
 		return
 	}
 
-	qrCode, err := h.amneziawg.GetClientQRCode(name)
+	ctx := c.Request.Context()
+	qrCode, err := h.vpnService.GetClientQRCode(ctx, name)
 	if err != nil {
 		h.logger.WithError(err).WithField("client", name).Error("Failed to get client QR code")
 		h.sendError(c, http.StatusInternalServerError, "Failed to get client QR code")
@@ -260,13 +274,16 @@ func (h *Handler) GetLogs(c *gin.Context) {
 		limit = 100
 	}
 
-	logs, err := h.logs.GetLogs(limit)
+	ctx := c.Request.Context()
+	logsStr, err := h.vpnService.GetLogs(ctx, limitStr)
 	if err != nil {
 		h.logger.WithError(err).Error("Failed to get logs")
 		h.sendError(c, http.StatusInternalServerError, "Failed to get logs")
 		return
 	}
 
+	// Parse logs into structured format
+	logs := h.parseLogsString(logsStr)
 	h.sendSuccess(c, logs)
 }
 
@@ -276,48 +293,119 @@ func (h *Handler) StreamLogs(c *gin.Context) {
 		h.logger.WithError(err).Error("Failed to upgrade to websocket")
 		return
 	}
+	defer conn.Close()
 
-	h.logs.AddClient(conn)
+	h.logger.Info("WebSocket client connected for log streaming")
 
-	// Обрабатываем отключение клиента
-	defer h.logs.RemoveClient(conn)
+	// Send initial logs
+	ctx := c.Request.Context()
+	initialLogs, err := h.vpnService.GetLogs(ctx, "50")
+	if err == nil {
+		logs := h.parseLogsString(initialLogs)
+		for _, log := range logs {
+			if err := conn.WriteJSON(log); err != nil {
+				h.logger.WithError(err).Error("Failed to send initial log")
+				return
+			}
+		}
+	}
 
-	// Читаем сообщения от клиента (для поддержания соединения)
+	// Keep connection alive and handle disconnection
 	for {
 		_, _, err := conn.ReadMessage()
 		if err != nil {
+			h.logger.Info("WebSocket client disconnected")
 			break
 		}
 	}
 }
 
-// Statistics handlers (заглушки)
+// Statistics handlers  
 func (h *Handler) GetConnectionStats(c *gin.Context) {
-	// Заглушка для статистики подключений
-	stats := []models.ConnectionStats{
-		{
-			Timestamp:        time.Now().Add(-1 * time.Hour),
-			ConnectedClients: 5,
-			BandwidthIn:      1024 * 1024,
-			BandwidthOut:     2 * 1024 * 1024,
-			TotalTraffic:     3 * 1024 * 1024,
-		},
+	// Generate mock statistics based on current server status
+	ctx := c.Request.Context()
+	status, err := h.vpnService.GetServerStatus(ctx)
+	if err != nil {
+		h.logger.WithError(err).Warn("Failed to get server status for stats")
+		status = &models.VPNServerStatus{}
+	}
+
+	// Generate sample data points for the last 24 hours
+	var stats []models.VPNStatistics
+	now := time.Now()
+	for i := 24; i >= 0; i-- {
+		timestamp := now.Add(-time.Duration(i) * time.Hour)
+		stat := models.VPNStatistics{
+			Timestamp:       timestamp,
+			ConnectedClients: status.Clients.Connected + (i % 3), // Slight variation
+			BandwidthIn:     status.Traffic.Received / 24,
+			BandwidthOut:    status.Traffic.Sent / 24,
+			TotalTraffic:    (status.Traffic.Sent + status.Traffic.Received) / 24,
+		}
+		stats = append(stats, stat)
 	}
 
 	h.sendSuccess(c, stats)
 }
 
 func (h *Handler) GetTrafficStats(c *gin.Context) {
-	// Заглушка для статистики трафика
-	stats := []models.ConnectionStats{
-		{
-			Timestamp:        time.Now().Add(-1 * time.Hour),
-			ConnectedClients: 5,
-			BandwidthIn:      1024 * 1024,
-			BandwidthOut:     2 * 1024 * 1024,
-			TotalTraffic:     3 * 1024 * 1024,
-		},
+	// Similar to connection stats but focused on traffic
+	ctx := c.Request.Context()
+	status, err := h.vpnService.GetServerStatus(ctx)
+	if err != nil {
+		h.logger.WithError(err).Warn("Failed to get server status for traffic stats")
+		status = &models.VPNServerStatus{}
+	}
+
+	var stats []models.VPNStatistics
+	now := time.Now()
+	for i := 24; i >= 0; i-- {
+		timestamp := now.Add(-time.Duration(i) * time.Hour)
+		// Generate some variation in traffic
+		variation := int64(i*1024*1024) + int64(timestamp.Unix()%1000)*1024
+		stat := models.VPNStatistics{
+			Timestamp:       timestamp,
+			ConnectedClients: status.Clients.Connected,
+			BandwidthIn:     variation,
+			BandwidthOut:    variation * 2,
+			TotalTraffic:    variation * 3,
+		}
+		stats = append(stats, stat)
 	}
 
 	h.sendSuccess(c, stats)
+}
+
+// Helper functions
+func (h *Handler) parseLogsString(logsStr string) []models.LogEntry {
+	var logs []models.LogEntry
+	lines := strings.Split(logsStr, "\n")
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		logEntry := models.LogEntry{
+			Timestamp: time.Now(),
+			Level:     "info",
+			Message:   line,
+			Source:    "amneziawg",
+		}
+
+		// Simple parsing to extract log level
+		lineLower := strings.ToLower(line)
+		if strings.Contains(lineLower, "error") || strings.Contains(lineLower, "err") {
+			logEntry.Level = "error"
+		} else if strings.Contains(lineLower, "warn") || strings.Contains(lineLower, "warning") {
+			logEntry.Level = "warn"
+		} else if strings.Contains(lineLower, "debug") {
+			logEntry.Level = "debug"
+		}
+
+		logs = append(logs, logEntry)
+	}
+
+	return logs
 }

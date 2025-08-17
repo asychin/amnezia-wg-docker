@@ -107,3 +107,12 @@ const (
 	WSMessageTypeStatus = "status"
 	WSMessageTypeError  = "error"
 )
+
+// VPN Statistics (for backend implementation)
+type VPNStatistics struct {
+	Timestamp       time.Time `json:"timestamp"`
+	ConnectedClients int      `json:"connected_clients"`
+	BandwidthIn     int64    `json:"bandwidth_in"`
+	BandwidthOut    int64    `json:"bandwidth_out"`
+	TotalTraffic    int64    `json:"total_traffic"`
+}

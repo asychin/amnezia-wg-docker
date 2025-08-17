@@ -1,64 +1,89 @@
 import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { serverApi } from '@/services/api';
+import { useCurrentServerApi } from './useCurrentServerApi';
 import type { ServerStatus, ServerConfig } from '@/types/api';
 
 export function useServerStatus() {
+  const { apis, currentServer, isConnected } = useCurrentServerApi();
+
   return useQuery<ServerStatus>({
-    queryKey: ['server', 'status'],
+    queryKey: ['server', 'status', currentServer?.id],
     queryFn: async () => {
-      const response = await serverApi.getStatus();
+      if (!apis) {
+        throw new Error('No server connected');
+      }
+      const response = await apis.server.getStatus();
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to fetch server status');
       }
       return response.data.data!;
     },
-    refetchInterval: 5000, // Обновляем статус каждые 5 секунд
+    enabled: isConnected && !!apis,
+    refetchInterval: isConnected ? 5000 : false, // Обновляем статус каждые 5 секунд только если подключены
     retry: 3,
   });
 }
 
 export function useServerConfig() {
+  const { apis, currentServer, isConnected } = useCurrentServerApi();
+
   return useQuery<ServerConfig>({
-    queryKey: ['server', 'config'],
+    queryKey: ['server', 'config', currentServer?.id],
     queryFn: async () => {
-      const response = await serverApi.getConfig();
+      if (!apis) {
+        throw new Error('No server connected');
+      }
+      const response = await apis.server.getConfig();
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to fetch server config');
       }
       return response.data.data!;
     },
+    enabled: isConnected && !!apis,
   });
 }
 
 export function useServerControl() {
   const queryClient = useQueryClient();
+  const { apis, currentServer, isConnected } = useCurrentServerApi();
 
   const startServer = useMutation({
-    mutationFn: serverApi.start,
+    mutationFn: async () => {
+      if (!apis) throw new Error('No server connected');
+      return apis.server.start();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['server', 'status']);
+      queryClient.invalidateQueries(['server', 'status', currentServer?.id]);
     },
   });
 
   const stopServer = useMutation({
-    mutationFn: serverApi.stop,
+    mutationFn: async () => {
+      if (!apis) throw new Error('No server connected');
+      return apis.server.stop();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['server', 'status']);
+      queryClient.invalidateQueries(['server', 'status', currentServer?.id]);
     },
   });
 
   const restartServer = useMutation({
-    mutationFn: serverApi.restart,
+    mutationFn: async () => {
+      if (!apis) throw new Error('No server connected');
+      return apis.server.restart();
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['server', 'status']);
+      queryClient.invalidateQueries(['server', 'status', currentServer?.id]);
     },
   });
 
   const updateConfig = useMutation({
-    mutationFn: serverApi.updateConfig,
+    mutationFn: async (config: Partial<ServerConfig>) => {
+      if (!apis) throw new Error('No server connected');
+      return apis.server.updateConfig(config);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries(['server', 'config']);
-      queryClient.invalidateQueries(['server', 'status']);
+      queryClient.invalidateQueries(['server', 'config', currentServer?.id]);
+      queryClient.invalidateQueries(['server', 'status', currentServer?.id]);
     },
   });
 
@@ -67,5 +92,7 @@ export function useServerControl() {
     stopServer,
     restartServer,
     updateConfig,
+    isConnected,
+    hasServer: !!currentServer,
   };
 }

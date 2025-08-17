@@ -1,19 +1,28 @@
 # AmneziaWG Web Interface Makefile
-# Управление веб-интерфейсом для AmneziaWG сервера
+# Docker-реализация: asychin (https://github.com/asychin)
+# Оригинальный VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
+# Удобное управление веб-интерфейсом AmneziaWG
 
 # ============================================================================
 # ПЕРЕМЕННЫЕ
 # ============================================================================
 
-# Пути к проектам
-WEB_DIR := $(PWD)
-FRONTEND_DIR := $(WEB_DIR)/frontend
-BACKEND_DIR := $(WEB_DIR)/backend
-AMNEZIA_DIR := $(shell dirname $(WEB_DIR))
+# Настройки проекта
+WEB_COMPOSE_FILE := docker-compose.web.yml
+WEB_PROJECT_NAME := amneziawg-web
+VPN_PROJECT_PATH := ..
+PROJECT_NAME := amneziawg-web
 
-# Docker Compose файлы
-COMPOSE_WEB := docker-compose.web.yml
-COMPOSE_MAIN := ../docker-compose.yml
+# Команды Docker
+DOCKER_COMPOSE := docker compose
+WEB_DOCKER_COMPOSE := $(DOCKER_COMPOSE) -f $(WEB_COMPOSE_FILE) -p $(WEB_PROJECT_NAME)
+VPN_DOCKER_COMPOSE := $(DOCKER_COMPOSE) -f ../docker-compose.yml
+
+# Сервисы
+WEB_API_SERVICE := amneziawg-web-api
+WEB_FRONTEND_SERVICE := amneziawg-web-frontend
+WEB_NGINX_SERVICE := amneziawg-web-nginx
+VPN_SERVICE := amneziawg-server
 
 # Цвета для вывода
 BLUE := \033[34m
@@ -21,224 +30,352 @@ GREEN := \033[32m
 YELLOW := \033[33m
 RED := \033[31m
 PURPLE := \033[35m
-NC := \033[0m
+CYAN := \033[36m
+NC := \033[0m # No Color
+
+# ============================================================================
+# ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+# ============================================================================
+
+.PHONY: check-compose check-vpn-server check-web-env check-container check-web-running check-web-stopped
+
+# Проверка наличия docker compose
+check-compose:
+	@$(DOCKER_COMPOSE) version > /dev/null 2>&1 || (echo "$(RED)Error: Docker Compose не установлен$(NC)" && exit 1)
+
+# Проверка что VPN сервер запущен
+check-vpn-server:
+	@if ! $(VPN_DOCKER_COMPOSE) ps | grep -q "$(VPN_SERVICE).*Up"; then \
+		echo "$(RED)❌ VPN сервер не запущен$(NC)"; \
+		echo "$(YELLOW)💡 Запустите VPN сервер командой: cd .. && make up$(NC)"; \
+		exit 1; \
+	fi
+
+# Проверка наличия .env файлов
+check-web-env:
+	@if [ ! -f "backend/.env" ] && [ ! -f "backend/env.example" ]; then \
+		echo "$(RED)❌ Не найден backend/.env файл$(NC)"; \
+		echo "$(YELLOW)💡 Скопируйте backend/env.example в backend/.env$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -f "frontend/.env" ] && [ ! -f "frontend/env.example" ]; then \
+		echo "$(RED)❌ Не найден frontend/.env файл$(NC)"; \
+		echo "$(YELLOW)💡 Скопируйте frontend/env.example в frontend/.env$(NC)"; \
+		exit 1; \
+	fi
+	@if [ ! -f ".env" ] && [ ! -f "env.web.example" ]; then \
+		echo "$(RED)❌ Не найден .env файл$(NC)"; \
+		echo "$(YELLOW)💡 Скопируйте env.web.example в .env$(NC)"; \
+		exit 1; \
+	fi
+
+# Проверка запущенности контейнера
+check-container:
+	@if ! $(WEB_DOCKER_COMPOSE) ps | grep -q "Up"; then \
+		echo "$(RED)❌ Веб-интерфейс не запущен$(NC)"; \
+		echo "$(YELLOW)💡 Используйте 'make up' для запуска$(NC)"; \
+		exit 1; \
+	fi
+
+# Проверка что веб-интерфейс запущен
+check-web-running:
+	@if ! $(WEB_DOCKER_COMPOSE) ps | grep -q "Up"; then \
+		echo "$(RED)❌ Веб-интерфейс не запущен$(NC)"; \
+		echo "$(YELLOW)💡 Используйте 'make up' для запуска веб-интерфейса$(NC)"; \
+		exit 1; \
+	fi
+
+# Проверка что веб-интерфейс остановлен
+check-web-stopped:
+	@if $(WEB_DOCKER_COMPOSE) ps | grep -q "Up"; then \
+		echo "$(YELLOW)⚠️  Веб-интерфейс уже запущен$(NC)"; \
+		echo "$(YELLOW)💡 Используйте 'make down' для остановки$(NC)"; \
+		exit 1; \
+	fi
+
+.PHONY: help
+help: ## Показать эту справку
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║            AmneziaWG Web Interface Commands                  ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(CYAN)📋 ОСНОВНЫЕ КОМАНДЫ:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+		grep -E "(init|build|up|down|restart|status|logs)"
+	@echo ""
+	@echo "$(CYAN)🔗 CONNECTION STRINGS:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+		grep -E "(connection-)"
+	@echo ""
+	@echo "$(CYAN)🔧 УТИЛИТЫ:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+		grep -E "(shell|clean|debug|monitor)"
+	@echo ""
+	@echo "$(YELLOW)💡 Примеры использования:$(NC)"
+	@echo "  make up                                         # Запустить веб-интерфейс"
+	@echo "  make connection-generate name=\"My Server\"       # Сгенерировать connection string"
+	@echo "  make connection-list                            # Список connection strings"
+	@echo ""
+
+# ============================================================================
+# ИНИЦИАЛИЗАЦИЯ И НАСТРОЙКА
+# ============================================================================
+
+.PHONY: init
+init: check-compose ## Инициализация веб-интерфейса
+	@echo "$(BLUE)📦 Инициализация веб-интерфейса...$(NC)"
+	@# Создаем .env файлы если их нет
+	@if [ ! -f ".env" ]; then \
+		echo "$(YELLOW)Создаем .env из шаблона env.web.example...$(NC)"; \
+		cp env.web.example .env; \
+		echo "$(GREEN)✅ Web .env создан$(NC)"; \
+	fi
+	@if [ ! -f "backend/.env" ]; then \
+		echo "$(YELLOW)Создаем backend/.env из шаблона...$(NC)"; \
+		cp backend/env.example backend/.env; \
+		echo "$(GREEN)✅ Backend .env создан$(NC)"; \
+	fi
+	@if [ ! -f "frontend/.env" ]; then \
+		echo "$(YELLOW)Создаем frontend/.env из шаблона...$(NC)"; \
+		cp frontend/env.example frontend/.env; \
+		echo "$(GREEN)✅ Frontend .env создан$(NC)"; \
+	fi
+	@# Создаем директории для данных
+	@mkdir -p backend/data nginx/ssl
+	@echo "$(GREEN)✅ Веб-интерфейс инициализирован$(NC)"
+	@echo "$(CYAN)💡 Отредактируйте файлы .env при необходимости$(NC)"
 
 # ============================================================================
 # ОСНОВНЫЕ КОМАНДЫ
 # ============================================================================
 
-.PHONY: help
-help: ## Показать справку
-	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(PURPLE)║            AmneziaWG Web Interface Commands                  ║$(NC)"
-	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-	@echo ""
-	@echo "$(CYAN)🌐 ВЕБ-ИНТЕРФЕЙС:$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-		grep -E "(web-|dev-|build-)"
-	@echo ""
-	@echo "$(CYAN)🐳 DOCKER:$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-		grep -E "(up|down|restart|status|logs)"
-	@echo ""
-	@echo "$(CYAN)🔧 РАЗРАБОТКА:$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-		grep -E "(install|test|clean)"
-
-# ============================================================================
-# УСТАНОВКА И РАЗРАБОТКА
-# ============================================================================
-
-.PHONY: install
-install: ## Установить зависимости для frontend и backend
-	@echo "$(BLUE)📦 Устанавливаем зависимости...$(NC)"
-	@echo "$(YELLOW)Installing frontend dependencies...$(NC)"
-	@cd $(FRONTEND_DIR) && npm install
-	@echo "$(YELLOW)Installing backend dependencies...$(NC)"
-	@cd $(BACKEND_DIR) && go mod download
-	@echo "$(GREEN)✅ Зависимости установлены$(NC)"
-
-.PHONY: dev-frontend
-dev-frontend: ## Запустить frontend в режиме разработки
-	@echo "$(BLUE)🚀 Запускаем frontend dev server...$(NC)"
-	@cd $(FRONTEND_DIR) && npm run dev
-
-.PHONY: dev-backend
-dev-backend: ## Запустить backend в режиме разработки
-	@echo "$(BLUE)🚀 Запускаем backend dev server...$(NC)"
-	@cd $(BACKEND_DIR) && go run cmd/main.go
-
-.PHONY: dev
-dev: ## Запустить полный dev stack (требует два терминала)
-	@echo "$(BLUE)🚀 Для разработки запустите в разных терминалах:$(NC)"
-	@echo "$(YELLOW)Terminal 1: make dev-backend$(NC)"
-	@echo "$(YELLOW)Terminal 2: make dev-frontend$(NC)"
-
-# ============================================================================
-# СБОРКА
-# ============================================================================
-
-.PHONY: build-frontend
-build-frontend: ## Собрать frontend для продакшена
-	@echo "$(BLUE)🔨 Сборка frontend...$(NC)"
-	@cd $(FRONTEND_DIR) && npm run build
-	@echo "$(GREEN)✅ Frontend собран$(NC)"
-
-.PHONY: build-backend
-build-backend: ## Собрать backend бинарник
-	@echo "$(BLUE)🔨 Сборка backend...$(NC)"
-	@cd $(BACKEND_DIR) && go build -o bin/amneziawg-web-api cmd/main.go
-	@echo "$(GREEN)✅ Backend собран$(NC)"
-
 .PHONY: build
-build: build-frontend build-backend ## Собрать весь проект
-
-# ============================================================================
-# DOCKER КОМАНДЫ
-# ============================================================================
-
-.PHONY: web-build
-web-build: ## Собрать Docker образы для веб-интерфейса
-	@echo "$(BLUE)🐳 Сборка Docker образов...$(NC)"
-	@docker compose -f $(COMPOSE_WEB) build
-	@echo "$(GREEN)✅ Docker образы собраны$(NC)"
-
-.PHONY: web-up
-web-up: ## Запустить весь веб-интерфейс (с AmneziaWG сервером)
-	@echo "$(BLUE)🚀 Запускаем веб-интерфейс...$(NC)"
-	@# Сначала убеждаемся что основной сервер запущен
-	@cd $(AMNEZIA_DIR) && make up
-	@# Затем запускаем веб-интерфейс
-	@docker compose -f $(COMPOSE_WEB) up -d
-	@echo "$(GREEN)✅ Веб-интерфейс запущен$(NC)"
-	@echo "$(YELLOW)🌐 Доступен по адресу: http://localhost$(NC)"
-	@echo "$(YELLOW)📡 API доступен по адресу: http://localhost:8080$(NC)"
-
-.PHONY: web-down
-web-down: ## Остановить веб-интерфейс
-	@echo "$(BLUE)🛑 Остановка веб-интерфейса...$(NC)"
-	@docker compose -f $(COMPOSE_WEB) down
-	@echo "$(GREEN)✅ Веб-интерфейс остановлен$(NC)"
-
-.PHONY: web-restart
-web-restart: web-down web-up ## Перезапустить веб-интерфейс
-
-.PHONY: web-status
-web-status: ## Показать статус веб-интерфейса
-	@echo "$(BLUE)📊 Статус веб-интерфейса:$(NC)"
-	@docker compose -f $(COMPOSE_WEB) ps
-
-.PHONY: web-logs
-web-logs: ## Показать логи веб-интерфейса
-	@echo "$(BLUE)📄 Логи веб-интерфейса:$(NC)"
-	@docker compose -f $(COMPOSE_WEB) logs -f
-
-.PHONY: web-logs-api
-web-logs-api: ## Показать логи API
-	@docker compose -f $(COMPOSE_WEB) logs -f amneziawg-web-api
-
-.PHONY: web-logs-frontend
-web-logs-frontend: ## Показать логи frontend
-	@docker compose -f $(COMPOSE_WEB) logs -f amneziawg-web-frontend
-
-# ============================================================================
-# ПОЛНОЕ УПРАВЛЕНИЕ
-# ============================================================================
+build: check-compose init ## Сборка веб-интерфейса
+	@echo "$(BLUE)🔨 Сборка веб-интерфейса...$(NC)"
+	@$(WEB_DOCKER_COMPOSE) build
+	@echo "$(GREEN)✅ Веб-интерфейс собран$(NC)"
 
 .PHONY: up
-up: ## Запустить весь стек (AmneziaWG + Web Interface)
-	@echo "$(BLUE)🚀 Запускаем полный стек...$(NC)"
-	@cd $(AMNEZIA_DIR) && make up
-	@docker compose -f $(COMPOSE_WEB) up -d
-	@echo "$(GREEN)✅ Полный стек запущен$(NC)"
-	@echo "$(YELLOW)🌐 Веб-интерфейс: http://localhost$(NC)"
-	@echo "$(YELLOW)📡 API: http://localhost:8080$(NC)"
+up: check-compose check-vpn-server check-web-stopped init ## Запуск веб-интерфейса
+	@echo "$(BLUE)🚀 Запуск веб-интерфейса...$(NC)"
+	@$(WEB_DOCKER_COMPOSE) up -d
+	@echo "$(GREEN)✅ Веб-интерфейс запущен$(NC)"
+	@sleep 3
+	@$(MAKE) status
 
 .PHONY: down
-down: ## Остановить весь стек
-	@echo "$(BLUE)🛑 Остановка полного стека...$(NC)"
-	@docker compose -f $(COMPOSE_WEB) down
-	@cd $(AMNEZIA_DIR) && make down
-	@echo "$(GREEN)✅ Полный стек остановлен$(NC)"
+down: check-compose check-web-running ## Остановка веб-интерфейса
+	@echo "$(BLUE)🛑 Остановка веб-интерфейса...$(NC)"
+	@$(WEB_DOCKER_COMPOSE) down
+	@echo "$(GREEN)✅ Веб-интерфейс остановлен$(NC)"
 
 .PHONY: restart
-restart: down up ## Перезапустить весь стек
-
-.PHONY: status
-status: ## Показать статус всех сервисов
-	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(PURPLE)║                    Статус всех сервисов                     ║$(NC)"
-	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-	@echo ""
-	@echo "$(CYAN)🔧 AmneziaWG Сервер:$(NC)"
-	@cd $(AMNEZIA_DIR) && docker compose ps || echo "$(RED)Не запущен$(NC)"
-	@echo ""
-	@echo "$(CYAN)🌐 Веб-интерфейс:$(NC)"
-	@docker compose -f $(COMPOSE_WEB) ps || echo "$(RED)Не запущен$(NC)"
+restart: check-compose check-web-running ## Перезапуск веб-интерфейса
+	@echo "$(BLUE)🔄 Перезапуск веб-интерфейса...$(NC)"
+	@$(WEB_DOCKER_COMPOSE) down
+	@sleep 2
+	@$(MAKE) up
 
 .PHONY: logs
-logs: ## Показать логи всех сервисов
-	@echo "$(BLUE)📄 Логи всех сервисов (Ctrl+C для выхода):$(NC)"
-	@docker compose -f $(COMPOSE_WEB) logs -f
+logs: check-compose ## Логи веб-интерфейса
+	@echo "$(BLUE)📄 Логи веб-интерфейса (Ctrl+C для выхода):$(NC)"
+	@$(WEB_DOCKER_COMPOSE) logs -f
+
+.PHONY: status
+status: check-compose ## Статус веб-интерфейса
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║                 Статус Веб-интерфейса                        ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(CYAN)📊 Статус сервисов:$(NC)"
+	@$(WEB_DOCKER_COMPOSE) ps || echo "$(RED)Веб-интерфейс не запущен$(NC)"
+	@echo ""
+	@if $(WEB_DOCKER_COMPOSE) ps | grep -q "Up"; then \
+		echo "$(CYAN)🌐 Доступные адреса:$(NC)"; \
+		echo "$(GREEN)  Frontend: http://localhost:3000$(NC)"; \
+		echo "$(GREEN)  API:      http://localhost:8080$(NC)"; \
+		echo "$(GREEN)  Nginx:    http://localhost:80$(NC)"; \
+		echo ""; \
+		echo "$(CYAN)💻 Тест API:$(NC)"; \
+		curl -s http://localhost:8080/health >/dev/null 2>&1 && \
+			echo "$(GREEN)✅ API отвечает$(NC)" || \
+			echo "$(RED)❌ API недоступен$(NC)"; \
+	else \
+		echo "$(RED)❌ Веб-интерфейс не запущен. Используйте 'make up' для запуска$(NC)"; \
+	fi
+
+.PHONY: logs-api
+logs-api: check-compose ## Логи только API
+	@echo "$(BLUE)📄 Логи API (Ctrl+C для выхода):$(NC)"
+	@$(WEB_DOCKER_COMPOSE) logs -f $(WEB_API_SERVICE)
+
+.PHONY: logs-frontend
+logs-frontend: check-compose ## Логи только frontend
+	@echo "$(BLUE)📄 Логи Frontend (Ctrl+C для выхода):$(NC)"
+	@$(WEB_DOCKER_COMPOSE) logs -f $(WEB_FRONTEND_SERVICE)
+
+# ============================================================================
+# УПРАВЛЕНИЕ CONNECTION STRINGS
+# ============================================================================
+
+.PHONY: connection-generate
+connection-generate: check-compose ## Генерировать connection string (name=имя [location=место] [ttl=время])
+	@if [ -z "$(name)" ]; then \
+		echo "$(RED)❌ Необходимо указать имя сервера$(NC)"; \
+		echo "$(YELLOW)Пример: make connection-generate name=\"My Server\" location=\"Moscow\" ttl=720h$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)🔗 Генерация connection string для '$(name)'...$(NC)"
+	@LOCATION_ARG=""; if [ ! -z "$(location)" ]; then LOCATION_ARG="--location $(location)"; fi; \
+	TTL_ARG=""; if [ ! -z "$(ttl)" ]; then TTL_ARG="--ttl $(ttl)"; fi; \
+	HOST_ARG=""; if [ ! -z "$(host)" ]; then HOST_ARG="--host $(host)"; fi; \
+	PROTOCOL_ARG=""; if [ ! -z "$(protocol)" ]; then PROTOCOL_ARG="--protocol $(protocol)"; fi; \
+	docker exec $(WEB_API_SERVICE) ./connection-gen \
+		--server-name "$(name)" \
+		$$LOCATION_ARG \
+		$$TTL_ARG \
+		$$HOST_ARG \
+		$$PROTOCOL_ARG \
+		--output string
+	@echo ""
+	@echo "$(GREEN)✅ Connection string сгенерирован$(NC)"
+
+.PHONY: connection-generate-json
+connection-generate-json: check-compose ## Генерировать connection string в JSON формате
+	@if [ -z "$(name)" ]; then \
+		echo "$(RED)❌ Необходимо указать имя сервера$(NC)"; \
+		echo "$(YELLOW)Пример: make connection-generate-json name=\"My Server\"$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)🔗 Генерация connection string (JSON) для '$(name)'...$(NC)"
+	@LOCATION_ARG=""; if [ ! -z "$(location)" ]; then LOCATION_ARG="--location $(location)"; fi; \
+	TTL_ARG=""; if [ ! -z "$(ttl)" ]; then TTL_ARG="--ttl $(ttl)"; fi; \
+	HOST_ARG=""; if [ ! -z "$(host)" ]; then HOST_ARG="--host $(host)"; fi; \
+	PROTOCOL_ARG=""; if [ ! -z "$(protocol)" ]; then PROTOCOL_ARG="--protocol $(protocol)"; fi; \
+	docker exec $(WEB_API_SERVICE) ./connection-gen \
+		--server-name "$(name)" \
+		$$LOCATION_ARG \
+		$$TTL_ARG \
+		$$HOST_ARG \
+		$$PROTOCOL_ARG \
+		--output json
+
+.PHONY: connection-generate-qr
+connection-generate-qr: check-compose ## Генерировать connection string с QR кодом
+	@if [ -z "$(name)" ]; then \
+		echo "$(RED)❌ Необходимо указать имя сервера$(NC)"; \
+		echo "$(YELLOW)Пример: make connection-generate-qr name=\"My Server\"$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)🔗 Генерация connection string с QR кодом для '$(name)'...$(NC)"
+	@LOCATION_ARG=""; if [ ! -z "$(location)" ]; then LOCATION_ARG="--location $(location)"; fi; \
+	TTL_ARG=""; if [ ! -z "$(ttl)" ]; then TTL_ARG="--ttl $(ttl)"; fi; \
+	HOST_ARG=""; if [ ! -z "$(host)" ]; then HOST_ARG="--host $(host)"; fi; \
+	PROTOCOL_ARG=""; if [ ! -z "$(protocol)" ]; then PROTOCOL_ARG="--protocol $(protocol)"; fi; \
+	docker exec $(WEB_API_SERVICE) ./connection-gen \
+		--server-name "$(name)" \
+		$$LOCATION_ARG \
+		$$TTL_ARG \
+		$$HOST_ARG \
+		$$PROTOCOL_ARG \
+		--output qr
+
+.PHONY: connection-test
+connection-test: check-compose ## Тестировать connection string (conn=строка)
+	@if [ -z "$(conn)" ]; then \
+		echo "$(RED)❌ Необходимо указать connection string$(NC)"; \
+		echo "$(YELLOW)Пример: make connection-test conn=\"awgwc://eyJ2ZXJzaW9uIjoiMS4wIi...\"$(NC)"; \
+		exit 1; \
+	fi
+	@echo "$(BLUE)🧪 Тестирование connection string...$(NC)"
+	@curl -s -X POST http://localhost:8080/api/v1/connections/test \
+		-H "Content-Type: application/json" \
+		-d "{\"connection_string\": \"$(conn)\"}" | \
+		python3 -m json.tool 2>/dev/null || \
+		echo "$(RED)❌ Ошибка тестирования или API недоступен$(NC)"
+
+.PHONY: connection-list
+connection-list: check-compose ## Список всех connection strings (требует авторизации)
+	@echo "$(BLUE)📋 Список connection strings...$(NC)"
+	@echo "$(YELLOW)⚠️  Для просмотра требуется авторизация через веб-интерфейс$(NC)"
+	@echo "$(CYAN)💡 Откройте http://localhost:3000 и войдите как admin$(NC)"
+
+
 
 # ============================================================================
 # УТИЛИТЫ
 # ============================================================================
 
-.PHONY: test
-test: ## Запустить тесты
-	@echo "$(BLUE)🧪 Запуск тестов...$(NC)"
-	@cd $(FRONTEND_DIR) && npm run lint
-	@cd $(BACKEND_DIR) && go test ./...
-	@echo "$(GREEN)✅ Тесты прошли$(NC)"
-
-.PHONY: clean
-clean: ## Очистить все (остановить сервисы + удалить образы)
-	@echo "$(YELLOW)⚠️  Это остановит все сервисы и удалит Docker образы!$(NC)"
-	@read -p "Продолжить? [y/N]: " confirm && [ "$$confirm" = "y" ]
-	@docker compose -f $(COMPOSE_WEB) down -v --remove-orphans
-	@docker compose -f $(COMPOSE_WEB) rmi --all || true
-	@cd $(AMNEZIA_DIR) && make clean
-	@echo "$(GREEN)✅ Очистка завершена$(NC)"
-
-.PHONY: shell-api
-shell-api: ## Войти в контейнер API
-	@docker compose -f $(COMPOSE_WEB) exec amneziawg-web-api sh
+.PHONY: shell
+shell: check-compose ## Войти в контейнер API
+	@echo "$(BLUE)🐚 Вход в контейнер API...$(NC)"
+	@docker exec -it $(WEB_API_SERVICE) /bin/sh
 
 .PHONY: shell-frontend
-shell-frontend: ## Войти в контейнер frontend
-	@docker compose -f $(COMPOSE_WEB) exec amneziawg-web-frontend sh
+shell-frontend: check-compose ## Войти в контейнер Frontend
+	@echo "$(BLUE)🐚 Вход в контейнер Frontend...$(NC)"
+	@docker exec -it $(WEB_FRONTEND_SERVICE) /bin/sh
 
-# ============================================================================
-# ИНФОРМАЦИЯ
-# ============================================================================
+.PHONY: clean
+clean: check-compose ## Полная очистка веб-интерфейса
+	@echo "$(YELLOW)⚠️  Это удалит все данные веб-интерфейса!$(NC)"
+	@read -p "Продолжить? [y/N]: " confirm && [ "$$confirm" = "y" ]
+	@$(WEB_DOCKER_COMPOSE) down -v --remove-orphans
+	@docker rm -f $(WEB_API_SERVICE) $(WEB_FRONTEND_SERVICE) 2>/dev/null || true
+	@docker system prune -f
+	@rm -rf backend/data/* backend/.env frontend/.env .env
+	@echo "$(GREEN)✅ Веб-интерфейс очищен$(NC)"
 
-.PHONY: info
-info: ## Показать информацию о проекте
+.PHONY: test
+test: check-compose ## Тест веб-интерфейса и его соединений
+	@echo "$(BLUE)🧪 Тестирование веб-интерфейса...$(NC)"
+	@echo ""
+	@echo "$(CYAN)1. Проверка контейнеров:$(NC)"
+	@$(WEB_DOCKER_COMPOSE) ps | grep Up && echo "$(GREEN)✅ Контейнеры запущены$(NC)" || echo "$(RED)❌ Контейнеры не запущены$(NC)"
+	@echo ""
+	@echo "$(CYAN)2. Проверка API:$(NC)"
+	@curl -s http://localhost:8080/health >/dev/null 2>&1 && echo "$(GREEN)✅ API отвечает$(NC)" || echo "$(RED)❌ API недоступен$(NC)"
+	@echo ""
+	@echo "$(CYAN)3. Проверка Frontend:$(NC)"
+	@curl -s http://localhost:3000 >/dev/null 2>&1 && echo "$(GREEN)✅ Frontend доступен$(NC)" || echo "$(RED)❌ Frontend недоступен$(NC)"
+	@echo ""
+	@echo "$(CYAN)4. Проверка Nginx:$(NC)"
+	@curl -s http://localhost:80 >/dev/null 2>&1 && echo "$(GREEN)✅ Nginx работает$(NC)" || echo "$(RED)❌ Nginx недоступен$(NC)"
+
+.PHONY: debug
+debug: check-compose ## Отладочная информация
 	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(PURPLE)║                AmneziaWG Web Interface Info                  ║$(NC)"
+	@echo "$(PURPLE)║               Отладка Веб-интерфейса                         ║$(NC)"
 	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
-	@echo "$(CYAN)📁 Структура проекта:$(NC)"
-	@echo "  • Frontend: React + TypeScript + Chakra UI v3"
-	@echo "  • Backend:  Go + Gin + WebSocket"
-	@echo "  • Proxy:    Nginx"
-	@echo "  • Container: Docker + Docker Compose"
+	@echo "$(CYAN)📊 Статус контейнеров:$(NC)"
+	@$(WEB_DOCKER_COMPOSE) ps
 	@echo ""
-	@echo "$(CYAN)🌐 URL сервисов:$(NC)"
-	@echo "  • Web Interface: http://localhost"
-	@echo "  • API:          http://localhost:8080"
-	@echo "  • Frontend Dev: http://localhost:3000"
+	@echo "$(CYAN)🔍 Логи (последние 10 строк):$(NC)"
+	@$(WEB_DOCKER_COMPOSE) logs --tail=10
 	@echo ""
-	@echo "$(CYAN)📊 Функции:$(NC)"
-	@echo "  • Dashboard с графиками и метриками"
-	@echo "  • Управление клиентами (добавление, удаление, QR коды)"
-	@echo "  • Настройки сервера и обфускации"
-	@echo "  • Real-time логи через WebSocket"
-	@echo "  • Responsive design для мобильных устройств"
+	@echo "$(CYAN)🌐 Сетевые подключения:$(NC)"
+	@docker network ls | grep web || echo "Веб-сети не найдены"
+	@echo ""
+	@echo "$(CYAN)💾 Использование ресурсов:$(NC)"
+	@docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" $$($(WEB_DOCKER_COMPOSE) ps -q) 2>/dev/null || echo "Контейнеры не запущены"
+
+.PHONY: monitor
+monitor: check-compose ## Мониторинг веб-интерфейса в реальном времени
+	@echo "$(BLUE)📈 Мониторинг веб-интерфейса (Ctrl+C для выхода)$(NC)"
+	@while true; do \
+		clear; \
+		echo "$(PURPLE)═══════════════ AmneziaWG Web Monitor $(shell date) ═══════════════$(NC)"; \
+		echo ""; \
+		$(MAKE) status --no-print-directory; \
+		echo ""; \
+		echo "$(CYAN)💾 Ресурсы:$(NC)"; \
+		docker stats --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" $$($(WEB_DOCKER_COMPOSE) ps -q) 2>/dev/null || echo "Контейнеры не запущены"; \
+		sleep 5; \
+	done
 
 # По умолчанию показываем справку
 .DEFAULT_GOAL := help

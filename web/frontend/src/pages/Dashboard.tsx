@@ -6,25 +6,105 @@ import {
   Grid,
   Heading,
   HStack,
-
+  VStack,
   Text,
   Badge,
   Button,
-
   SimpleGrid,
+  Center,
+  useDisclosure,
 } from '@chakra-ui/react';
 import { Chart, useChart } from '@chakra-ui/charts';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, AreaChart } from 'recharts';
 import { useServerStatus, useServerControl } from '@/hooks/useServerStatus';
 import { useClients } from '@/hooks/useClients';
-import { LuPlay, LuSquare, LuRotateCcw, LuUsers, LuActivity, LuHardDrive } from 'react-icons/lu';
+import { useServers } from '@/contexts/ServerContext';
+import AddServerModal from '@/components/AddServerModal';
+import { LuPlay, LuSquare, LuRotateCcw, LuUsers, LuActivity, LuHardDrive, LuPlus, LuServer, LuWifiOff } from 'react-icons/lu';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
+const NoServersState: React.FC = () => {
+  const addModal = useDisclosure();
+
+  return (
+    <>
+      <Center minH="60vh">
+        <VStack gap="6" textAlign="center" maxW="md">
+          <VStack gap="4">
+            <Box color="fg.muted">
+              <LuWifiOff size="64" />
+            </Box>
+            <VStack gap="2">
+              <Heading size="lg" color="fg.emphasized">
+                No Servers Connected
+              </Heading>
+              <Text color="fg.muted" textAlign="center">
+                Get started by adding your first AmneziaWG server using a connection string.
+                You can manage multiple servers from this interface.
+              </Text>
+            </VStack>
+          </VStack>
+          <Button
+            size="lg"
+            colorScheme="blue"
+            onClick={addModal.onOpen}
+          >
+            <LuPlus size="20" />
+            Add Your First Server
+          </Button>
+        </VStack>
+      </Center>
+      <AddServerModal isOpen={addModal.open} onClose={addModal.onClose} />
+    </>
+  );
+};
+
+const DisconnectedServerState: React.FC = () => {
+  const { currentServer } = useServers();
+  
+  return (
+    <Center minH="60vh">
+      <VStack gap="6" textAlign="center" maxW="md">
+        <VStack gap="4">
+          <Box color="orange.solid">
+            <LuServer size="64" />
+          </Box>
+          <VStack gap="2">
+            <Heading size="lg" color="fg.emphasized">
+              Server Disconnected
+            </Heading>
+            <Text color="fg.muted" textAlign="center">
+              You have selected "{currentServer?.name}" but are not currently connected.
+              Please authenticate to access server management features.
+            </Text>
+          </VStack>
+        </VStack>
+        <HStack gap="3">
+          <Text fontSize="sm" color="fg.muted">
+            Connect to start managing this server
+          </Text>
+        </HStack>
+      </VStack>
+    </Center>
+  );
+};
+
 const Dashboard: React.FC = () => {
+  const { servers } = useServers();
   const { data: serverStatus, isLoading: statusLoading } = useServerStatus();
   const { isLoading: clientsLoading } = useClients();
-  const { startServer, stopServer, restartServer } = useServerControl();
+  const { startServer, stopServer, restartServer, isConnected } = useServerControl();
+
+  // Show no servers state if no servers are added
+  if (servers.length === 0) {
+    return <NoServersState />;
+  }
+
+  // Show disconnected state if server is selected but not connected
+  if (!isConnected) {
+    return <DisconnectedServerState />;
+  }
 
   // Моковые данные для графиков (позже заменим на реальные данные)
   const connectionData = [

@@ -10,7 +10,7 @@
 # Настройки проекта
 COMPOSE_FILE := docker-compose.yml
 SERVICE_NAME := amneziawg-server
-PROJECT_NAME := docker-wg
+PROJECT_NAME := amneziawg-docker
 
 # Команды Docker (для переиспользования)
 DOCKER_COMPOSE := docker compose
@@ -110,7 +110,7 @@ check-config-exists:
 .PHONY: help
 help: ## Показать эту справку
 	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(PURPLE)║               AmneziaWG Docker Server Commands               ║$(NC)"
+	@echo "$(PURPLE)║               AmneziaWG VPN Server Commands                  ║$(NC)"
 	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(CYAN)📋 ОСНОВНЫЕ КОМАНДЫ:$(NC)"
@@ -134,6 +134,8 @@ help: ## Показать эту справку
 	@echo "  make client-qr name=john                    # Показать QR код для john"
 	@echo "  make client-config name=john > john.conf   # Сохранить конфигурацию"
 	@echo ""
+	@echo "$(CYAN)💡 Для веб-интерфейса используйте:$(NC) $(GREEN)cd web && make help$(NC)"
+	@echo ""
 
 # ============================================================================
 # ОСНОВНЫЕ КОМАНДЫ
@@ -152,21 +154,10 @@ init: check-compose init-submodules ## Инициализация проекта
 	@echo "$(CYAN)💡 Команда init автоматически вызывается при:$(NC)"
 	@echo "$(CYAN)   - make up (если .env отсутствует)$(NC)"
 	@echo "$(CYAN)   - make build (если .env отсутствует)$(NC)"
-	@echo "$(CYAN)   - make build-safe (если .env отсутствует)$(NC)"
 
-.PHONY: build build-safe
-build: check-compose init-submodules check-config-exists auto-backup ## Сборка Docker образа (полная пересборка)
+.PHONY: build
+build: check-compose init-submodules check-config-exists auto-backup ## Сборка Docker образа
 	@echo "$(BLUE)🔨 Сборка Docker образа...$(NC)"
-	@# Автоматическая инициализация если нужно
-	@if [ ! -f ".env" ]; then \
-		echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
-		$(MAKE) init; \
-	fi
-	@$(DOCKER_COMPOSE) build --no-cache
-	@echo "$(GREEN)✅ Образ собран успешно$(NC)"
-
-build-safe: check-compose init-submodules check-config-exists auto-backup ## Безопасная сборка Docker образа (с использованием кеша)
-	@echo "$(BLUE)🔨 Безопасная сборка Docker образа...$(NC)"
 	@# Автоматическая инициализация если нужно
 	@if [ ! -f ".env" ]; then \
 		echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
@@ -287,30 +278,18 @@ clean: check-compose check-container-exists auto-backup ## Полная очис
 	@echo "$(GREEN)✅ Очистка завершена$(NC)"
 
 .PHONY: update
-update: check-compose init-submodules check-server-running auto-backup ## Обновление сабмодулей и пересборка (с сохранением настроек)
+update: check-compose init-submodules check-server-running auto-backup ## Обновление сабмодулей и пересборка
 	@echo "$(BLUE)🔄 Обновление проекта...$(NC)"
 	@echo "$(BLUE)📥 Обновляем сабмодули...$(NC)"
 	@git submodule update --remote --recursive
 	@echo "$(BLUE)🛑 Останавливаем сервер...$(NC)"
 	@$(DOCKER_COMPOSE) down
 	@echo "$(BLUE)🔨 Пересобираем образ...$(NC)"
-	@$(MAKE) build-safe
+	@$(MAKE) build
 	@echo "$(BLUE)🚀 Запускаем сервер...$(NC)"
 	@$(MAKE) up
 	@echo "$(GREEN)✅ Обновление завершено$(NC)"
 	@echo "$(YELLOW)💡 Если возникли проблемы с конфигурацией, используйте 'make restore file=<backup_file>'$(NC)"
-
-.PHONY: update-fast
-update-fast: check-compose init-submodules check-server-running auto-backup ## Быстрое обновление сабмодулей без пересборки образа
-	@echo "$(BLUE)⚡ Быстрое обновление проекта...$(NC)"
-	@echo "$(BLUE)📥 Обновляем сабмодули...$(NC)"
-	@git submodule update --remote --recursive
-	@echo "$(BLUE)🔄 Перезапускаем сервер...$(NC)"
-	@$(DOCKER_COMPOSE) down
-	@sleep 2
-	@$(MAKE) up
-	@echo "$(GREEN)✅ Быстрое обновление завершено$(NC)"
-	@echo "$(YELLOW)💡 Если обновления сабмодулей требуют пересборки, используйте 'make update'$(NC)"
 
 .PHONY: backup
 backup: check-compose ## Создать резервную копию конфигураций
