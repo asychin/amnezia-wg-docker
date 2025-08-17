@@ -26,6 +26,7 @@ import {
 } from 'react-icons/lu';
 import { useQuery } from 'react-query';
 import { logsApi } from '@/services/api';
+import { withServerConnection } from '@/components/ServerStates';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { LogEntry } from '@/types/api';
@@ -363,4 +364,4 @@ const Logs: React.FC = () => {
   );
 };
 
-export default Logs;
+export default withServerConnection(Logs);

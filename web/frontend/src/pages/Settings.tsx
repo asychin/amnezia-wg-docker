@@ -12,12 +12,13 @@ import {
   VStack,
   HStack,
   Field,
-
+  Badge,
   Separator,
   Alert,
 } from '@chakra-ui/react';
 import { LuSave, LuRotateCcw, LuSettings, LuShield } from 'react-icons/lu';
 import { useServerConfig, useServerControl } from '@/hooks/useServerStatus';
+import { withServerConnection } from '@/components/ServerStates';
 
 const Settings: React.FC = () => {
   const { data: serverConfig, isLoading } = useServerConfig();
@@ -139,11 +140,17 @@ const Settings: React.FC = () => {
       <Flex justify="space-between" align="center" mb="6">
         <Box>
           <Heading size="lg" mb="1">
-            Server Settings
+            ⚙️ Multi-Server Settings
           </Heading>
           <Text color="fg.muted">
-            Configure AmneziaWG server parameters
+            Configure parameters for the currently selected server
           </Text>
+          <HStack gap="2" mt="2">
+            <Badge colorScheme="green" variant="subtle">Server-Specific</Badge>
+            <Text fontSize="sm" color="green.solid">
+              Настройки применяются только к текущему серверу
+            </Text>
+          </HStack>
         </Box>
         
         <HStack gap="2">
@@ -441,4 +448,4 @@ const Settings: React.FC = () => {
   );
 };
 
-export default Settings;
+export default withServerConnection(Settings);

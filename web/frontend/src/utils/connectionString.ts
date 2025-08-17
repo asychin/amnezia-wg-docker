@@ -1,32 +1,42 @@
 /**
  * Connection String Format: awgwc://base64url(JSON)
  * 
- * JSON Structure:
+ * JSON Structure (Backend format):
  * {
- *   "endpoint": "https://server.example.com:8080",
+ *   "version": "1.0",
+ *   "name": "My AmneziaWG Server",
+ *   "api_endpoint": "https://server.example.com:8080/api/v1",
  *   "server_info": {
- *     "name": "My AmneziaWG Server",
- *     "description": "Production server",
- *     "capabilities": ["vpn_management", "logs_access", "stats_view"]
+ *     "id": "uuid",
+ *     "location": "Moscow",
+ *     "public_key_fingerprint": "sha256:..."
  *   },
- *   "auth_info": {
+ *   "capabilities": ["clients", "logs", "stats", "config"],
+ *   "auth": {
  *     "method": "jwt",
- *     "login_endpoint": "/api/v1/auth/login"
- *   }
+ *     "refresh_endpoint": "/auth/refresh"
+ *   },
+ *   "created_at": "2025-08-17T09:59:49.718264712Z",
+ *   "expires_at": "2025-09-16T09:59:49.718264712Z"
  * }
  */
 
 export interface ConnectionStringData {
-  endpoint: string;
+  version: string;
+  name: string;
+  api_endpoint: string;
   server_info: {
-    name: string;
-    description?: string;
-    capabilities: string[];
+    id: string;
+    location: string;
+    public_key_fingerprint: string;
   };
-  auth_info: {
+  capabilities: string[];
+  auth: {
     method: string;
-    login_endpoint: string;
+    refresh_endpoint: string;
   };
+  created_at: string;
+  expires_at: string;
 }
 
 export interface ServerConnection {
@@ -59,7 +69,7 @@ export function parseConnectionString(connectionString: string): ConnectionStrin
     const data = JSON.parse(jsonData) as ConnectionStringData;
 
     // Validate required fields
-    if (!data.endpoint || !data.server_info || !data.auth_info) {
+    if (!data.version || !data.name || !data.api_endpoint || !data.server_info || !data.auth) {
       throw new Error('Invalid connection string data structure');
     }
 
@@ -106,11 +116,11 @@ export function validateConnectionString(connectionString: string): { isValid: b
  */
 export function createServerConnection(data: ConnectionStringData): ServerConnection {
   return {
-    id: generateConnectionId(data.endpoint),
-    name: data.server_info.name,
-    description: data.server_info.description,
-    endpoint: data.endpoint,
-    capabilities: data.server_info.capabilities,
+    id: generateConnectionId(data.api_endpoint),
+    name: data.name,
+    description: data.server_info.location,
+    endpoint: data.api_endpoint,
+    capabilities: data.capabilities,
     isConnected: false,
     lastSeen: undefined,
     auth: undefined,

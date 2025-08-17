@@ -15,7 +15,7 @@ PROJECT_NAME := amneziawg-web
 
 # Команды Docker
 DOCKER_COMPOSE := docker compose
-WEB_DOCKER_COMPOSE := $(DOCKER_COMPOSE) -f $(WEB_COMPOSE_FILE) -p $(WEB_PROJECT_NAME)
+WEB_DOCKER_COMPOSE := $(DOCKER_COMPOSE) -f $(WEB_COMPOSE_FILE)
 VPN_DOCKER_COMPOSE := $(DOCKER_COMPOSE) -f ../docker-compose.yml
 
 # Сервисы

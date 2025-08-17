@@ -1,9 +1,6 @@
 ---
-description: Generate a professional README.md by analyzing existing codebase
-globs:
 alwaysApply: false
 ---
-
 # Rule: Generate README from Codebase Analysis
 
 ## Goal

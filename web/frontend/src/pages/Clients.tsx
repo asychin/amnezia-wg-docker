@@ -36,6 +36,7 @@ import {
   LuCopy
 } from 'react-icons/lu';
 import { useClients, useClientManagement, useClientConfig, useClientQrCode } from '@/hooks/useClients';
+import { withServerConnection } from '@/components/ServerStates';
 import { formatDistanceToNow } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -119,11 +120,17 @@ const Clients: React.FC = () => {
       <Flex justify="space-between" align="center" mb="6">
         <Box>
           <Heading size="lg" mb="1">
-            Client Management
+docke            🔧 Multi-Server Client Management
           </Heading>
           <Text color="fg.muted">
-            Manage VPN clients and their configurations
+            Manage VPN clients for the currently selected server
           </Text>
+          <HStack gap="2" mt="2">
+            <Badge colorScheme="blue" variant="subtle">Multi-Server Mode</Badge>
+            <Text fontSize="sm" color="blue.solid">
+              Активен мульти-серверный режим
+            </Text>
+          </HStack>
         </Box>
         
         <Button
@@ -297,11 +304,11 @@ const Clients: React.FC = () => {
 
       {/* Create Client Modal */}
       <DialogRoot open={isCreateOpen} onOpenChange={onCreateClose}>
-        <DialogContent>
+        <DialogContent maxHeight="80vh" overflow="hidden">
           <DialogHeader>
             <DialogTitle>Add New Client</DialogTitle>
           </DialogHeader>
-          <DialogBody>
+          <DialogBody overflow="auto" maxHeight="60vh">
             <Stack gap="4">
               <Field.Root>
                 <Field.Label>Client Name</Field.Label>
@@ -346,11 +353,11 @@ const Clients: React.FC = () => {
 
       {/* QR Code Modal */}
       <DialogRoot open={isQrOpen} onOpenChange={onQrClose}>
-        <DialogContent>
+        <DialogContent maxHeight="80vh" overflow="hidden">
           <DialogHeader>
             <DialogTitle>QR Code - {selectedClient}</DialogTitle>
           </DialogHeader>
-          <DialogBody>
+          <DialogBody overflow="auto" maxHeight="60vh">
             <VStack gap="4">
               {qrCode ? (
                 <Box
@@ -359,6 +366,8 @@ const Clients: React.FC = () => {
                   borderRadius="md"
                   border="1px"
                   borderColor="border.muted"
+                  overflow="auto"
+                  maxHeight="400px"
                 >
                   <pre style={{ fontSize: '8px', lineHeight: '8px', fontFamily: 'monospace' }}>
                     {qrCode}
@@ -380,11 +389,11 @@ const Clients: React.FC = () => {
 
       {/* Config Modal */}
       <DialogRoot open={isConfigOpen} onOpenChange={onConfigClose}>
-        <DialogContent maxW="2xl">
+        <DialogContent maxW="2xl" maxHeight="80vh" overflow="hidden">
           <DialogHeader>
             <DialogTitle>Client Configuration - {selectedClient}</DialogTitle>
           </DialogHeader>
-          <DialogBody>
+          <DialogBody overflow="auto" maxHeight="60vh">
             <VStack gap="4" align="stretch">
               {clientConfig ? (
                 <>
@@ -394,6 +403,10 @@ const Clients: React.FC = () => {
                     rows={15}
                     fontFamily="mono"
                     fontSize="sm"
+                    resize="vertical"
+                    minHeight="300px"
+                    maxHeight="500px"
+                    overflow="auto"
                   />
                   <HStack>
                     <Button
@@ -428,4 +441,4 @@ const Clients: React.FC = () => {
   );
 };
 
-export default Clients;
+export default withServerConnection(Clients);
