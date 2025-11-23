@@ -1,20 +1,21 @@
-# AmneziaWG Docker VPN Server - Replit Documentation Portal
+# AmneziaWG VPN Management Interface - Replit Web Application
 
 ## Overview
 
-This Replit workspace contains a **documentation portal** for the AmneziaWG Docker VPN Server project. The actual VPN server cannot run in the Replit environment due to technical limitations, but this portal provides comprehensive documentation and setup instructions.
+This Replit workspace contains a **full-stack VPN management web interface** for the AmneziaWG Docker VPN Server project. While the actual VPN server requires Docker to run, this interface provides a complete management system that can be deployed alongside the VPN server or used as a standalone demo.
 
-**Version:** 1.1.0  
+**Version:** 2.0.0  
 **Original Project:** [AmneziaVPN Team](https://github.com/amnezia-vpn)  
-**Docker Implementation:** asychin
+**Docker Implementation:** asychin  
+**Web Interface:** React + TypeScript + shadcn/ui + Drizzle ORM
 
 ## What's Available in This Workspace
 
-### 1. Documentation Portal (Running)
+### 1. VPN Management Interface (Running)
 - **URL:** Available via the Webview panel
-- **Port:** 5000
-- **Technology:** Node.js + Express + EJS
-- **Purpose:** Interactive documentation and setup guide
+- **Port:** 5000 (Frontend), 3001 (API)
+- **Technology:** React + Vite + TypeScript + shadcn/ui
+- **Purpose:** Interactive VPN client management with beautiful UI
 
 ### 2. Complete Project Files
 - `Dockerfile` - Multi-stage Docker build configuration
@@ -66,31 +67,61 @@ make up
 
 ```
 amnezia-wg-docker/
-├── server.js              # Documentation portal server
-├── views/                 # EJS templates
-│   └── index.ejs         # Main documentation page
-├── public/               # Static assets
-│   └── css/
-│       └── style.css     # Styles
-├── amneziawg-go/         # VPN implementation (submodule)
-├── amneziawg-tools/      # CLI tools (submodule)
-├── scripts/              # Automation scripts
+├── src/                   # Frontend source (React + TypeScript)
+│   ├── main.tsx          # React entry point
+│   ├── App.tsx           # Main application component
+│   ├── components/       # shadcn/ui components
+│   │   └── ui/          # Button, Card, Dialog, Table, Badge, etc.
+│   ├── api/             # API client functions
+│   ├── types/           # TypeScript interfaces
+│   ├── lib/             # Utilities
+│   └── index.css        # Tailwind CSS styles
+├── server/               # Backend API (TypeScript)
+│   ├── main.ts          # API server entry point
+│   ├── api.ts           # REST API routes
+│   └── storage.ts       # Database operations (Drizzle ORM)
+├── shared/               # Shared types and schemas
+│   └── schema.ts        # Drizzle ORM database schema
+├── scripts/              # VPN management scripts
 │   ├── entrypoint.sh    # Container entry point
-│   ├── manage-clients.sh # Client management
+│   ├── manage-clients.sh # Client management (bash)
 │   ├── healthcheck.sh   # Health monitoring
 │   └── diagnose.sh      # Diagnostics
-├── Dockerfile           # Multi-stage build
-├── docker-compose.yml   # Service configuration
-├── Makefile            # Management commands
-└── env.example         # Configuration template
+├── views/                # Legacy documentation templates
+│   └── index.ejs        # Documentation page (accessible at /docs)
+├── public/               # Static assets
+├── clients/              # Generated VPN client configs
+├── amneziawg-go/         # VPN implementation (submodule)
+├── amneziawg-tools/      # CLI tools (submodule)
+├── vite.config.ts        # Vite configuration
+├── tailwind.config.ts    # Tailwind CSS configuration
+├── drizzle.config.ts     # Drizzle ORM configuration
+├── tsconfig.json         # TypeScript configuration
+├── package.json          # Node.js dependencies
+├── Dockerfile            # Multi-stage build
+├── docker-compose.yml    # Service configuration
+├── Makefile              # Management commands
+└── env.example           # Configuration template
 ```
 
 ## Technology Stack
 
-### Documentation Portal
-- **Backend:** Node.js + Express
-- **Template Engine:** EJS
-- **Frontend:** Vanilla JavaScript + CSS
+### Frontend (VPN Management Interface)
+- **Framework:** React 19 + TypeScript
+- **Build Tool:** Vite 7
+- **UI Library:** shadcn/ui (Radix UI primitives)
+- **Styling:** Tailwind CSS v4
+- **State Management:** Tanstack Query (React Query)
+- **Icons:** Lucide React
+
+### Backend API
+- **Runtime:** Node.js with tsx (TypeScript executor)
+- **Framework:** Express 5
+- **Language:** TypeScript
+- **Database:** PostgreSQL (Replit-managed)
+- **ORM:** Drizzle ORM
+- **QR Codes:** qrcode library
+- **Process Management:** child_process for bash scripts
 
 ### VPN Server (for deployment elsewhere)
 - **Core:** amneziawg-go (Go 1.24)
@@ -158,9 +189,65 @@ make backup       # Backup configs
 - **README.md:** Comprehensive project documentation
 - **env.example:** Configuration template with explanations
 
+## Features
+
+### VPN Client Management Interface
+
+#### 1. Dashboard
+- Beautiful, modern UI with gradient background
+- Shield icon branding
+- Responsive card-based layout
+- Real-time client list with status badges
+
+#### 2. Client Operations
+- **Add Client:** Create new VPN clients with auto-assigned or custom IP addresses
+- **Delete Client:** Remove clients with confirmation dialog
+- **View QR Code:** Generate and display QR codes for easy mobile setup
+- **View Configuration:** Display full WireGuard configuration text
+- **Sync Clients:** Synchronize filesystem clients with database
+
+#### 3. Client Information Display
+- Name and IP address
+- Status badges (Active/Inactive)
+- Creation date
+- Quick action buttons for each client
+
+### API Endpoints
+
+#### Client Management
+- `GET /api/clients` - List all VPN clients
+- `POST /api/clients` - Create new client (body: { name, ipAddress? })
+- `DELETE /api/clients/:name` - Delete client
+- `GET /api/clients/:name/qr` - Get QR code as data URL
+- `GET /api/clients/:name/config` - Get configuration file text
+- `POST /api/sync` - Sync filesystem clients to database
+
+### Database Schema
+
+**vpn_clients table:**
+- `id` (serial, primary key)
+- `name` (varchar, unique) - Client identifier
+- `ip_address` (varchar) - Assigned VPN IP
+- `public_key` (varchar) - Client's public key
+- `created_at` (timestamp) - Creation time
+- `updated_at` (timestamp) - Last update
+- `enabled` (boolean) - Active status
+- `last_handshake` (timestamp, nullable) - Last connection
+
 ## Recent Changes
 
-**2024-11-23:** Created documentation portal for Replit environment
+**2024-11-23 v2.0:** Complete VPN management interface
+- Created full-stack React + TypeScript application
+- Implemented REST API with Express
+- Integrated PostgreSQL database with Drizzle ORM
+- Added shadcn/ui component library
+- Implemented client CRUD operations
+- Added QR code generation
+- Created beautiful responsive UI
+- Configured dual-server setup (API + Frontend)
+- Maintained original documentation portal (accessible at /docs)
+
+**2024-11-23 v1.1:** Created documentation portal for Replit environment
 - Added Express-based web server
 - Created interactive documentation interface
 - Configured workflow for port 5000
@@ -168,11 +255,14 @@ make backup       # Backup configs
 
 ## Notes
 
-This workspace serves as both:
-1. An **interactive documentation portal** - accessible via Webview
-2. A **complete source repository** - ready to deploy on a Docker-capable server
+This workspace serves as:
+1. A **full-stack VPN management application** - accessible via Webview
+2. A **complete REST API** - for VPN client operations
+3. A **PostgreSQL-backed database** - for client persistence
+4. A **documentation portal** - accessible at /docs endpoint
+5. A **complete source repository** - ready to deploy on a Docker-capable server
 
-The documentation portal runs on Node.js and showcases all features, while the actual VPN components (Docker, Go binaries, scripts) are available for deployment elsewhere.
+The management interface runs entirely in the browser with React, communicating with a TypeScript API backend that interfaces with VPN management scripts and PostgreSQL database.
 
 ## Support
 

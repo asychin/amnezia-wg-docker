@@ -90,15 +90,63 @@ run_check "Интерфейс $AWG_INTERFACE существует" "ip link show
 # Для userspace WireGuard интерфейсов состояние может быть UNKNOWN, проверяем флаги UP,LOWER_UP
 run_check "Интерфейс $AWG_INTERFACE активен" "ip link show $AWG_INTERFACE | grep -q 'UP,LOWER_UP'"
 
-# 3. Проверка порта (с несколькими методами)
-if run_check "Порт $AWG_PORT прослушивается (netstat)" "netstat -ulnp 2>/dev/null | grep -q ':$AWG_PORT '" false; then
-    debug "Порт проверен через netstat"
-elif run_check "Порт $AWG_PORT прослушивается (ss)" "ss -ulnp 2>/dev/null | grep -q ':$AWG_PORT '" false; then
-    debug "Порт проверен через ss"
-elif run_check "Порт $AWG_PORT прослушивается (lsof)" "lsof -i UDP:$AWG_PORT 2>/dev/null" false; then
-    debug "Порт проверен через lsof"
+# 3. Проверка порта (приоритет: ss -> netstat -> lsof)
+# ss - современная замена netstat, более быстрая и эффективная
+if command -v ss >/dev/null 2>&1; then
+    if run_check "Порт $AWG_PORT прослушивается (ss)" "ss -ulnp 2>/dev/null | grep -q ':$AWG_PORT '" false; then
+        debug "✅ Порт проверен через ss (современная утилита)"
+    elif command -v netstat >/dev/null 2>&1; then
+        if run_check "Порт $AWG_PORT прослушивается (netstat)" "netstat -ulnp 2>/dev/null | grep -q ':$AWG_PORT '" false; then
+            debug "✅ Порт проверен через netstat (fallback)"
+        else
+            warn "⚠️ ss и netstat не смогли обнаружить порт, пробуем lsof..."
+            if command -v lsof >/dev/null 2>&1; then
+                if run_check "Порт $AWG_PORT прослушивается (lsof)" "lsof -i UDP:$AWG_PORT 2>/dev/null" false; then
+                    debug "✅ Порт проверен через lsof (fallback)"
+                else
+                    error "❌ Порт $AWG_PORT не прослушивается (проверено всеми методами: ss, netstat, lsof)"
+                    HEALTH_STATUS=1
+                fi
+            else
+                error "❌ Порт $AWG_PORT не прослушивается (lsof недоступен)"
+                HEALTH_STATUS=1
+            fi
+        fi
+    elif command -v lsof >/dev/null 2>&1; then
+        if run_check "Порт $AWG_PORT прослушивается (lsof)" "lsof -i UDP:$AWG_PORT 2>/dev/null" false; then
+            debug "✅ Порт проверен через lsof (fallback)"
+        else
+            error "❌ Порт $AWG_PORT не прослушивается (netstat недоступен)"
+            HEALTH_STATUS=1
+        fi
+    else
+        error "❌ Ни одна утилита для проверки портов не доступна (ss, netstat, lsof)"
+        HEALTH_STATUS=1
+    fi
+elif command -v netstat >/dev/null 2>&1; then
+    if run_check "Порт $AWG_PORT прослушивается (netstat)" "netstat -ulnp 2>/dev/null | grep -q ':$AWG_PORT '" false; then
+        debug "✅ Порт проверен через netstat (ss недоступен)"
+    elif command -v lsof >/dev/null 2>&1; then
+        if run_check "Порт $AWG_PORT прослушивается (lsof)" "lsof -i UDP:$AWG_PORT 2>/dev/null" false; then
+            debug "✅ Порт проверен через lsof (fallback)"
+        else
+            error "❌ Порт $AWG_PORT не прослушивается (проверено: netstat, lsof)"
+            HEALTH_STATUS=1
+        fi
+    else
+        error "❌ Порт $AWG_PORT не прослушивается (lsof недоступен)"
+        HEALTH_STATUS=1
+    fi
+elif command -v lsof >/dev/null 2>&1; then
+    if run_check "Порт $AWG_PORT прослушивается (lsof)" "lsof -i UDP:$AWG_PORT 2>/dev/null" false; then
+        debug "✅ Порт проверен через lsof (только lsof доступен)"
+    else
+        error "❌ Порт $AWG_PORT не прослушивается"
+        HEALTH_STATUS=1
+    fi
 else
-    error "❌ Порт $AWG_PORT не прослушивается (проверено всеми методами)"
+    error "❌ Ни одна утилита для проверки портов не установлена (ss, netstat, lsof)"
+    warn "Рекомендуется установить 'ss' (iproute2) или 'netstat' (net-tools)"
     HEALTH_STATUS=1
 fi
 

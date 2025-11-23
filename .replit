@@ -15,10 +15,10 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Documentation Portal"
+args = "VPN Management Interface"
 
 [[workflows.workflow]]
-name = "Documentation Portal"
+name = "VPN Management Interface"
 author = "agent"
 
 [[workflows.workflow.tasks]]
@@ -30,9 +30,17 @@ waitForPort = 5000
 outputType = "webview"
 
 [[ports]]
+localPort = 3001
+externalPort = 3001
+
+[[ports]]
 localPort = 5000
 externalPort = 80
 
 [[ports]]
-localPort = 32967
+localPort = 32807
+externalPort = 3002
+
+[[ports]]
+localPort = 43551
 externalPort = 3000
