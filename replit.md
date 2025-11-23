@@ -236,16 +236,34 @@ make backup       # Backup configs
 
 ## Recent Changes
 
-**2024-11-23 v2.0:** Complete VPN management interface
-- Created full-stack React + TypeScript application
-- Implemented REST API with Express
-- Integrated PostgreSQL database with Drizzle ORM
-- Added shadcn/ui component library
-- Implemented client CRUD operations
-- Added QR code generation
-- Created beautiful responsive UI
-- Configured dual-server setup (API + Frontend)
-- Maintained original documentation portal (accessible at /docs)
+**2024-11-23 v2.0.0:** Security hardening and full-stack web interface
+- **CRITICAL: Fixed IP address detection bug** (Linux systems)
+  - Added priority local IP detection via `ip -4 route get 1.1.1.1`
+  - Forced IPv4 with curl `-4` flag for external IP detection
+  - Protected /etc/resolv.conf writes with proper error handling
+- **Security audit and vulnerability fixes:**
+  - ✅ Path traversal protection in client name validation
+  - ✅ Command injection protection (dual-layer: API + bash scripts)
+  - ✅ Race condition prevention with flock file locking
+  - ✅ Private key exposure eliminated from API responses
+  - ✅ Secure file permissions (chmod 700, umask 077)
+  - ✅ Updated healthcheck.sh to use `ss` instead of deprecated `netstat`
+- **Full-stack web management interface:**
+  - Created React + TypeScript + shadcn/ui frontend (Russian UI)
+  - Implemented REST API with Express (TypeScript)
+  - Integrated PostgreSQL database with Drizzle ORM
+  - Added client CRUD operations with QR code generation
+  - Implemented optional API authorization (API_SECRET for production)
+  - Dual-server setup (API on 3001, Frontend on 5000)
+- **Backward compatibility maintained:**
+  - All existing functionality preserved
+  - Docker volumes and configs unchanged
+  - Created comprehensive MIGRATION.md guide
+  - Version bumped to 2.0.0 with upgrade instructions
+- **Documentation improvements:**
+  - Security warnings in MIGRATION.md and env.example
+  - API documentation with authorization setup
+  - Production deployment best practices
 
 **2024-11-23 v1.1:** Created documentation portal for Replit environment
 - Added Express-based web server
