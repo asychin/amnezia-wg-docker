@@ -1,0 +1,20 @@
+{
+  "name": "amneziawg-documentation-portal",
+  "version": "1.1.0",
+  "description": "Documentation portal for AmneziaWG Docker VPN Server",
+  "main": "server.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": ["vpn", "amneziawg", "docker", "documentation"],
+  "author": "asychin",
+  "license": "MIT",
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "express": "^5.1.0"
+  }
+}

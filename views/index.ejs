@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AmneziaWG Docker Server - Documentation Portal</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>🔐 AmneziaWG Docker Server</h1>
+            <p class="subtitle">Production-ready VPN Server with DPI Bypass Capabilities</p>
+            <div class="version-badge">Version <%= version %></div>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <div class="container">
+            <button class="tab-btn active" data-tab="overview">Overview</button>
+            <button class="tab-btn" data-tab="features">Features</button>
+            <button class="tab-btn" data-tab="setup">Setup Guide</button>
+            <button class="tab-btn" data-tab="config">Configuration</button>
+            <button class="tab-btn" data-tab="replit">Replit Notice</button>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div id="overview" class="tab-content active">
+            <div class="card">
+                <h2>About AmneziaWG</h2>
+                <p>AmneziaWG Docker Server is a fully containerized implementation of the AmneziaWG VPN protocol running in userspace mode. It provides secure connectivity with the ability to bypass Deep Packet Inspection (DPI) systems.</p>
+                
+                <div class="highlight-box warning">
+                    <h3>⚠️ Important: Docker Required</h3>
+                    <p>This VPN server requires Docker with privileged network capabilities (NET_ADMIN, TUN devices, iptables). It cannot run in restricted environments like Replit.</p>
+                    <p><strong>For deployment:</strong> Use a VPS, cloud instance, or local server with Docker installed.</p>
+                </div>
+
+                <h3>Key Features</h3>
+                <ul>
+                    <li>⚡ <strong>1-minute installation</strong> - Single <code>make up</code> command</li>
+                    <li>🐳 <strong>100% Docker</strong> - Works in any Docker environment</li>
+                    <li>🛡️ <strong>DPI Bypass</strong> - Masks VPN traffic as HTTPS</li>
+                    <li>🚀 <strong>Userspace mode</strong> - No kernel modules required</li>
+                    <li>📱 <strong>QR codes</strong> - Quick mobile client setup</li>
+                    <li>🔧 <strong>Full automation</strong> - Automated build and configuration</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>Technology Stack</h2>
+                <table>
+                    <tr>
+                        <th>Component</th>
+                        <th>Technology</th>
+                        <th>Purpose</th>
+                    </tr>
+                    <tr>
+                        <td>Core</td>
+                        <td>amneziawg-go</td>
+                        <td>Userspace protocol implementation</td>
+                    </tr>
+                    <tr>
+                        <td>Tools</td>
+                        <td>amneziawg-tools</td>
+                        <td>Management utilities</td>
+                    </tr>
+                    <tr>
+                        <td>Container</td>
+                        <td>Docker</td>
+                        <td>Containerization</td>
+                    </tr>
+                    <tr>
+                        <td>Base OS</td>
+                        <td>Ubuntu 22.04</td>
+                        <td>Base image</td>
+                    </tr>
+                    <tr>
+                        <td>Language</td>
+                        <td>Go 1.24</td>
+                        <td>Core implementation</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div id="features" class="tab-content">
+            <div class="card">
+                <h2>Core Features</h2>
+                
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <h3>🚀 Quick Deployment</h3>
+                        <p>Deploy a full VPN server in under 60 seconds with automated initialization, build, and configuration.</p>
+                    </div>
+
+                    <div class="feature-item">
+                        <h3>🛡️ DPI Bypass</h3>
+                        <p>Advanced traffic obfuscation masks VPN traffic as HTTPS, bypassing Deep Packet Inspection systems.</p>
+                    </div>
+
+                    <div class="feature-item">
+                        <h3>📱 Mobile Ready</h3>
+                        <p>Automatic QR code generation for easy mobile device configuration with the AmneziaVPN client.</p>
+                    </div>
+
+                    <div class="feature-item">
+                        <h3>🔧 Easy Management</h3>
+                        <p>Simple Makefile commands for all operations: add clients, view status, backup configurations.</p>
+                    </div>
+
+                    <div class="feature-item">
+                        <h3>💾 Auto Backups</h3>
+                        <p>Automatic configuration backups before destructive operations to prevent data loss.</p>
+                    </div>
+
+                    <div class="feature-item">
+                        <h3>🏥 Health Checks</h3>
+                        <p>Built-in health monitoring system checks process status, network interfaces, and connectivity.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Obfuscation Capabilities</h2>
+                <p>AmneziaWG uses multiple techniques to mask VPN traffic:</p>
+                
+                <h3>1. Junk Packets</h3>
+                <p>Adds random data to handshakes to break traffic patterns. Configurable via <code>Jc</code> (count), <code>Jmin/Jmax</code> (size).</p>
+                
+                <h3>2. Header Obfuscation</h3>
+                <p>Modifies packet headers to mimic legitimate protocols. Configured through <code>S1, S2</code> (sizes) and <code>H1-H4</code> (hash functions).</p>
+                
+                <h3>3. Port Camouflage</h3>
+                <p>Can use standard ports like 443 (HTTPS) or 53 (DNS) to blend with normal traffic.</p>
+            </div>
+        </div>
+
+        <div id="setup" class="tab-content">
+            <div class="card">
+                <h2>Installation Requirements</h2>
+                <ul>
+                    <li><strong>OS:</strong> Linux (Ubuntu 20.04+, Debian 11+, CentOS 8+)</li>
+                    <li><strong>Docker:</strong> Docker Engine and Docker Compose</li>
+                    <li><strong>RAM:</strong> Minimum 512 MB (1 GB recommended)</li>
+                    <li><strong>CPU:</strong> 1 vCPU (2 vCPU for 50+ clients)</li>
+                    <li><strong>Disk:</strong> 1 GB free space</li>
+                    <li><strong>Network:</strong> Public IP address</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>Quick Start Guide</h2>
+                
+                <h3>Step 1: Install Docker</h3>
+                <div class="code-block">
+                    <pre># Quick installation script
+curl -fsSL https://get.docker.com | sudo sh
+
+# Verify installation
+docker --version
+docker compose version</pre>
+                </div>
+
+                <h3>Step 2: Clone and Start</h3>
+                <div class="code-block">
+                    <pre># Clone repository with submodules
+git clone --recursive https://github.com/yourusername/amnezia-wg-docker.git
+cd amnezia-wg-docker
+
+# Start the server (auto-configures everything)
+make up</pre>
+                </div>
+
+                <h3>Step 3: Add Clients</h3>
+                <div class="code-block">
+                    <pre># Add a client (IP assigned automatically)
+make client-add name=myphone
+
+# Display QR code for mobile
+make client-qr name=myphone
+
+# Export configuration file
+make client-config name=myphone > myphone.conf</pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Common Commands</h2>
+                <table>
+                    <tr>
+                        <th>Command</th>
+                        <th>Description</th>
+                    </tr>
+                    <tr>
+                        <td><code>make up</code></td>
+                        <td>Start the VPN server</td>
+                    </tr>
+                    <tr>
+                        <td><code>make down</code></td>
+                        <td>Stop the server</td>
+                    </tr>
+                    <tr>
+                        <td><code>make restart</code></td>
+                        <td>Restart the server</td>
+                    </tr>
+                    <tr>
+                        <td><code>make status</code></td>
+                        <td>Check server status and connections</td>
+                    </tr>
+                    <tr>
+                        <td><code>make logs</code></td>
+                        <td>View server logs</td>
+                    </tr>
+                    <tr>
+                        <td><code>make client-list</code></td>
+                        <td>List all clients</td>
+                    </tr>
+                    <tr>
+                        <td><code>make backup</code></td>
+                        <td>Create configuration backup</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div id="config" class="tab-content">
+            <div class="card">
+                <h2>Configuration File (.env)</h2>
+                <p>The <code>.env</code> file controls all server settings. Below is the template with explanations:</p>
+                
+                <div class="code-block">
+                    <pre><%= envExample %></pre>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Obfuscation Profiles</h2>
+                
+                <h3>Standard Profile (Default)</h3>
+                <div class="code-block">
+                    <pre>AWG_JC=7
+AWG_JMIN=50
+AWG_JMAX=1000
+AWG_S1=86
+AWG_S2=574</pre>
+                </div>
+
+                <h3>Enhanced Obfuscation (Strict DPI)</h3>
+                <div class="code-block">
+                    <pre>AWG_JC=12
+AWG_JMIN=75
+AWG_JMAX=1500
+AWG_S1=96
+AWG_S2=684</pre>
+                </div>
+
+                <h3>HTTPS Traffic Simulation</h3>
+                <div class="code-block">
+                    <pre>AWG_PORT=443
+AWG_JC=8
+AWG_S1=86
+AWG_S2=574</pre>
+                </div>
+
+                <h3>DNS Traffic Simulation</h3>
+                <div class="code-block">
+                    <pre>AWG_PORT=53
+AWG_JC=5
+AWG_JMIN=32
+AWG_JMAX=512</pre>
+                </div>
+            </div>
+        </div>
+
+        <div id="replit" class="tab-content">
+            <div class="card">
+                <div class="highlight-box warning">
+                    <h2>⚠️ Replit Environment Limitations</h2>
+                    <p>This is a <strong>documentation portal only</strong>. The actual AmneziaWG VPN server cannot run in Replit due to the following technical limitations:</p>
+                    
+                    <h3>Why It Can't Run Here:</h3>
+                    <ul>
+                        <li><strong>No Docker Support:</strong> Replit doesn't support Docker containers or nested virtualization</li>
+                        <li><strong>No TUN/TAP Devices:</strong> VPN servers require TUN device creation which needs kernel-level access</li>
+                        <li><strong>No NET_ADMIN Capability:</strong> Creating network interfaces requires privileged capabilities not available in Replit</li>
+                        <li><strong>No iptables Access:</strong> VPN routing requires iptables/NAT configuration</li>
+                        <li><strong>Network Restrictions:</strong> Replit's network architecture doesn't support VPN server operations</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>What This Portal Provides</h2>
+                <ul>
+                    <li>📚 Complete documentation of the AmneziaWG project</li>
+                    <li>🔧 Setup instructions for proper deployment environments</li>
+                    <li>⚙️ Configuration examples and best practices</li>
+                    <li>📖 Reference for all available commands and features</li>
+                    <li>🎯 Architecture overview and technical specifications</li>
+                </ul>
+            </div>
+
+            <div class="card">
+                <h2>Recommended Deployment Options</h2>
+                
+                <h3>1. VPS Providers</h3>
+                <ul>
+                    <li>DigitalOcean - Starting at $6/month</li>
+                    <li>Linode/Akamai - Starting at $5/month</li>
+                    <li>Vultr - Starting at $5/month</li>
+                    <li>AWS Lightsail - Starting at $3.50/month</li>
+                </ul>
+
+                <h3>2. Cloud Platforms</h3>
+                <ul>
+                    <li>Google Cloud Platform</li>
+                    <li>Microsoft Azure</li>
+                    <li>Oracle Cloud (Free tier available)</li>
+                </ul>
+
+                <h3>3. Self-Hosted</h3>
+                <ul>
+                    <li>Home server with Docker</li>
+                    <li>Raspberry Pi 4 or similar SBC</li>
+                    <li>Any Linux machine with Docker support</li>
+                </ul>
+
+                <div class="highlight-box info">
+                    <h3>💡 Deployment Tip</h3>
+                    <p>Once you have a server with Docker, deployment is simple:</p>
+                    <div class="code-block">
+                        <pre>git clone --recursive https://github.com/yourusername/amnezia-wg-docker.git
+cd amnezia-wg-docker
+make up</pre>
+                    </div>
+                    <p>That's it! Your VPN server will be running in under a minute.</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Project Resources</h2>
+                <ul>
+                    <li><strong>Repository:</strong> All source code and scripts are available in this Replit workspace</li>
+                    <li><strong>Documentation:</strong> Full README with detailed instructions</li>
+                    <li><strong>Scripts:</strong> Automated management scripts in the <code>scripts/</code> directory</li>
+                    <li><strong>Configuration:</strong> Example configuration in <code>env.example</code></li>
+                    <li><strong>Docker Files:</strong> <code>Dockerfile</code> and <code>docker-compose.yml</code> ready to use</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>AmneziaWG Docker Server - Documentation Portal</p>
+            <p>Original VPN Server: <a href="https://github.com/amnezia-vpn" target="_blank">AmneziaVPN Team</a> | Docker Implementation: asychin</p>
+        </div>
+    </footer>
+
+    <script>
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                btn.classList.add('active');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
