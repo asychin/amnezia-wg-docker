@@ -1,7 +1,7 @@
-import React from 'react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, QrCode, FileText, RefreshCw, Shield } from 'lucide-react';
+import { useToast } from './hooks/use-toast';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
 import {
@@ -35,6 +35,7 @@ import type { VpnClient } from './types';
 
 function App() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
@@ -57,6 +58,16 @@ function App() {
       setAddDialogOpen(false);
       setNewClientName('');
       setNewClientIp('');
+      toast({
+        title: 'Клиент создан',
+        description: 'VPN клиент успешно создан',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Ошибка создания',
+        description: error.message || 'Не удалось создать клиента',
+      });
     },
   });
 
@@ -66,6 +77,16 @@ function App() {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       setDeleteDialogOpen(false);
       setSelectedClient(null);
+      toast({
+        title: 'Клиент удален',
+        description: 'VPN клиент успешно удален',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Ошибка удаления',
+        description: error.message || 'Не удалось удалить клиента',
+      });
     },
   });
 
@@ -73,6 +94,16 @@ function App() {
     mutationFn: syncClients,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      toast({
+        title: 'Синхронизация завершена',
+        description: 'Клиенты успешно синхронизированы',
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Ошибка синхронизации',
+        description: error.message || 'Не удалось синхронизировать клиентов',
+      });
     },
   });
 
@@ -101,6 +132,10 @@ function App() {
       setQrDialogOpen(true);
     } catch (error) {
       console.error('Failed to fetch QR code:', error);
+      toast({
+        title: 'Ошибка загрузки QR кода',
+        description: 'Не удалось загрузить QR код',
+      });
     }
   };
 
@@ -112,6 +147,10 @@ function App() {
       setConfigDialogOpen(true);
     } catch (error) {
       console.error('Failed to fetch config:', error);
+      toast({
+        title: 'Ошибка загрузки конфигурации',
+        description: 'Не удалось загрузить конфигурацию',
+      });
     }
   };
 
@@ -139,22 +178,23 @@ function App() {
 
         <Card className="shadow-xl border-slate-200/50 backdrop-blur-sm bg-white/80">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-2xl">VPN Клиенты</CardTitle>
                 <CardDescription className="text-base">Список всех подключенных клиентов</CardDescription>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => syncMutation.mutate()}
                   disabled={syncMutation.isPending}
+                  className="w-full sm:w-auto"
                 >
                   <RefreshCw className={`w-4 h-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
                   Синхронизировать
                 </Button>
-                <Button onClick={() => setAddDialogOpen(true)}>
+                <Button onClick={() => setAddDialogOpen(true)} className="w-full sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" />
                   Добавить клиента
                 </Button>
@@ -169,6 +209,7 @@ function App() {
                 Нет клиентов. Добавьте первого клиента!
               </div>
             ) : (
+              <div className="overflow-x-auto -mx-6 sm:mx-0">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -196,11 +237,12 @@ function App() {
                         {new Date(client.createdAt).toLocaleDateString('ru-RU')}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                        <div className="flex flex-col sm:flex-row justify-end gap-2">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleShowQR(client)}
+                            className="w-full sm:w-auto"
                           >
                             <QrCode className="w-4 h-4" />
                           </Button>
@@ -208,6 +250,7 @@ function App() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleShowConfig(client)}
+                            className="w-full sm:w-auto"
                           >
                             <FileText className="w-4 h-4" />
                           </Button>
@@ -215,6 +258,7 @@ function App() {
                             variant="destructive"
                             size="sm"
                             onClick={() => handleDeleteClick(client)}
+                            className="w-full sm:w-auto"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -224,12 +268,13 @@ function App() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
 
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogContent className="bg-white border-2 border-slate-200 shadow-2xl">
+          <DialogContent className="bg-white border-2 border-slate-200 shadow-2xl sm:max-w-[425px] w-[calc(100%-2rem)]">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-slate-900">Добавить нового клиента</DialogTitle>
               <DialogDescription className="text-base text-slate-600">
@@ -256,11 +301,11 @@ function App() {
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setAddDialogOpen(false)} className="w-full sm:w-auto">
                 Отмена
               </Button>
-              <Button onClick={handleAddClient} disabled={createMutation.isPending}>
+              <Button onClick={handleAddClient} disabled={createMutation.isPending} className="w-full sm:w-auto">
                 {createMutation.isPending ? 'Создание...' : 'Создать'}
               </Button>
             </DialogFooter>
@@ -268,7 +313,7 @@ function App() {
         </Dialog>
 
         <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
-          <DialogContent className="max-w-md bg-white border-2 border-slate-200 shadow-2xl">
+          <DialogContent className="max-w-md bg-white border-2 border-slate-200 shadow-2xl w-[calc(100%-2rem)] sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-slate-900">QR код для {selectedClient?.name}</DialogTitle>
               <DialogDescription className="text-base text-slate-600">
@@ -284,7 +329,7 @@ function App() {
         </Dialog>
 
         <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
-          <DialogContent className="max-w-2xl bg-white border-2 border-slate-200 shadow-2xl">
+          <DialogContent className="max-w-2xl bg-white border-2 border-slate-200 shadow-2xl w-[calc(100%-2rem)] sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-slate-900">Конфигурация {selectedClient?.name}</DialogTitle>
               <DialogDescription className="text-base text-slate-600">
@@ -300,7 +345,7 @@ function App() {
         </Dialog>
 
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <DialogContent className="bg-white border-2 border-red-200 shadow-2xl">
+          <DialogContent className="bg-white border-2 border-red-200 shadow-2xl w-[calc(100%-2rem)] sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle className="text-2xl font-bold text-red-700">Удалить клиента</DialogTitle>
               <DialogDescription className="text-base text-slate-600">
@@ -308,14 +353,15 @@ function App() {
                 действие нельзя отменить.
               </DialogDescription>
             </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <DialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="w-full sm:w-auto">
                 Отмена
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleDeleteClient}
                 disabled={deleteMutation.isPending}
+                className="w-full sm:w-auto"
               >
                 {deleteMutation.isPending ? 'Удаление...' : 'Удалить'}
               </Button>
