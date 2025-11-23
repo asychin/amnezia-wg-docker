@@ -1,0 +1,54 @@
+# Multi-stage Dockerfile для Web Interface
+# Stage 1: Dependencies и Build
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Копируем package files
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY vite.config.ts ./
+COPY tailwind.config.ts ./
+COPY postcss.config.js ./
+COPY drizzle.config.ts ./
+
+# Устанавливаем все зависимости
+RUN npm ci
+
+# Копируем исходный код
+COPY src/ ./src/
+COPY server/ ./server/
+COPY shared/ ./shared/
+COPY public/ ./public/
+COPY views/ ./views/
+COPY index.html ./
+
+# Собираем фронтенд
+RUN npm run build
+
+# Stage 2: Production Runtime
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Копируем package files для production dependencies
+COPY package*.json ./
+
+# Устанавливаем только production dependencies
+RUN npm ci --omit=dev
+
+# Копируем необходимые файлы для production
+COPY env.example README.md VERSION ./
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/server ./server
+COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/views ./views
+
+# Устанавливаем curl для healthcheck
+RUN apk add --no-cache curl
+
+# Открываем порт
+EXPOSE 3001
+
+# Запускаем веб-сервер
+CMD ["npm", "run", "start:prod"]

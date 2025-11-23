@@ -12,7 +12,6 @@ const app = express();
 const port = Number(process.env.API_PORT || 3001);
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
 
 app.use('/api', apiRouter);
 
@@ -34,6 +33,16 @@ app.get('/docs', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'AmneziaWG VPN Management API' });
 });
+
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../dist')));
+  
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../dist/index.html'));
+  });
+} else {
+  app.use(express.static(path.join(__dirname, '../public')));
+}
 
 async function initializeDatabase() {
   try {

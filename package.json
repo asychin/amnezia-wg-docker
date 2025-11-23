@@ -12,11 +12,13 @@
     "dev:api": "tsx server/main.ts",
     "dev:vite": "vite",
     "dev:full": "concurrently \"npm run dev:api\" \"npm run dev:vite\"",
+    "start:prod": "NODE_ENV=production tsx server/main.ts",
+    "build": "npm run build:vite",
+    "build:vite": "vite build",
+    "build:server": "tsc --project tsconfig.server.json",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
-    "build:server": "tsc --project tsconfig.server.json",
-    "build:vite": "vite build",
     "preview": "vite preview"
   },
   "keywords": [

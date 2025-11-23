@@ -236,6 +236,29 @@ make backup       # Backup configs
 
 ## Recent Changes
 
+**2024-11-23 v2.0.1:** Critical Docker configuration and port mapping fixes
+- **CRITICAL: Fixed port mapping and single-server architecture**
+  - Unified Express server now serves both static files (from dist/) and API on port 3001
+  - Updated docker-compose.yml port mapping: 8080→3001 (was incorrectly 8080→5000)
+  - Fixed healthcheck to use correct port (localhost:3001/health)
+  - Removed separate vite preview server (now single Express server in production)
+- **Fixed production Docker build (Dockerfile.web):**
+  - Removed copying of dev dependencies from builder stage
+  - Using `npm ci --omit=dev` for clean production dependencies only
+  - Changed EXPOSE port from 5000 to 3001 (API port)
+  - Added necessary files (env.example, README.md, VERSION) for server runtime
+- **Fixed docker-compose.yml default passwords:**
+  - Changed POSTGRES_PASSWORD default from "change_this_password" to "change_this_password_to_secure_one"
+  - Now matches env.example pattern for consistent behavior
+  - quickstart.sh sed patterns already correct
+- **Updated package.json scripts:**
+  - Simplified start:prod to run only tsx server/main.ts
+  - Removed separate serve:api and serve:static scripts (no longer needed)
+- **Architecture improvement:**
+  - Production mode: Single Express server on port 3001 serving both API and static files
+  - Development mode: Dual server (API on 3001, Vite HMR on 5000 with proxy)
+  - Cleaner separation, better resource usage, simpler deployment
+
 **2024-11-23 v2.0.0:** Security hardening and full-stack web interface
 - **CRITICAL: Fixed IP address detection bug** (Linux systems)
   - Added priority local IP detection via `ip -4 route get 1.1.1.1`

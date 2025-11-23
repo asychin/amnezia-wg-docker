@@ -1,9 +1,35 @@
-# AmneziaWG Docker Server Compose Configuration
+# AmneziaWG Docker Server v2.0.0 - Full Stack Configuration
 # Docker-реализация: asychin (https://github.com/asychin)
 # Оригинальный VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
+# Web Interface: React + TypeScript + PostgreSQL
 
 services:
-  amneziawg:
+  # PostgreSQL Database для управления клиентами
+  postgres:
+    image: postgres:16-alpine
+    container_name: amneziawg-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-amneziawg}
+      POSTGRES_USER: ${POSTGRES_USER:-amneziawg}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password_to_secure_one}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - amneziawg-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-amneziawg}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # VPN Server с AmneziaWG
+  vpn:
     build: .
     container_name: amneziawg-server
     privileged: true
@@ -18,34 +44,34 @@ services:
     networks:
       - amneziawg-net
     ports:
-      - "51820:51820/udp"
+      - "${AWG_PORT:-51820}:${AWG_PORT:-51820}/udp"
     volumes:
       - ./config:/app/config
       - ./clients:/app/clients
       - /lib/modules:/lib/modules:ro
     environment:
-      # Основные настройки
-      - AWG_INTERFACE=awg0
-      - AWG_PORT=51820
-      - AWG_NET=10.13.13.0/24
-      - AWG_SERVER_IP=10.13.13.1
-      - AWG_DNS=8.8.8.8,8.8.4.4
+      # Основные настройки VPN
+      - AWG_INTERFACE=${AWG_INTERFACE:-awg0}
+      - AWG_PORT=${AWG_PORT:-51820}
+      - AWG_NET=${AWG_NET:-10.13.13.0/24}
+      - AWG_SERVER_IP=${AWG_SERVER_IP:-10.13.13.1}
+      - AWG_DNS=${AWG_DNS:-8.8.8.8,8.8.4.4}
       
-      # Параметры обфускации AmneziaWG
-      - AWG_JC=7
-      - AWG_JMIN=50
-      - AWG_JMAX=1000
-      - AWG_S1=86
-      - AWG_S2=574
-      - AWG_H1=1
-      - AWG_H2=2
-      - AWG_H3=3
-      - AWG_H4=4
+      # Параметры обфускации AmneziaWG для обхода DPI
+      - AWG_JC=${AWG_JC:-7}
+      - AWG_JMIN=${AWG_JMIN:-50}
+      - AWG_JMAX=${AWG_JMAX:-1000}
+      - AWG_S1=${AWG_S1:-86}
+      - AWG_S2=${AWG_S2:-574}
+      - AWG_H1=${AWG_H1:-1}
+      - AWG_H2=${AWG_H2:-2}
+      - AWG_H3=${AWG_H3:-3}
+      - AWG_H4=${AWG_H4:-4}
       
       # Настройки сервера
-      - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP}
-      - CLIENTS_SUBNET=10.13.13.0/24
-      - ALLOWED_IPS=0.0.0.0/0
+      - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP:-auto}
+      - CLIENTS_SUBNET=${CLIENTS_SUBNET:-10.13.13.0/24}
+      - ALLOWED_IPS=${ALLOWED_IPS:-0.0.0.0/0}
       
       # Настройки хелсчека
       - HEALTHCHECK_TIMEOUT=${HEALTHCHECK_TIMEOUT:-5}
@@ -62,6 +88,55 @@ services:
       timeout: 15s
       start_period: 60s
       retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Web Interface & API Server (Node.js + TypeScript)
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    container_name: amneziawg-web
+    networks:
+      - amneziawg-net
+    ports:
+      - "${WEB_PORT:-8080}:3001"
+    volumes:
+      - ./clients:/app/clients:ro
+      - ./config:/app/config:ro
+    environment:
+      # Database Connection
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-amneziawg}:${POSTGRES_PASSWORD:-change_this_password_to_secure_one}@postgres:5432/${POSTGRES_DB:-amneziawg}
+      
+      # API Configuration
+      - API_PORT=3001
+      - FRONTEND_PORT=5000
+      - NODE_ENV=${NODE_ENV:-production}
+      
+      # Security (ВАЖНО: Установите для продакшена!)
+      - API_SECRET=${API_SECRET:-}
+      
+      # Paths
+      - CLIENTS_DIR=/app/clients
+      - CONFIG_DIR=/app/config
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vpn:
+        condition: service_healthy
 
 networks:
   amneziawg-net:
@@ -69,3 +144,7 @@ networks:
     ipam:
       config:
         - subnet: 172.20.0.0/16
+
+volumes:
+  postgres-data:
+    driver: local
