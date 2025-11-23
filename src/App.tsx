@@ -121,22 +121,28 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <Shield className="w-10 h-10 text-primary" />
-            <h1 className="text-4xl font-bold text-slate-900">AmneziaWG VPN</h1>
+            <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg">
+              <Shield className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
+                AmneziaWG VPN
+              </h1>
+              <p className="text-slate-600 font-medium">Управление VPN клиентами</p>
+            </div>
           </div>
-          <p className="text-slate-600">Управление VPN клиентами</p>
         </div>
 
-        <Card>
+        <Card className="shadow-xl border-slate-200/50 backdrop-blur-sm bg-white/80">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle>VPN Клиенты</CardTitle>
-                <CardDescription>Список всех подключенных клиентов</CardDescription>
+                <CardTitle className="text-2xl">VPN Клиенты</CardTitle>
+                <CardDescription className="text-base">Список всех подключенных клиентов</CardDescription>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -223,10 +229,10 @@ function App() {
         </Card>
 
         <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
-          <DialogContent>
+          <DialogContent className="bg-white border-2 border-slate-200 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Добавить нового клиента</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-2xl font-bold text-slate-900">Добавить нового клиента</DialogTitle>
+              <DialogDescription className="text-base text-slate-600">
                 Укажите имя клиента. IP адрес будет назначен автоматически.
               </DialogDescription>
             </DialogHeader>
@@ -262,10 +268,10 @@ function App() {
         </Dialog>
 
         <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md bg-white border-2 border-slate-200 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>QR код для {selectedClient?.name}</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-2xl font-bold text-slate-900">QR код для {selectedClient?.name}</DialogTitle>
+              <DialogDescription className="text-base text-slate-600">
                 Отсканируйте QR код в приложении AmneziaWG
               </DialogDescription>
             </DialogHeader>
@@ -278,15 +284,15 @@ function App() {
         </Dialog>
 
         <Dialog open={configDialogOpen} onOpenChange={setConfigDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl bg-white border-2 border-slate-200 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Конфигурация {selectedClient?.name}</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-2xl font-bold text-slate-900">Конфигурация {selectedClient?.name}</DialogTitle>
+              <DialogDescription className="text-base text-slate-600">
                 WireGuard конфигурационный файл
               </DialogDescription>
             </DialogHeader>
             <div className="py-4">
-              <pre className="bg-slate-100 p-4 rounded-md overflow-auto text-xs">
+              <pre className="bg-gradient-to-br from-slate-50 to-slate-100 p-4 rounded-md overflow-auto text-xs border border-slate-200 text-slate-900">
                 {configData}
               </pre>
             </div>
@@ -294,10 +300,10 @@ function App() {
         </Dialog>
 
         <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <DialogContent>
+          <DialogContent className="bg-white border-2 border-red-200 shadow-2xl">
             <DialogHeader>
-              <DialogTitle>Удалить клиента</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-2xl font-bold text-red-700">Удалить клиента</DialogTitle>
+              <DialogDescription className="text-base text-slate-600">
                 Вы уверены что хотите удалить клиента "{selectedClient?.name}"? Это
                 действие нельзя отменить.
               </DialogDescription>
