@@ -136,7 +136,7 @@ create_env() {
     echo
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
         API_SECRET=$(openssl rand -base64 32)
-        sed -i "s/^API_SECRET=$/API_SECRET=${API_SECRET}/" .env
+        sed -i "s|^API_SECRET=\$|API_SECRET=${API_SECRET}|" .env
         echo -e "${GREEN}✅ API_SECRET установлен (Production режим)${NC}"
         echo -e "${YELLOW}💾 Сохраните этот секрет: ${API_SECRET}${NC}"
     else

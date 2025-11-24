@@ -143,7 +143,7 @@ docker compose --profile web up -d
 ### Option 1: Automated Quick Start (Recommended)
 
 ```bash
-# Clone the repository with submodules
+# Clone the repository WITH submodules (ОБЯЗАТЕЛЬНО флаг --recursive!)
 git clone --recursive https://github.com/yourusername/amnezia-wg-docker.git
 cd amnezia-wg-docker
 
@@ -154,6 +154,13 @@ cd amnezia-wg-docker
 # Для запуска с веб-интерфейсом используйте:
 # docker compose --profile web up -d
 ```
+
+> ⚠️ **ВАЖНО:** Используйте флаг `--recursive` для загрузки submodules (amneziawg-go и amneziawg-tools)!
+>
+> **Если забыли `--recursive` при клонировании:**
+> ```bash
+> git submodule update --init --recursive
+> ```
 
 The quickstart script will:
 1. ✅ Check dependencies (Docker, Git)
@@ -167,19 +174,23 @@ The quickstart script will:
 ### Option 2: Manual Setup
 
 ```bash
-# Clone with submodules
+# 1. Clone with submodules (ОБЯЗАТЕЛЬНО --recursive!)
 git clone --recursive https://github.com/yourusername/amnezia-wg-docker.git
 cd amnezia-wg-docker
 
-# Create configuration
+# 2. Verify submodules are loaded
+ls -la amneziawg-go/go.mod        # Should exist
+ls -la amneziawg-tools/src/       # Should exist
+
+# 3. Create configuration
 cp env.example .env
 nano .env  # Edit configuration
 
-# Initialize and start (VPN-only по умолчанию)
+# 4. Initialize and start (VPN-only по умолчанию)
 make init
 make up
 
-# Check status
+# 5. Check status
 make status
 
 # Опционально: запустить с веб-интерфейсом
@@ -745,6 +756,37 @@ make restore file=amneziawg-backup-20241123-100000.tar.gz
 ---
 
 ## 🔧 Troubleshooting
+
+### Docker Build Issues
+
+**Problem:** `failed to compute cache key: "/amneziawg-tools": not found` or similar submodule errors
+
+**Причина:** Git submodules не загружены или загружены неполностью
+
+**Решение:**
+```bash
+# Вариант 1: Переинициализация submodules (быстро)
+git submodule deinit -f amneziawg-go amneziawg-tools
+rm -rf .git/modules/amneziawg-go .git/modules/amneziawg-tools
+rm -rf amneziawg-go amneziawg-tools
+git submodule update --init --recursive
+
+# Проверка
+ls -la amneziawg-go/go.mod        # Должен существовать
+ls -la amneziawg-tools/src/       # Должна существовать
+
+# Вариант 2: Клонировать репозиторий заново (надежнее)
+cd .. && rm -rf amnezia-wg-docker
+git clone --recursive https://github.com/yourusername/amnezia-wg-docker.git
+cd amnezia-wg-docker
+```
+
+> 💡 **Совет:** Всегда клонируйте репозиторий с флагом `--recursive`:
+> ```bash
+> git clone --recursive https://github.com/yourusername/amnezia-wg-docker.git
+> ```
+
+---
 
 ### Web Interface Issues
 
