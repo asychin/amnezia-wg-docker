@@ -200,17 +200,31 @@ build-safe: check-compose init-submodules check-config-exists auto-backup ## Б�
 
 
 .PHONY: up
-up: check-compose init-submodules check-server-stopped ## Запуск сервера
-        @echo "$(BLUE)🚀 Запуск AmneziaWG сервера...$(NC)"
+up: check-compose init-submodules check-server-stopped ## Запуск сервера (VPN-only, v1.x совместимость)
+        @echo "$(BLUE)🚀 Запуск AmneziaWG сервера (VPN-only)...$(NC)"
         @# Автоматическая инициализация если нужно
         @if [ ! -f ".env" ]; then \
                 echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
                 $(MAKE) init; \
         fi
         @$(DOCKER_COMPOSE) up -d
-        @echo "$(GREEN)✅ Сервер запущен$(NC)"
+        @echo "$(GREEN)✅ VPN сервер запущен$(NC)"
+        @echo "$(YELLOW)💡 Для запуска с веб-интерфейсом: docker compose --profile web up -d$(NC)"
         @sleep 5
         @$(MAKE) status
+
+.PHONY: up-web
+up-web: check-compose init-submodules check-server-stopped ## Запуск полного стека (VPN + Web + PostgreSQL)
+        @echo "$(BLUE)🚀 Запуск полного стека (VPN + Web + PostgreSQL)...$(NC)"
+        @# Автоматическая инициализация если нужно
+        @if [ ! -f ".env" ]; then \
+                echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
+                $(MAKE) init; \
+        fi
+        @$(DOCKER_COMPOSE) --profile web up -d
+        @echo "$(GREEN)✅ Полный стек запущен$(NC)"
+        @sleep 5
+        @$(DOCKER_COMPOSE) ps
 
 .PHONY: down
 down: check-compose check-server-running auto-backup ## Остановка сервера
@@ -555,74 +569,74 @@ release-info: ## Показать информацию о релизах (теп
 
 .PHONY: web-logs web-shell web-restart web-status web-url
 web-logs: check-compose ## Просмотр логов веб-интерфейса
-	@echo "$(BLUE)📄 Логи веб-интерфейса (Ctrl+C для выхода):$(NC)"
-	@$(DOCKER_LOGS) -f $(WEB_SERVICE)
+        @echo "$(BLUE)📄 Логи веб-интерфейса (Ctrl+C для выхода):$(NC)"
+        @$(DOCKER_LOGS) -f $(WEB_SERVICE)
 
 web-shell: check-compose ## Войти в контейнер веб-интерфейса
-	@echo "$(BLUE)🐚 Вход в контейнер веб-интерфейса...$(NC)"
-	@docker exec -it $(WEB_SERVICE) /bin/sh
+        @echo "$(BLUE)🐚 Вход в контейнер веб-интерфейса...$(NC)"
+        @docker exec -it $(WEB_SERVICE) /bin/sh
 
 web-restart: check-compose ## Перезапустить веб-интерфейс
-	@echo "$(BLUE)🔄 Перезапуск веб-интерфейса...$(NC)"
-	@$(DOCKER_COMPOSE) restart web
-	@sleep 3
-	@echo "$(GREEN)✅ Веб-интерфейс перезапущен$(NC)"
+        @echo "$(BLUE)🔄 Перезапуск веб-интерфейса...$(NC)"
+        @$(DOCKER_COMPOSE) restart web
+        @sleep 3
+        @echo "$(GREEN)✅ Веб-интерфейс перезапущен$(NC)"
 
 web-status: check-compose ## Статус веб-интерфейса и API
-	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(PURPLE)║                  Статус Web Interface & API                  ║$(NC)"
-	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-	@$(DOCKER_COMPOSE) ps web db 2>/dev/null || echo "Сервисы не запущены"
+        @echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+        @echo "$(PURPLE)║                  Статус Web Interface & API                  ║$(NC)"
+        @echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+        @$(DOCKER_COMPOSE) ps web db 2>/dev/null || echo "Сервисы не запущены"
 
 web-url: check-compose ## Показать URL веб-интерфейса
-	@WEB_PORT=$$(grep "^WEB_PORT=" .env 2>/dev/null | cut -d= -f2 || echo "8080"); \
-	SERVER_IP=$$(curl -s -4 https://eth0.me || echo "localhost"); \
-	echo "$(CYAN)🌐 Веб-интерфейс доступен:$(NC) $(GREEN)http://$$SERVER_IP:$$WEB_PORT$(NC)"
+        @WEB_PORT=$$(grep "^WEB_PORT=" .env 2>/dev/null | cut -d= -f2 || echo "8080"); \
+        SERVER_IP=$$(curl -s -4 https://eth0.me || echo "localhost"); \
+        echo "$(CYAN)🌐 Веб-интерфейс доступен:$(NC) $(GREEN)http://$$SERVER_IP:$$WEB_PORT$(NC)"
 
 .PHONY: db-logs db-shell db-backup db-restore db-status db-psql
 db-logs: check-compose ## Просмотр логов PostgreSQL
-	@echo "$(BLUE)📄 Логи PostgreSQL (Ctrl+C для выхода):$(NC)"
-	@$(DOCKER_LOGS) -f $(DB_SERVICE)
+        @echo "$(BLUE)📄 Логи PostgreSQL (Ctrl+C для выхода):$(NC)"
+        @$(DOCKER_LOGS) -f $(DB_SERVICE)
 
 db-shell: check-compose ## Войти в контейнер PostgreSQL
-	@docker exec -it $(DB_SERVICE) /bin/sh
+        @docker exec -it $(DB_SERVICE) /bin/sh
 
 db-psql: check-compose ## Подключиться к PostgreSQL через psql
-	@PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-	docker exec -it $(DB_SERVICE) psql -U $$PGUSER -d $$PGDB
+        @PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+        PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+        docker exec -it $(DB_SERVICE) psql -U $$PGUSER -d $$PGDB
 
 db-backup: check-compose ## Создать бэкап PostgreSQL
-	@BACKUP_FILE="postgres-backup-$$(date +%Y%m%d-%H%M%S).sql"; \
-	PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-	docker exec $(DB_SERVICE) pg_dump -U $$PGUSER $$PGDB > $$BACKUP_FILE 2>/dev/null && \
-	echo "$(GREEN)✅ Бэкап создан: $$BACKUP_FILE$(NC)"
+        @BACKUP_FILE="postgres-backup-$$(date +%Y%m%d-%H%M%S).sql"; \
+        PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+        PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+        docker exec $(DB_SERVICE) pg_dump -U $$PGUSER $$PGDB > $$BACKUP_FILE 2>/dev/null && \
+        echo "$(GREEN)✅ Бэкап создан: $$BACKUP_FILE$(NC)"
 
 db-restore: check-compose ## Восстановить PostgreSQL из бэкапа (file=путь)
-	@[ -n "$(file)" ] || (echo "$(RED)Укажите file=путь_к_файлу$(NC)" && exit 1)
-	@[ -f "$(file)" ] || (echo "$(RED)Файл $(file) не найден$(NC)" && exit 1)
-	@PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-	cat $(file) | docker exec -i $(DB_SERVICE) psql -U $$PGUSER $$PGDB && \
-	echo "$(GREEN)✅ Бэкап восстановлен$(NC)"
+        @[ -n "$(file)" ] || (echo "$(RED)Укажите file=путь_к_файлу$(NC)" && exit 1)
+        @[ -f "$(file)" ] || (echo "$(RED)Файл $(file) не найден$(NC)" && exit 1)
+        @PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+        PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+        cat $(file) | docker exec -i $(DB_SERVICE) psql -U $$PGUSER $$PGDB && \
+        echo "$(GREEN)✅ Бэкап восстановлен$(NC)"
 
 db-status: check-compose ## Статус PostgreSQL
-	@echo "$(CYAN)📊 PostgreSQL Status:$(NC)"
-	@$(DOCKER_COMPOSE) ps db 2>/dev/null || echo "PostgreSQL не запущен"
+        @echo "$(CYAN)📊 PostgreSQL Status:$(NC)"
+        @$(DOCKER_COMPOSE) ps db 2>/dev/null || echo "PostgreSQL не запущен"
 
 .PHONY: stack-status stack-logs stack-restart
 stack-status: ## Статус всего стека (VPN + Web + DB)
-	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(PURPLE)║          AmneziaWG v2.0.0 - Полный статус стека              ║$(NC)"
-	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-	@$(DOCKER_COMPOSE) ps
+        @echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+        @echo "$(PURPLE)║          AmneziaWG v2.0.0 - Полный статус стека              ║$(NC)"
+        @echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+        @$(DOCKER_COMPOSE) ps
 
 stack-logs: check-compose ## Просмотр логов всего стека
-	@$(DOCKER_COMPOSE) logs -f
+        @$(DOCKER_COMPOSE) logs -f
 
 stack-restart: check-compose auto-backup ## Перезапустить весь стек
-	@$(DOCKER_COMPOSE) down && sleep 2 && $(MAKE) up
+        @$(DOCKER_COMPOSE) down && sleep 2 && $(MAKE) up
 
 # По умолчанию показываем справку
 .DEFAULT_GOAL := help

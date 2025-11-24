@@ -72,7 +72,9 @@ _Web interface, API, database - everything automated!_
 
 ### 🔄 Backward Compatibility
 
-- **100% Compatible** - All v1.x features preserved
+- **100% Compatible** - All v1.x features preserved  
+- **VPN-only by default** - `make up` запускает только VPN (как в v1.x)
+- **Web optional** - Веб-интерфейс активируется по желанию (`--profile web`)
 - **Migration Guide** - Detailed upgrade instructions
 - **Zero Downtime** - Upgrade without service interruption
 
@@ -120,6 +122,24 @@ _Web interface, API, database - everything automated!_
 - **Git** for submodule management
 - **curl** and **openssl** for setup script
 
+### ⚡ Режимы работы
+
+**v2.0.0 предлагает 2 режима работы:**
+
+#### 1️⃣ VPN-only режим (v1.x совместимость) - **по умолчанию**
+Запускает только VPN сервер без веб-интерфейса и PostgreSQL.
+```bash
+make up                          # Или: docker compose up -d
+```
+
+#### 2️⃣ Полный стек (VPN + Web + PostgreSQL) - **опционально**
+Запускает VPN + веб-интерфейс + PostgreSQL для управления через браузер.
+```bash
+docker compose --profile web up -d
+```
+
+---
+
 ### Option 1: Automated Quick Start (Recommended)
 
 ```bash
@@ -130,17 +150,18 @@ cd amnezia-wg-docker
 # Run automated setup
 ./quickstart.sh
 
-# Access web interface
-# Open http://your-server-ip:8080 in browser
+# По умолчанию запустит VPN-only режим (v1.x совместимость)
+# Для запуска с веб-интерфейсом используйте:
+# docker compose --profile web up -d
 ```
 
 The quickstart script will:
 1. ✅ Check dependencies (Docker, Git)
 2. ✅ Initialize git submodules
-3. ✅ Generate secure passwords (PostgreSQL, API_SECRET)
+3. ✅ Generate secure configuration (.env)
 4. ✅ Detect your public IP address
 5. ✅ Build Docker images
-6. ✅ Start all services (VPN, API, Database, Web)
+6. ✅ Start VPN server (веб-интерфейс опционален)
 7. ✅ Display access information
 
 ### Option 2: Manual Setup
@@ -154,25 +175,35 @@ cd amnezia-wg-docker
 cp env.example .env
 nano .env  # Edit configuration
 
-# Initialize and start
+# Initialize and start (VPN-only по умолчанию)
 make init
 make up
 
 # Check status
 make status
+
+# Опционально: запустить с веб-интерфейсом
+# docker compose --profile web up -d
 ```
 
 ### First VPN Client
 
+#### Вариант А: Через командную строку (работает в обоих режимах)
 ```bash
 # Add your first client
 make client-add name=john
 
 # Show QR code for mobile setup
 make client-qr name=john
+```
 
-# Or use web interface
-# http://your-server:8080
+#### Вариант Б: Через веб-интерфейс (только в режиме --profile web)
+```bash
+# Запустите полный стек если еще не запущен
+docker compose --profile web up -d
+
+# Откройте в браузере
+# http://your-server-ip:8080
 ```
 
 ---

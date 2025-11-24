@@ -3,6 +3,21 @@
 ## Overview
 This project provides a full-stack web interface for managing AmneziaWG Docker VPN servers. It offers a user-friendly way to control VPN clients, generate configurations, and monitor server status. While the VPN server itself requires a Docker-capable environment for deployment, this workspace demonstrates the complete management interface as a standalone application. The core purpose is to simplify VPN client management for the AmneziaWG VPN server, offering a modern, interactive dashboard with features like DPI bypass, quick setup, QR code generation, and health monitoring. The business vision is to provide a robust and easy-to-use VPN solution, enhancing digital privacy and security with broad market potential for individuals and small businesses seeking secure and uncensored internet access.
 
+**v2.0.0 is 100% backward compatible with v1.x** - VPN runs standalone by default, web interface is optional via `--profile web`.
+
+### Recent Changes (Nov 24, 2025)
+- ✅ **100% Backward Compatibility Restored**: VPN runs independently by default
+- ✅ **Docker Compose Profiles**: PostgreSQL and Web only start with `--profile web`
+- ✅ **VPN Independence**: Removed PostgreSQL dependency from VPN service
+- ✅ **New Makefile Commands**:
+  - `make up` → VPN-only (v1.x compatible)
+  - `make up-web` → Full stack (VPN + Web + PostgreSQL)
+- ✅ **Documentation Created**:
+  - BACKWARD_COMPATIBILITY.md (12KB) - Complete compatibility guide
+  - docker-compose.minimal.yml (2.6KB) - Explicit VPN-only mode
+  - MAKEFILE_V2.md (6.8KB) - Web interface commands
+- ✅ **Updated Documentation**: MIGRATION.md, README.md with deployment modes
+
 ## User Preferences
 I prefer simple language and direct answers. I like to work iteratively, so please suggest small changes and ask for my approval before implementing major ones. I appreciate detailed explanations, especially for complex technical concepts. Do not make changes to the `amneziawg-go/` or `amneziawg-tools/` folders.
 

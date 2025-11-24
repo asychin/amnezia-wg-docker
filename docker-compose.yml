@@ -5,9 +5,11 @@
 
 services:
   # PostgreSQL Database для управления клиентами
+  # Используется только с веб-интерфейсом (профиль "web")
   postgres:
     image: postgres:16-alpine
     container_name: amneziawg-db
+    profiles: ["web"]  # Запускается только с --profile web
     environment:
       # Основные настройки БД (из .env)
       POSTGRES_DB: ${POSTGRES_DB:-amneziawg}
@@ -134,12 +136,13 @@ services:
       timeout: 15s
       start_period: 60s
       retries: 3
-    depends_on:
-      postgres:
-        condition: service_healthy
+    # VPN НЕ зависит от PostgreSQL (только веб-интерфейс использует БД)
+    # depends_on закомментирован для обратной совместимости с v1.x
 
   # Web Interface & API Server (Node.js + TypeScript)
+  # Запускается только с профилем "web"
   web:
+    profiles: ["web"]  # Запускается только с --profile web
     build:
       context: .
       dockerfile: Dockerfile.web
