@@ -15,13 +15,29 @@ COPY drizzle.config.ts ./
 # Устанавливаем все зависимости
 RUN npm ci
 
-# Копируем исходный код
-COPY src/ ./src/
-COPY server/ ./server/
-COPY shared/ ./shared/
-COPY public/ ./public/
-COPY views/ ./views/
-COPY index.html ./
+# Копируем весь проект (кроме node_modules - см. .dockerignore)
+COPY . .
+
+# Создаем index.html ТОЛЬКО если его нет (fallback для обратной совместимости)
+RUN if [ ! -f index.html ]; then \
+    echo "⚠️  index.html не найден - создаем fallback версию" && \
+    cat > index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="ru" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>AmneziaWG VPN Management</title>
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+EOF
+fi
 
 # Собираем фронтенд
 RUN npm run build

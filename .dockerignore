@@ -1,0 +1,64 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Build output
+dist
+.vite
+
+# Environment and configs
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+.gitmodules
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Docker
+Dockerfile
+Dockerfile.*
+docker-compose*.yml
+.dockerignore
+
+# Documentation (не нужна в runtime)
+*.md
+!README.md
+
+# VPN generated configs and keys
+config/
+clients/
+*.conf
+*.key
+
+# Submodules (не нужны для web интерфейса)
+amneziawg-go/
+amneziawg-tools/
+
+# Backups
+*.backup
+*.bak
+*.tar.gz
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx

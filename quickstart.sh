@@ -64,6 +64,30 @@ init_submodules() {
     fi
 }
 
+# Создание index.html для Vite (если отсутствует)
+ensure_index_html() {
+    if [ ! -f "index.html" ]; then
+        echo -e "${BLUE}📄 Создание index.html для Vite...${NC}"
+        cat > index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="ru" class="light">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
+    <title>AmneziaWG VPN Management</title>
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+EOF
+        echo -e "${GREEN}✅ index.html создан${NC}"
+    fi
+}
+
 # Создание .env файла
 create_env() {
     if [ -f ".env" ]; then
@@ -215,6 +239,7 @@ main() {
     
     check_dependencies
     init_submodules
+    ensure_index_html
     create_env
     detect_public_ip
     build_images
