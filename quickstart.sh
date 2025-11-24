@@ -129,7 +129,7 @@ create_env() {
     
     # PostgreSQL пароль
     PG_PASSWORD=$(openssl rand -base64 32)
-    sed -i "s/change_this_password_to_secure_one/${PG_PASSWORD}/" .env
+    sed -i "s|change_this_password_to_secure_one|${PG_PASSWORD}|" .env
     
     # API Secret (опционально)
     read -p "Установить API_SECRET для защиты API? (Рекомендуется) (Y/n): " -n 1 -r
@@ -162,7 +162,7 @@ detect_public_ip() {
         fi
     fi
     
-    sed -i "s/^SERVER_PUBLIC_IP=.*/SERVER_PUBLIC_IP=${PUBLIC_IP}/" .env
+    sed -i "s|^SERVER_PUBLIC_IP=.*|SERVER_PUBLIC_IP=${PUBLIC_IP}|" .env
     echo -e "${GREEN}✅ Публичный IP: ${PUBLIC_IP}${NC}"
 }
 

@@ -18,7 +18,7 @@ This project provides a full-stack web interface for managing AmneziaWG Docker V
   - MAKEFILE_V2.md (6.8KB) - Web interface commands
 - ✅ **Updated Documentation**: MIGRATION.md, README.md with deployment modes
 - ✅ **Dockerfile.web Fixed**: Corrected heredoc syntax error (line 40)
-- ✅ **quickstart.sh Improved**: Fixed sed syntax error in API_SECRET generation (line 142)
+- ✅ **quickstart.sh FIXED**: Исправлены ВСЕ sed команды - изменен разделитель с `/` на `|` для корректной работы с base64 строками (строки 135, 142, 168)
 - ✅ **quickstart.sh Improved**: Better submodules validation (checks real files, not just .git dirs)
 - ✅ **Documentation Consolidated**: Removed 3 extra docs (SUBMODULES_FIX, BACKWARD_COMPATIBILITY, MAKEFILE_V2), merged into README
 - ✅ **README Updated**: Added prominent warnings about --recursive flag and submodules troubleshooting
