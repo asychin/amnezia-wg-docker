@@ -1,313 +1,50 @@
 # AmneziaWG VPN Management Interface - Replit Web Application
 
 ## Overview
+This project provides a full-stack web interface for managing AmneziaWG Docker VPN servers. It offers a user-friendly way to control VPN clients, generate configurations, and monitor server status. While the VPN server itself requires a Docker-capable environment for deployment, this workspace demonstrates the complete management interface as a standalone application. The core purpose is to simplify VPN client management for the AmneziaWG VPN server, offering a modern, interactive dashboard with features like DPI bypass, quick setup, QR code generation, and health monitoring. The business vision is to provide a robust and easy-to-use VPN solution, enhancing digital privacy and security with broad market potential for individuals and small businesses seeking secure and uncensored internet access.
 
-This Replit workspace contains a **full-stack VPN management web interface** for the AmneziaWG Docker VPN Server project. While the actual VPN server requires Docker to run, this interface provides a complete management system that can be deployed alongside the VPN server or used as a standalone demo.
+## User Preferences
+I prefer simple language and direct answers. I like to work iteratively, so please suggest small changes and ask for my approval before implementing major ones. I appreciate detailed explanations, especially for complex technical concepts. Do not make changes to the `amneziawg-go/` or `amneziawg-tools/` folders.
 
-**Version:** 2.0.0  
-**Original Project:** [AmneziaVPN Team](https://github.com/amnezia-vpn)  
-**Docker Implementation:** asychin  
-**Web Interface:** React + TypeScript + shadcn/ui + Drizzle ORM
+## System Architecture
+The system comprises a React-based frontend and a Node.js/Express backend.
 
-## What's Available in This Workspace
+**UI/UX Decisions:**
+The frontend utilizes React 19 with TypeScript, Vite 7 for building, and `shadcn/ui` (built on Radix UI primitives) for a modern, responsive, and visually appealing interface. Styling is managed with Tailwind CSS v4, and icons are provided by Lucide React. The dashboard features a clean, card-based layout with a gradient background and real-time client status badges.
 
-### 1. VPN Management Interface (Running)
-- **URL:** Available via the Webview panel
-- **Port:** 5000 (Frontend), 3001 (API)
-- **Technology:** React + Vite + TypeScript + shadcn/ui
-- **Purpose:** Interactive VPN client management with beautiful UI
+**Technical Implementations:**
+- **Frontend:** Built with React, TypeScript, Vite, `shadcn/ui`, Tailwind CSS, Tanstack Query for state management.
+- **Backend:** Developed with Node.js and `tsx` for TypeScript execution, using Express 5 for REST API endpoints. It interacts with VPN management scripts via `child_process` and manages data persistence with Drizzle ORM.
+- **Database:** PostgreSQL is used for storing VPN client information.
+- **VPN Server (external deployment):** Uses `amneziawg-go` (Go 1.24) for the core VPN functionality and `amneziawg-tools` (C) for utilities, packaged in a Docker container based on Ubuntu 22.04.
 
-### 2. Complete Project Files
-- `Dockerfile` - Multi-stage Docker build configuration
-- `docker-compose.yml` - Service composition
-- `Makefile` - Management commands
-- `scripts/` - Automation scripts (entrypoint, client management, health checks)
-- `env.example` - Configuration template
-- `amneziawg-go/` - Git submodule for Go implementation
-- `amneziawg-tools/` - Git submodule for CLI utilities
+**Feature Specifications:**
+- **Dashboard:** Modern UI, responsive design, real-time client list with status.
+- **Client Operations:** Add, delete, view QR codes, view configurations, and synchronize clients.
+- **API Endpoints:**
+    - `GET /api/clients`: List all VPN clients.
+    - `POST /api/clients`: Create a new client.
+    - `DELETE /api/clients/:name`: Delete a client.
+    - `GET /api/clients/:name/qr`: Get QR code data URL.
+    - `GET /api/clients/:name/config`: Get configuration text.
+    - `POST /api/sync`: Sync filesystem clients to database.
 
-## Important Limitations
+**System Design Choices:**
+- **Containerization:** The entire application (frontend, backend, and database) is containerized using Docker and Docker Compose for easy deployment and scalability.
+- **Microservices-like separation:** Although co-located in this workspace, the frontend and backend are distinct services, allowing for flexible deployment.
+- **Database Schema:** A `vpn_clients` table stores client details including name, IP address, public key, creation/update timestamps, enabled status, and last handshake.
+- **Security:** Includes path traversal and command injection protection, race condition prevention with file locking, secure file permissions, and elimination of private key exposure in API responses.
 
-### ❌ Cannot Run in Replit
-
-The AmneziaWG VPN server **cannot run in this environment** because it requires:
-
-1. **Docker Support** - Replit doesn't support Docker containers
-2. **TUN/TAP Devices** - VPN needs kernel-level network device creation
-3. **NET_ADMIN Capability** - Privileged network operations not available
-4. **iptables Access** - NAT and routing configuration requires system access
-5. **Kernel Modules** - VPN protocols need direct kernel interaction
-
-### ✅ What This Portal Provides
-
-- Complete project documentation
-- Setup instructions for proper deployment
-- Configuration examples and best practices
-- Command reference
-- Architecture overview
-- Deployment recommendations
-
-## Deployment Options
-
-To actually deploy this VPN server, you need a server with Docker support:
-
-### Recommended Options:
-1. **VPS Providers** - DigitalOcean, Linode, Vultr, AWS Lightsail
-2. **Cloud Platforms** - Google Cloud, Azure, Oracle Cloud
-3. **Self-Hosted** - Home server, Raspberry Pi, any Linux machine with Docker
-
-### Quick Deploy (on a Docker-capable server):
-```bash
-git clone --recursive https://github.com/yourusername/amnezia-wg-docker.git
-cd amnezia-wg-docker
-make up
-```
-
-## Project Structure
-
-```
-amnezia-wg-docker/
-├── src/                   # Frontend source (React + TypeScript)
-│   ├── main.tsx          # React entry point
-│   ├── App.tsx           # Main application component
-│   ├── components/       # shadcn/ui components
-│   │   └── ui/          # Button, Card, Dialog, Table, Badge, etc.
-│   ├── api/             # API client functions
-│   ├── types/           # TypeScript interfaces
-│   ├── lib/             # Utilities
-│   └── index.css        # Tailwind CSS styles
-├── server/               # Backend API (TypeScript)
-│   ├── main.ts          # API server entry point
-│   ├── api.ts           # REST API routes
-│   └── storage.ts       # Database operations (Drizzle ORM)
-├── shared/               # Shared types and schemas
-│   └── schema.ts        # Drizzle ORM database schema
-├── scripts/              # VPN management scripts
-│   ├── entrypoint.sh    # Container entry point
-│   ├── manage-clients.sh # Client management (bash)
-│   ├── healthcheck.sh   # Health monitoring
-│   └── diagnose.sh      # Diagnostics
-├── views/                # Legacy documentation templates
-│   └── index.ejs        # Documentation page (accessible at /docs)
-├── public/               # Static assets
-├── clients/              # Generated VPN client configs
-├── amneziawg-go/         # VPN implementation (submodule)
-├── amneziawg-tools/      # CLI tools (submodule)
-├── vite.config.ts        # Vite configuration
-├── tailwind.config.ts    # Tailwind CSS configuration
-├── drizzle.config.ts     # Drizzle ORM configuration
-├── tsconfig.json         # TypeScript configuration
-├── package.json          # Node.js dependencies
-├── Dockerfile            # Multi-stage build
-├── docker-compose.yml    # Service configuration
-├── Makefile              # Management commands
-└── env.example           # Configuration template
-```
-
-## Technology Stack
-
-### Frontend (VPN Management Interface)
-- **Framework:** React 19 + TypeScript
-- **Build Tool:** Vite 7
-- **UI Library:** shadcn/ui (Radix UI primitives)
-- **Styling:** Tailwind CSS v4
-- **State Management:** Tanstack Query (React Query)
-- **Icons:** Lucide React
-
-### Backend API
-- **Runtime:** Node.js with tsx (TypeScript executor)
-- **Framework:** Express 5
-- **Language:** TypeScript
-- **Database:** PostgreSQL (Replit-managed)
-- **ORM:** Drizzle ORM
-- **QR Codes:** qrcode library
-- **Process Management:** child_process for bash scripts
-
-### VPN Server (for deployment elsewhere)
-- **Core:** amneziawg-go (Go 1.24)
-- **Tools:** amneziawg-tools (C)
-- **Container:** Docker + Ubuntu 22.04
-- **Automation:** Bash scripts + Makefile
-
-## Key Features of AmneziaWG
-
-1. **DPI Bypass** - Traffic obfuscation to avoid censorship
-2. **Userspace Mode** - No kernel modules required
-3. **Quick Setup** - 1-minute deployment with `make up`
-4. **QR Codes** - Easy mobile configuration
-5. **Auto Backups** - Configuration protection
-6. **Health Monitoring** - Built-in diagnostics
-
-## Usage Instructions
-
-### In This Replit Workspace:
-- View the documentation portal in the Webview panel
-- Explore the project files and structure
-- Review the configuration examples
-- Learn about deployment options
-
-### For Actual VPN Deployment:
-1. Get a VPS or server with Docker installed
-2. Clone this repository with submodules
-3. Run `make up` to start the server
-4. Add clients with `make client-add name=username`
-5. Generate QR codes with `make client-qr name=username`
-
-## Configuration
-
-The VPN server is configured via environment variables in the `.env` file:
-
-### Core Settings:
-- `AWG_INTERFACE` - Interface name (default: awg0)
-- `AWG_PORT` - UDP port (default: 51820)
-- `AWG_NET` - VPN subnet (default: 10.13.13.0/24)
-- `SERVER_PUBLIC_IP` - Auto-detected or manual
-
-### Obfuscation Parameters:
-- `AWG_JC` - Jitter intensity (3-15)
-- `AWG_JMIN/JMAX` - Junk packet sizes
-- `AWG_S1/S2` - Header sizes for HTTPS simulation
-- `AWG_H1-H4` - Hash functions
-
-## Common Commands (for deployed server)
-
-```bash
-make up           # Start VPN server
-make down         # Stop server
-make restart      # Restart server
-make status       # View status
-make logs         # View logs
-make client-add   # Add client
-make client-qr    # Show QR code
-make backup       # Backup configs
-```
-
-## Resources
-
-- **Documentation Portal:** Running in this workspace
-- **Source Files:** All available in this Replit
-- **README.md:** Comprehensive project documentation
-- **env.example:** Configuration template with explanations
-
-## Features
-
-### VPN Client Management Interface
-
-#### 1. Dashboard
-- Beautiful, modern UI with gradient background
-- Shield icon branding
-- Responsive card-based layout
-- Real-time client list with status badges
-
-#### 2. Client Operations
-- **Add Client:** Create new VPN clients with auto-assigned or custom IP addresses
-- **Delete Client:** Remove clients with confirmation dialog
-- **View QR Code:** Generate and display QR codes for easy mobile setup
-- **View Configuration:** Display full WireGuard configuration text
-- **Sync Clients:** Synchronize filesystem clients with database
-
-#### 3. Client Information Display
-- Name and IP address
-- Status badges (Active/Inactive)
-- Creation date
-- Quick action buttons for each client
-
-### API Endpoints
-
-#### Client Management
-- `GET /api/clients` - List all VPN clients
-- `POST /api/clients` - Create new client (body: { name, ipAddress? })
-- `DELETE /api/clients/:name` - Delete client
-- `GET /api/clients/:name/qr` - Get QR code as data URL
-- `GET /api/clients/:name/config` - Get configuration file text
-- `POST /api/sync` - Sync filesystem clients to database
-
-### Database Schema
-
-**vpn_clients table:**
-- `id` (serial, primary key)
-- `name` (varchar, unique) - Client identifier
-- `ip_address` (varchar) - Assigned VPN IP
-- `public_key` (varchar) - Client's public key
-- `created_at` (timestamp) - Creation time
-- `updated_at` (timestamp) - Last update
-- `enabled` (boolean) - Active status
-- `last_handshake` (timestamp, nullable) - Last connection
-
-## Recent Changes
-
-**2024-11-23 v2.0.1:** Critical Docker configuration and port mapping fixes
-- **CRITICAL: Fixed port mapping and single-server architecture**
-  - Unified Express server now serves both static files (from dist/) and API on port 3001
-  - Updated docker-compose.yml port mapping: 8080→3001 (was incorrectly 8080→5000)
-  - Fixed healthcheck to use correct port (localhost:3001/health)
-  - Removed separate vite preview server (now single Express server in production)
-- **Fixed production Docker build (Dockerfile.web):**
-  - Removed copying of dev dependencies from builder stage
-  - Using `npm ci --omit=dev` for clean production dependencies only
-  - Changed EXPOSE port from 5000 to 3001 (API port)
-  - Added necessary files (env.example, README.md, VERSION) for server runtime
-- **Fixed docker-compose.yml default passwords:**
-  - Changed POSTGRES_PASSWORD default from "change_this_password" to "change_this_password_to_secure_one"
-  - Now matches env.example pattern for consistent behavior
-  - quickstart.sh sed patterns already correct
-- **Updated package.json scripts:**
-  - Simplified start:prod to run only tsx server/main.ts
-  - Removed separate serve:api and serve:static scripts (no longer needed)
-- **Architecture improvement:**
-  - Production mode: Single Express server on port 3001 serving both API and static files
-  - Development mode: Dual server (API on 3001, Vite HMR on 5000 with proxy)
-  - Cleaner separation, better resource usage, simpler deployment
-
-**2024-11-23 v2.0.0:** Security hardening and full-stack web interface
-- **CRITICAL: Fixed IP address detection bug** (Linux systems)
-  - Added priority local IP detection via `ip -4 route get 1.1.1.1`
-  - Forced IPv4 with curl `-4` flag for external IP detection
-  - Protected /etc/resolv.conf writes with proper error handling
-- **Security audit and vulnerability fixes:**
-  - ✅ Path traversal protection in client name validation
-  - ✅ Command injection protection (dual-layer: API + bash scripts)
-  - ✅ Race condition prevention with flock file locking
-  - ✅ Private key exposure eliminated from API responses
-  - ✅ Secure file permissions (chmod 700, umask 077)
-  - ✅ Updated healthcheck.sh to use `ss` instead of deprecated `netstat`
-- **Full-stack web management interface:**
-  - Created React + TypeScript + shadcn/ui frontend (Russian UI)
-  - Implemented REST API with Express (TypeScript)
-  - Integrated PostgreSQL database with Drizzle ORM
-  - Added client CRUD operations with QR code generation
-  - Implemented optional API authorization (API_SECRET for production)
-  - Dual-server setup (API on 3001, Frontend on 5000)
-- **Backward compatibility maintained:**
-  - All existing functionality preserved
-  - Docker volumes and configs unchanged
-  - Created comprehensive MIGRATION.md guide
-  - Version bumped to 2.0.0 with upgrade instructions
-- **Documentation improvements:**
-  - Security warnings in MIGRATION.md and env.example
-  - API documentation with authorization setup
-  - Production deployment best practices
-
-**2024-11-23 v1.1:** Created documentation portal for Replit environment
-- Added Express-based web server
-- Created interactive documentation interface
-- Configured workflow for port 5000
-- Updated project structure for dual purpose (docs + VPN source)
-
-## Notes
-
-This workspace serves as:
-1. A **full-stack VPN management application** - accessible via Webview
-2. A **complete REST API** - for VPN client operations
-3. A **PostgreSQL-backed database** - for client persistence
-4. A **documentation portal** - accessible at /docs endpoint
-5. A **complete source repository** - ready to deploy on a Docker-capable server
-
-The management interface runs entirely in the browser with React, communicating with a TypeScript API backend that interfaces with VPN management scripts and PostgreSQL database.
-
-## Support
-
-For questions about:
-- **AmneziaWG Protocol:** [AmneziaVPN GitHub](https://github.com/amnezia-vpn)
-- **WireGuard:** [WireGuard Documentation](https://www.wireguard.com/)
-- **Docker:** [Docker Documentation](https://docs.docker.com/)
+## External Dependencies
+- **PostgreSQL:** Used as the primary database for storing VPN client data.
+- **amneziawg-go (Git Submodule):** The Go-based VPN server implementation.
+- **amneziawg-tools (Git Submodule):** C-based command-line utilities for VPN management.
+- **Docker:** Core technology for containerization and deployment of the VPN server and its management interface.
+- **Vite:** Frontend build tool.
+- **shadcn/ui:** UI component library.
+- **Tailwind CSS:** Utility-first CSS framework.
+- **Tanstack Query:** For data fetching, caching, and state management in React.
+- **Lucide React:** Icon library.
+- **Express:** Backend web framework for Node.js.
+- **Drizzle ORM:** TypeScript ORM for database interaction.
+- **qrcode library:** For generating QR codes.

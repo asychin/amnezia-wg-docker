@@ -9,9 +9,54 @@ services:
     image: postgres:16-alpine
     container_name: amneziawg-db
     environment:
+      # Основные настройки БД (из .env)
       POSTGRES_DB: ${POSTGRES_DB:-amneziawg}
       POSTGRES_USER: ${POSTGRES_USER:-amneziawg}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password_to_secure_one}
+      
+      # Настройки производительности PostgreSQL
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:--E UTF8 --locale=C}
+      
+      # Дополнительные параметры (опционально через .env)
+      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD:-scram-sha-256}
+    command: 
+      - "postgres"
+      - "-c"
+      - "shared_buffers=${PG_SHARED_BUFFERS:-128MB}"
+      - "-c"
+      - "max_connections=${PG_MAX_CONNECTIONS:-100}"
+      - "-c"
+      - "work_mem=${PG_WORK_MEM:-4MB}"
+      - "-c"
+      - "maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-64MB}"
+      - "-c"
+      - "effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-512MB}"
+      - "-c"
+      - "checkpoint_completion_target=${PG_CHECKPOINT_COMPLETION_TARGET:-0.9}"
+      - "-c"
+      - "wal_buffers=${PG_WAL_BUFFERS:-16MB}"
+      - "-c"
+      - "default_statistics_target=${PG_DEFAULT_STATISTICS_TARGET:-100}"
+      - "-c"
+      - "random_page_cost=${PG_RANDOM_PAGE_COST:-1.1}"
+      - "-c"
+      - "effective_io_concurrency=${PG_EFFECTIVE_IO_CONCURRENCY:-200}"
+      - "-c"
+      - "min_wal_size=${PG_MIN_WAL_SIZE:-1GB}"
+      - "-c"
+      - "max_wal_size=${PG_MAX_WAL_SIZE:-4GB}"
+      - "-c"
+      - "max_worker_processes=${PG_MAX_WORKER_PROCESSES:-4}"
+      - "-c"
+      - "max_parallel_workers_per_gather=${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-2}"
+      - "-c"
+      - "max_parallel_workers=${PG_MAX_PARALLEL_WORKERS:-4}"
+      - "-c"
+      - "max_parallel_maintenance_workers=${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-2}"
+      - "-c"
+      - "log_timezone=UTC"
+      - "-c"
+      - "timezone=UTC"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     networks:
@@ -27,6 +72,7 @@ services:
       options:
         max-size: "5m"
         max-file: "2"
+    shm_size: ${PG_SHM_SIZE:-128MB}
 
   # VPN Server с AmneziaWG
   vpn:
