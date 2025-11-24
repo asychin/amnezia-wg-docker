@@ -56,11 +56,32 @@ check_dependencies() {
 init_submodules() {
     echo -e "${BLUE}📦 Инициализация git submodules...${NC}"
     
-    if [ ! -d "amneziawg-go/.git" ] || [ ! -d "amneziawg-tools/.git" ]; then
+    # Проверяем что submodules не только инициализированы, но и содержат файлы
+    local need_init=false
+    
+    if [ ! -d "amneziawg-go/.git" ] || [ ! -f "amneziawg-go/go.mod" ]; then
+        need_init=true
+    fi
+    
+    if [ ! -d "amneziawg-tools/.git" ] || [ ! -d "amneziawg-tools/src" ]; then
+        need_init=true
+    fi
+    
+    if [ "$need_init" = true ]; then
+        echo -e "${CYAN}🔄 Загрузка submodules...${NC}"
         git submodule update --init --recursive
-        echo -e "${GREEN}✅ Submodules инициализированы${NC}"
+        
+        # Проверка успешности
+        if [ ! -f "amneziawg-go/go.mod" ] || [ ! -d "amneziawg-tools/src" ]; then
+            echo -e "${RED}❌ Ошибка загрузки submodules!${NC}"
+            echo -e "${YELLOW}Попробуйте вручную:${NC}"
+            echo -e "  ${CYAN}git submodule update --init --recursive${NC}"
+            exit 1
+        fi
+        
+        echo -e "${GREEN}✅ Submodules загружены${NC}"
     else
-        echo -e "${CYAN}ℹ️  Submodules уже инициализированы${NC}"
+        echo -e "${CYAN}ℹ️  Submodules уже загружены${NC}"
     fi
 }
 

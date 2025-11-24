@@ -18,6 +18,8 @@ This project provides a full-stack web interface for managing AmneziaWG Docker V
   - MAKEFILE_V2.md (6.8KB) - Web interface commands
 - ✅ **Updated Documentation**: MIGRATION.md, README.md with deployment modes
 - ✅ **Dockerfile.web Fixed**: Corrected heredoc syntax error (line 40)
+- ✅ **quickstart.sh Improved**: Better submodules validation (checks real files, not just .git dirs)
+- ✅ **SUBMODULES_FIX.md Created**: Complete guide for fixing submodules issues (5.6KB)
 
 ## User Preferences
 I prefer simple language and direct answers. I like to work iteratively, so please suggest small changes and ask for my approval before implementing major ones. I appreciate detailed explanations, especially for complex technical concepts. Do not make changes to the `amneziawg-go/` or `amneziawg-tools/` folders.
