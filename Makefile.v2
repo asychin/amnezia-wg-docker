@@ -1,0 +1,151 @@
+# ============================================================================
+# AmneziaWG v2.0.0 - Дополнительные команды для веб-интерфейса и PostgreSQL
+# ============================================================================
+# Использование: make -f Makefile.v2 <команда>
+# Или добавьте в основной Makefile: include Makefile.v2
+
+# Переменные (должны совпадать с основным Makefile)
+WEB_SERVICE := amneziawg-web
+DB_SERVICE := amneziawg-db
+DOCKER_COMPOSE := docker compose
+
+# Цвета
+BLUE := \033[34m
+GREEN := \033[32m
+YELLOW := \033[33m
+RED := \033[31m
+PURPLE := \033[35m
+CYAN := \033[36m
+NC := \033[0m
+
+# ============================================================================
+# ВЕБ-ИНТЕРФЕЙС
+# ============================================================================
+
+.PHONY: web-logs web-shell web-restart web-status web-url
+
+web-logs: ## Просмотр логов веб-интерфейса
+	@echo "$(BLUE)📄 Логи веб-интерфейса (Ctrl+C для выхода):$(NC)"
+	@docker logs -f $(WEB_SERVICE)
+
+web-shell: ## Войти в контейнер веб-интерфейса
+	@echo "$(BLUE)🐚 Вход в контейнер веб-интерфейса...$(NC)"
+	@docker exec -it $(WEB_SERVICE) /bin/sh
+
+web-restart: ## Перезапустить веб-интерфейс
+	@echo "$(BLUE)🔄 Перезапуск веб-интерфейса...$(NC)"
+	@$(DOCKER_COMPOSE) restart web
+	@sleep 3
+	@echo "$(GREEN)✅ Веб-интерфейс перезапущен$(NC)"
+
+web-status: ## Статус веб-интерфейса и API
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║                  Статус Web Interface & API                  ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@$(DOCKER_COMPOSE) ps web db 2>/dev/null || echo "Сервисы не запущены"
+
+web-url: ## Показать URL веб-интерфейса
+	@WEB_PORT=$$(grep "^WEB_PORT=" .env 2>/dev/null | cut -d= -f2 || echo "8080"); \
+	SERVER_IP=$$(curl -s -4 https://eth0.me || echo "localhost"); \
+	echo "$(CYAN)🌐 Веб-интерфейс доступен:$(NC) $(GREEN)http://$$SERVER_IP:$$WEB_PORT$(NC)"
+
+# ============================================================================
+# POSTGRESQL
+# ============================================================================
+
+.PHONY: db-logs db-shell db-psql db-backup db-restore db-status
+
+db-logs: ## Просмотр логов PostgreSQL
+	@echo "$(BLUE)📄 Логи PostgreSQL (Ctrl+C для выхода):$(NC)"
+	@docker logs -f $(DB_SERVICE)
+
+db-shell: ## Войти в контейнер PostgreSQL
+	@echo "$(BLUE)🐚 Вход в контейнер PostgreSQL...$(NC)"
+	@docker exec -it $(DB_SERVICE) /bin/sh
+
+db-psql: ## Подключиться к PostgreSQL через psql
+	@echo "$(BLUE)💾 Подключение к PostgreSQL...$(NC)"
+	@PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	docker exec -it $(DB_SERVICE) psql -U $$PGUSER -d $$PGDB
+
+db-backup: ## Создать бэкап PostgreSQL
+	@echo "$(BLUE)💾 Создание бэкапа PostgreSQL...$(NC)"
+	@BACKUP_FILE="postgres-backup-$$(date +%Y%m%d-%H%M%S).sql"; \
+	PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	docker exec $(DB_SERVICE) pg_dump -U $$PGUSER $$PGDB > $$BACKUP_FILE 2>/dev/null && \
+	echo "$(GREEN)✅ Бэкап создан: $$BACKUP_FILE$(NC)"
+
+db-restore: ## Восстановить PostgreSQL из бэкапа (file=путь)
+	@[ -n "$(file)" ] || (echo "$(RED)❌ Укажите file=путь_к_файлу$(NC)" && exit 1)
+	@[ -f "$(file)" ] || (echo "$(RED)❌ Файл $(file) не найден$(NC)" && exit 1)
+	@echo "$(YELLOW)⚠️  Это перезапишет текущую базу данных!$(NC)"
+	@read -p "Продолжить? [y/N]: " confirm && [ "$$confirm" = "y" ] || exit 1
+	@echo "$(BLUE)💾 Восстановление PostgreSQL...$(NC)"
+	@PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	cat $(file) | docker exec -i $(DB_SERVICE) psql -U $$PGUSER $$PGDB && \
+	echo "$(GREEN)✅ Бэкап восстановлен$(NC)"
+
+db-status: ## Статус PostgreSQL
+	@echo "$(CYAN)📊 PostgreSQL Status:$(NC)"
+	@$(DOCKER_COMPOSE) ps db 2>/dev/null || echo "PostgreSQL не запущен"
+	@PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	docker exec $(DB_SERVICE) pg_isready -U $$PGUSER 2>/dev/null || true
+
+# ============================================================================
+# СТЕК (VPN + Web + DB)
+# ============================================================================
+
+.PHONY: stack-status stack-logs stack-restart
+
+stack-status: ## Статус всего стека (VPN + Web + DB)
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║          AmneziaWG v2.0.0 - Полный статус стека              ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@$(DOCKER_COMPOSE) ps
+
+stack-logs: ## Просмотр логов всего стека
+	@echo "$(BLUE)📄 Логи всех сервисов (Ctrl+C для выхода):$(NC)"
+	@$(DOCKER_COMPOSE) logs -f
+
+stack-restart: ## Перезапустить весь стек
+	@echo "$(BLUE)🔄 Перезапуск всего стека...$(NC)"
+	@$(DOCKER_COMPOSE) down && sleep 2 && $(DOCKER_COMPOSE) up -d
+
+# ============================================================================
+# HELP
+# ============================================================================
+
+.PHONY: help
+help: ## Показать справку по командам v2.0.0
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║         AmneziaWG v2.0.0 - Новые команды                     ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(CYAN)🌐 ВЕБ-ИНТЕРФЕЙС:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+		grep "^  web-"
+	@echo ""
+	@echo "$(CYAN)💾 POSTGRESQL:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+		grep "^  db-"
+	@echo ""
+	@echo "$(CYAN)📦 СТЕК:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+		grep "^  stack-"
+	@echo ""
+	@echo "$(YELLOW)💡 Примеры:$(NC)"
+	@echo "  make -f Makefile.v2 web-url              # Показать URL веб-интерфейса"
+	@echo "  make -f Makefile.v2 stack-status         # Статус всего стека"
+	@echo "  make -f Makefile.v2 db-backup            # Бэкап PostgreSQL"
+	@echo ""
+	@echo "$(CYAN)📝 Интеграция в основной Makefile:$(NC)"
+	@echo "  Добавьте в начало Makefile: include Makefile.v2"
+	@echo ""
+
+.DEFAULT_GOAL := help
