@@ -48,9 +48,8 @@ clients/
 *.conf
 *.key
 
-# Submodules (не нужны для web интерфейса)
-amneziawg-go/
-amneziawg-tools/
+# Submodules - НУЖНЫ для VPN контейнера!
+# НЕ исключаем amneziawg-go/ и amneziawg-tools/
 
 # Backups
 *.backup

@@ -354,8 +354,6 @@ add_client() {
 PrivateKey = ${CLIENT_PRIVATE_KEY}
 Address = ${client_ip}/24
 DNS = ${AWG_DNS:-8.8.8.8,8.8.4.4}
-
-# Параметры обфускации AmneziaWG
 Jc = ${AWG_JC}
 Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
