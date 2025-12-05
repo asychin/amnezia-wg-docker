@@ -9,6 +9,7 @@ export const vpnClients = pgTable('vpn_clients', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
   enabled: boolean('enabled').default(true).notNull(),
   lastHandshake: timestamp('last_handshake'),
+  configDownloadedAt: timestamp('config_downloaded_at'),
 });
 
 export type VpnClient = typeof vpnClients.$inferSelect;

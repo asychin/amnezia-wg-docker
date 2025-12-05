@@ -15,7 +15,7 @@ export const db = drizzle(pool);
 export async function getAllClients(): Promise<VpnClient[]> {
   // SECURITY: Возвращаем только безопасные метаданные из БД
   // Приватные ключи НЕ хранятся в БД - только в файлах
-  // Возвращаемые поля: id, name, ipAddress, publicKey (клиента), createdAt, updatedAt, enabled, lastHandshake
+  // Возвращаемые поля: id, name, ipAddress, publicKey (клиента), createdAt, updatedAt, enabled, lastHandshake, configDownloadedAt
   return await db.select({
     id: vpnClients.id,
     name: vpnClients.name,
@@ -25,6 +25,7 @@ export async function getAllClients(): Promise<VpnClient[]> {
     updatedAt: vpnClients.updatedAt,
     enabled: vpnClients.enabled,
     lastHandshake: vpnClients.lastHandshake,
+    configDownloadedAt: vpnClients.configDownloadedAt,
   }).from(vpnClients);
 }
 
@@ -39,7 +40,17 @@ export async function getClientByName(name: string): Promise<VpnClient | undefin
     updatedAt: vpnClients.updatedAt,
     enabled: vpnClients.enabled,
     lastHandshake: vpnClients.lastHandshake,
+    configDownloadedAt: vpnClients.configDownloadedAt,
   }).from(vpnClients).where(eq(vpnClients.name, name));
+  return results[0];
+}
+
+export async function markConfigDownloaded(name: string): Promise<VpnClient | undefined> {
+  const results = await db
+    .update(vpnClients)
+    .set({ configDownloadedAt: new Date(), updatedAt: new Date() })
+    .where(eq(vpnClients.name, name))
+    .returning();
   return results[0];
 }
 

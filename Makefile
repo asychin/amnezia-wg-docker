@@ -200,7 +200,23 @@ build-safe: check-compose init-submodules check-config-exists auto-backup ## Б�
 
 
 .PHONY: up
-up: check-compose init-submodules check-server-stopped ## Запуск сервера (VPN-only, v1.x совместимость)
+up: check-compose init-submodules check-server-stopped ## Запуск полного стека v2.0 (VPN + Web + PostgreSQL)
+        @echo "$(BLUE)🚀 Запуск AmneziaWG v2.0 (VPN + Web + PostgreSQL)...$(NC)"
+        @# Автоматическая инициализация если нужно
+        @if [ ! -f ".env" ]; then \
+                echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
+                $(MAKE) init; \
+        fi
+        @$(DOCKER_COMPOSE) --profile web up -d
+        @echo "$(GREEN)✅ Полный стек запущен$(NC)"
+        @echo "$(CYAN)🌐 Веб-интерфейс: http://localhost:8080$(NC)"
+        @echo "$(CYAN)🔒 VPN порт: 51820/UDP$(NC)"
+        @echo "$(YELLOW)💡 Для запуска только VPN (без веб-интерфейса): make up-vpn$(NC)"
+        @sleep 5
+        @$(DOCKER_COMPOSE) ps
+
+.PHONY: up-vpn
+up-vpn: check-compose init-submodules check-server-stopped ## Запуск только VPN (без веб-интерфейса, совместимость с v1.x)
         @echo "$(BLUE)🚀 Запуск AmneziaWG сервера (VPN-only)...$(NC)"
         @# Автоматическая инициализация если нужно
         @if [ ! -f ".env" ]; then \
@@ -209,22 +225,9 @@ up: check-compose init-submodules check-server-stopped ## Запуск серв�
         fi
         @$(DOCKER_COMPOSE) up -d
         @echo "$(GREEN)✅ VPN сервер запущен$(NC)"
-        @echo "$(YELLOW)💡 Для запуска с веб-интерфейсом: docker compose --profile web up -d$(NC)"
+        @echo "$(YELLOW)💡 Для запуска с веб-интерфейсом: make up$(NC)"
         @sleep 5
         @$(MAKE) status
-
-.PHONY: up-web
-up-web: check-compose init-submodules check-server-stopped ## Запуск полного стека (VPN + Web + PostgreSQL)
-        @echo "$(BLUE)🚀 Запуск полного стека (VPN + Web + PostgreSQL)...$(NC)"
-        @# Автоматическая инициализация если нужно
-        @if [ ! -f ".env" ]; then \
-                echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
-                $(MAKE) init; \
-        fi
-        @$(DOCKER_COMPOSE) --profile web up -d
-        @echo "$(GREEN)✅ Полный стек запущен$(NC)"
-        @sleep 5
-        @$(DOCKER_COMPOSE) ps
 
 .PHONY: down
 down: check-compose check-server-running auto-backup ## Остановка сервера

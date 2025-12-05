@@ -106,3 +106,27 @@ export function downloadQRCode(name: string, qrCodeDataUrl: string): void {
   a.click();
   document.body.removeChild(a);
 }
+
+export async function downloadBundle(name: string): Promise<{ success: boolean; error?: string }> {
+  const response = await fetch(`${API_BASE}/clients/${name}/bundle`);
+  
+  if (!response.ok) {
+    const error = await response.json();
+    return { 
+      success: false, 
+      error: error.message || error.error || 'Failed to download bundle' 
+    };
+  }
+  
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}-vpn-config.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  return { success: true };
+}

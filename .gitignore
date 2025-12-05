@@ -69,6 +69,13 @@ Thumbs.db
 # Cursor
 .cursor/
 
+# Replit
+.replit
+replit.md
+
+# Development assets
+attached_assets/
+
 # IntelliJ IDEA
 .idea/
 *.iml

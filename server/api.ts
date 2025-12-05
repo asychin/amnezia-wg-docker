@@ -11,8 +11,10 @@ import {
   createClient,
   deleteClient,
   syncClientFromFilesystem,
+  markConfigDownloaded,
   db
 } from './storage';
+import archiver from 'archiver';
 import { vpnClients } from '../shared/schema';
 import { sql } from 'drizzle-orm';
 
@@ -334,6 +336,96 @@ router.get('/clients/:name/qr', requireAuth, async (req: Request, res: Response)
   } catch (error: any) {
     console.error('Error generating QR code:', error);
     res.status(500).json({ error: error.message || 'Failed to generate QR code' });
+  }
+});
+
+// ONE-TIME DOWNLOAD: Скачивание ZIP-архива с конфигом и QR-кодом
+// После скачивания конфиг помечается как скачанный и повторное скачивание невозможно
+// Это обеспечивает безопасность - конфиг можно получить только один раз
+router.get('/clients/:name/bundle', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { name } = req.params;
+    
+    const validation = isValidClientName(name);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
+    const client = await getClientByName(name);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    
+    // Проверяем, был ли конфиг уже скачан
+    if (client.configDownloadedAt) {
+      return res.status(403).json({ 
+        error: 'Config already downloaded',
+        message: 'This configuration was already downloaded and cannot be downloaded again for security reasons.',
+        downloadedAt: client.configDownloadedAt
+      });
+    }
+    
+    const configPath = path.join(CLIENTS_DIR, `${name}.conf`);
+    const rawConfig = await fs.readFile(configPath, 'utf-8');
+    // Strip comment lines from config
+    const config = rawConfig
+      .split('\n')
+      .filter(line => !line.trim().startsWith('#'))
+      .join('\n');
+    
+    // Generate QR code as PNG buffer
+    const qrCodeBuffer = await QRCode.toBuffer(config, { type: 'png', width: 400 });
+    
+    // Mark config as downloaded BEFORE sending the response
+    await markConfigDownloaded(name);
+    
+    // Create ZIP archive
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${name}-vpn-config.zip"`);
+    
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(res);
+    
+    // Add config file to archive
+    archive.append(config, { name: `${name}.conf` });
+    
+    // Add QR code image to archive
+    archive.append(qrCodeBuffer, { name: `${name}-qr.png` });
+    
+    // Add README with instructions
+    const readme = `AmneziaWG VPN Configuration for ${name}
+========================================
+
+This archive contains:
+- ${name}.conf - VPN configuration file
+- ${name}-qr.png - QR code for mobile app
+
+Installation Instructions:
+--------------------------
+
+For Desktop (Windows/macOS/Linux):
+1. Install AmneziaVPN client from https://amnezia.org
+2. Import the ${name}.conf file
+
+For Mobile (iOS/Android):
+1. Install AmneziaVPN app from App Store / Google Play
+2. Scan the QR code (${name}-qr.png) or import the config file
+
+SECURITY WARNING:
+-----------------
+This configuration contains your private VPN key.
+- Keep it secure and do not share with others
+- This configuration can only be downloaded ONCE
+- If you lose it, you will need to create a new client
+
+Generated: ${new Date().toISOString()}
+`;
+    archive.append(readme, { name: 'README.txt' });
+    
+    await archive.finalize();
+  } catch (error: any) {
+    console.error('Error generating bundle:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate bundle' });
   }
 });
 

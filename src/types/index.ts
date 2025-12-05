@@ -7,6 +7,7 @@ export interface VpnClient {
   updatedAt: string;
   enabled: boolean;
   lastHandshake: string | null;
+  configDownloadedAt: string | null;
 }
 
 export interface CreateClientRequest {

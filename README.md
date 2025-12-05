@@ -73,10 +73,17 @@ _Web interface, API, database - everything automated!_
 ### 🔄 Backward Compatibility
 
 - **100% Compatible** - All v1.x features preserved  
-- **VPN-only by default** - `make up` запускает только VPN (как в v1.x)
-- **Web optional** - Веб-интерфейс активируется по желанию (`--profile web`)
+- **Full stack by default** - `make up` запускает полный стек v2.0 (VPN + Web + PostgreSQL)
+- **VPN-only available** - `make up-vpn` для режима совместимости с v1.x
 - **Migration Guide** - Detailed upgrade instructions
 - **Zero Downtime** - Upgrade without service interruption
+
+### 🔒 One-Time Config Download (NEW!)
+
+- **Security First** - Конфигурация скачивается только один раз
+- **ZIP Bundle** - Архив с конфигом (.conf) и QR-кодом (.png)
+- **Admin View** - После скачивания админ видит только статистику
+- **README Included** - Инструкции по установке в архиве
 
 ---
 
@@ -126,16 +133,16 @@ _Web interface, API, database - everything automated!_
 
 **v2.0.0 предлагает 2 режима работы:**
 
-#### 1️⃣ VPN-only режим (v1.x совместимость) - **по умолчанию**
-Запускает только VPN сервер без веб-интерфейса и PostgreSQL.
-```bash
-make up                          # Или: docker compose up -d
-```
-
-#### 2️⃣ Полный стек (VPN + Web + PostgreSQL) - **опционально**
+#### 1️⃣ Полный стек (VPN + Web + PostgreSQL) - **по умолчанию**
 Запускает VPN + веб-интерфейс + PostgreSQL для управления через браузер.
 ```bash
-docker compose --profile web up -d
+make up                          # Запускает полный стек v2.0
+```
+
+#### 2️⃣ VPN-only режим (v1.x совместимость) - **опционально**
+Запускает только VPN сервер без веб-интерфейса и PostgreSQL.
+```bash
+make up-vpn                      # Или: docker compose up -d
 ```
 
 ---
@@ -561,6 +568,40 @@ Get configuration file text
 {
   "name": "john",
   "config": "[Interface]\nPrivateKey = ...\n..."
+}
+```
+
+#### GET /api/clients/:name/bundle (NEW!)
+
+**One-time download** - Download ZIP archive with config and QR code.
+After download, config is marked as downloaded and cannot be downloaded again.
+
+**Response:** ZIP file containing:
+- `{name}.conf` - VPN configuration file
+- `{name}-qr.png` - QR code image (400x400 PNG)
+- `README.txt` - Installation instructions
+
+**Error Response (if already downloaded):**
+```json
+{
+  "error": "Config already downloaded",
+  "message": "This configuration was already downloaded and cannot be downloaded again for security reasons.",
+  "downloadedAt": "2024-11-23T10:30:00Z"
+}
+```
+
+#### GET /api/clients/:name/stats
+
+Get VPN connection statistics for a client
+
+**Response:**
+```json
+{
+  "endpoint": "203.0.113.10:51820",
+  "latestHandshake": 1700000000000,
+  "transferRx": 1048576,
+  "transferTx": 2097152,
+  "connected": true
 }
 ```
 
