@@ -17,3 +17,21 @@ export interface CreateClientRequest {
 export interface QRCodeResponse {
   qrCode: string;
 }
+
+export interface ClientStats {
+  endpoint: string | null;
+  latestHandshake: number | null;
+  transferRx: number;
+  transferTx: number;
+  connected: boolean;
+}
+
+export interface LegacyClient {
+  name: string;
+  ipAddress: string;
+}
+
+export interface LegacyClientsResponse {
+  legacyClients: LegacyClient[];
+  count: number;
+}

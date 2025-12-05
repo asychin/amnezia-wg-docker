@@ -17,13 +17,20 @@ import { vpnClients } from '../shared/schema';
 import { sql } from 'drizzle-orm';
 
 const execFileAsync = promisify(execFile);
+const execAsync = promisify(require('child_process').exec);
 const router = express.Router();
 
 router.use(cors());
 router.use(express.json());
 
 const CLIENTS_DIR = process.env.CLIENTS_DIR || './clients';
-const MANAGE_SCRIPT = process.env.MANAGE_SCRIPT || './scripts/manage-clients.sh';
+const VPN_CONTAINER_NAME = process.env.VPN_CONTAINER_NAME || 'amneziawg-server';
+
+// Execute command in VPN container via docker exec
+async function execInVpnContainer(command: string): Promise<{ stdout: string; stderr: string }> {
+  const dockerCommand = `docker exec ${VPN_CONTAINER_NAME} ${command}`;
+  return execAsync(dockerCommand);
+}
 
 /**
  * ⚠️ БЕЗОПАСНОСТЬ: Middleware для авторизации API
@@ -207,8 +214,8 @@ router.post('/clients', requireAuth, async (req: Request, res: Response) => {
       return res.status(409).json({ error: 'Client already exists' });
     }
     
-    const args = ipAddress ? ['add', name, ipAddress] : ['add', name];
-    const { stdout, stderr } = await execFileAsync(MANAGE_SCRIPT, args);
+    const scriptArgs = ipAddress ? `add ${name} ${ipAddress}` : `add ${name}`;
+    const { stdout, stderr } = await execInVpnContainer(`/app/scripts/manage-clients.sh ${scriptArgs}`);
     
     console.log('Script output:', stdout);
     if (stderr) console.error('Script stderr:', stderr);
@@ -250,7 +257,7 @@ router.delete('/clients/:name', requireAuth, async (req: Request, res: Response)
       return res.status(404).json({ error: 'Client not found' });
     }
     
-    const { stdout, stderr } = await execFileAsync(MANAGE_SCRIPT, ['remove', name]);
+    const { stdout, stderr } = await execInVpnContainer(`/app/scripts/manage-clients.sh remove ${name}`);
     
     console.log('Script output:', stdout);
     if (stderr) console.error('Script stderr:', stderr);
@@ -282,7 +289,12 @@ router.get('/clients/:name/config', requireAuth, async (req: Request, res: Respo
     }
     
     const configPath = path.join(CLIENTS_DIR, `${name}.conf`);
-    const config = await fs.readFile(configPath, 'utf-8');
+    const rawConfig = await fs.readFile(configPath, 'utf-8');
+    // Strip comment lines from config
+    const config = rawConfig
+      .split('\n')
+      .filter(line => !line.trim().startsWith('#'))
+      .join('\n');
     
     res.type('text/plain').send(config);
   } catch (error: any) {
@@ -309,7 +321,12 @@ router.get('/clients/:name/qr', requireAuth, async (req: Request, res: Response)
     }
     
     const configPath = path.join(CLIENTS_DIR, `${name}.conf`);
-    const config = await fs.readFile(configPath, 'utf-8');
+    const rawConfig = await fs.readFile(configPath, 'utf-8');
+    // Strip comment lines from config
+    const config = rawConfig
+      .split('\n')
+      .filter(line => !line.trim().startsWith('#'))
+      .join('\n');
     
     const qrCodeDataUrl = await QRCode.toDataURL(config);
     
@@ -328,6 +345,98 @@ router.post('/sync', async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error syncing clients:', error);
     res.status(500).json({ error: error.message || 'Failed to sync clients' });
+  }
+});
+
+// Get VPN statistics for a specific client
+router.get('/clients/:name/stats', async (req: Request, res: Response) => {
+  try {
+    const { name } = req.params;
+    
+    const validation = isValidClientName(name);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
+    const client = await getClientByName(name);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    
+    // Get stats from awg show command
+    const { stdout } = await execInVpnContainer('awg show awg0 dump');
+    const lines = stdout.trim().split('\n');
+    
+    // Parse the dump output to find this client's stats
+    // Format: public_key, preshared_key, endpoint, allowed_ips, latest_handshake, transfer_rx, transfer_tx, persistent_keepalive
+    let stats = {
+      endpoint: null as string | null,
+      latestHandshake: null as number | null,
+      transferRx: 0,
+      transferTx: 0,
+      connected: false
+    };
+    
+    for (const line of lines) {
+      const parts = line.split('\t');
+      if (parts.length >= 7 && parts[0] === client.publicKey) {
+        stats.endpoint = parts[2] !== '(none)' ? parts[2] : null;
+        stats.latestHandshake = parts[4] !== '0' ? parseInt(parts[4]) * 1000 : null; // Convert to ms
+        stats.transferRx = parseInt(parts[5]) || 0;
+        stats.transferTx = parseInt(parts[6]) || 0;
+        // Consider connected if handshake was within last 3 minutes
+        stats.connected = stats.latestHandshake !== null && 
+          (Date.now() - stats.latestHandshake) < 180000;
+        break;
+      }
+    }
+    
+    res.json(stats);
+  } catch (error: any) {
+    console.error('Error fetching client stats:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch client stats' });
+  }
+});
+
+// Get list of legacy clients (flat-file only, not in database)
+router.get('/migration/legacy-clients', async (req: Request, res: Response) => {
+  try {
+    const files = await fs.readdir(CLIENTS_DIR);
+    const confFiles = files.filter(f => f.endsWith('.conf'));
+    
+    const dbClients = await getAllClients();
+    const dbClientNames = new Set(dbClients.map(c => c.name));
+    
+    const legacyClients = [];
+    for (const file of confFiles) {
+      const clientName = path.basename(file, '.conf');
+      if (!dbClientNames.has(clientName)) {
+        const configPath = path.join(CLIENTS_DIR, file);
+        const config = await fs.readFile(configPath, 'utf-8');
+        const ipMatch = config.match(/Address\s*=\s*([0-9.]+)/);
+        legacyClients.push({
+          name: clientName,
+          ipAddress: ipMatch ? ipMatch[1] : 'unknown'
+        });
+      }
+    }
+    
+    res.json({ legacyClients, count: legacyClients.length });
+  } catch (error: any) {
+    console.error('Error fetching legacy clients:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch legacy clients' });
+  }
+});
+
+// Migrate all legacy clients to database
+router.post('/migration/migrate-all', requireAuth, async (req: Request, res: Response) => {
+  try {
+    await syncClientsFromFilesystem();
+    const clients = await getAllClients();
+    res.json({ success: true, migratedCount: clients.length });
+  } catch (error: any) {
+    console.error('Error migrating clients:', error);
+    res.status(500).json({ error: error.message || 'Failed to migrate clients' });
   }
 });
 
