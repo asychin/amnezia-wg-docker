@@ -62,8 +62,24 @@ async function initializeDatabase() {
         created_at TIMESTAMP DEFAULT NOW() NOT NULL,
         updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
         enabled BOOLEAN DEFAULT TRUE NOT NULL,
-        last_handshake TIMESTAMP
+        last_handshake TIMESTAMP,
+        config_downloaded_at TIMESTAMP
       )
+    `);
+    
+    // Migration: Add config_downloaded_at column if it doesn't exist (for existing databases)
+    console.log('🔄 Running database migrations...');
+    await db.execute(sql`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'vpn_clients' AND column_name = 'config_downloaded_at'
+        ) THEN 
+          ALTER TABLE vpn_clients ADD COLUMN config_downloaded_at TIMESTAMP;
+          RAISE NOTICE 'Added config_downloaded_at column';
+        END IF;
+      END $$;
     `);
     console.log('✅ Database schema ready');
     
