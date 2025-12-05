@@ -117,6 +117,21 @@ help: ## Показать эту справку
 	@echo "$(PURPLE)║         AmneziaWG v2.0.0 - Docker Server Commands            ║$(NC)"
 	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
+	@echo "$(CYAN)📦 СТЕК v2.0 (VPN + Web + PostgreSQL):$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+	        grep -E "(stack-)"
+	@echo ""
+	@echo "$(CYAN)🌐 ВЕБ-ИНТЕРФЕЙС v2.0:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+	        grep -E "(web-)"
+	@echo ""
+	@echo "$(CYAN)💾 POSTGRESQL v2.0:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+	        grep -E "(db-)"
+	@echo ""
 	@echo "$(CYAN)📋 ОСНОВНЫЕ КОМАНДЫ:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
@@ -127,32 +142,18 @@ help: ## Показать эту справку
 	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
 	        grep -E "(client-)"
 	@echo ""
-	@echo "$(CYAN)🌐 ВЕБ-ИНТЕРФЕЙС (v2.0.0+):$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-	        grep -E "(web-)"
-	@echo ""
-	@echo "$(CYAN)💾 POSTGRESQL (v2.0.0+):$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-	        grep -E "(db-)"
-	@echo ""
-	@echo "$(CYAN)📦 СТЕК (v2.0.0+):$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-	        grep -E "(stack-)"
-	@echo ""
 	@echo "$(CYAN)🔧 УТИЛИТЫ:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
 	        grep -E "(shell|clean|update|backup|restore|autocomplete)" | grep -v -E "(web-|db-)"
 	@echo ""
 	@echo "$(YELLOW)💡 Примеры использования:$(NC)"
+	@echo "  make up                                      # Запуск полного стека v2.0"
 	@echo "  make stack-status                            # Статус всего стека (VPN + Web + DB)"
 	@echo "  make web-url                                 # Показать URL веб-интерфейса"
 	@echo "  make client-add name=john                    # Добавить клиента john"
 	@echo "  make client-qr name=john                     # Показать QR код"
-	@echo "  make db-backup                               # Создать бэкап PostgreSQL"
+	@echo "  make up-vpn                                  # Режим совместимости с v1.x (только VPN)"
 	@echo ""
 
 # ============================================================================
