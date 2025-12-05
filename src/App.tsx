@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, QrCode, FileText, RefreshCw, Shield, Settings, Download } from 'lucide-react';
+import { Plus, Trash2, QrCode, FileText, Shield, Settings, Download } from 'lucide-react';
 import { useToast } from './hooks/use-toast';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
@@ -27,7 +27,6 @@ import {
   deleteClient,
   fetchClientQR,
   fetchClientConfig,
-  syncClients,
   downloadConfig,
   downloadQRCode,
 } from './api/client';
@@ -89,23 +88,6 @@ function App() {
       toast({
         title: 'Ошибка удаления',
         description: error.message || 'Не удалось удалить клиента',
-      });
-    },
-  });
-
-  const syncMutation = useMutation({
-    mutationFn: syncClients,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['clients'] });
-      toast({
-        title: 'Синхронизация завершена',
-        description: 'Клиенты успешно синхронизированы',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Ошибка синхронизации',
-        description: error.message || 'Не удалось синхронизировать клиентов',
       });
     },
   });
@@ -212,22 +194,10 @@ function App() {
                 <CardTitle className="text-2xl">VPN Клиенты</CardTitle>
                 <CardDescription className="text-base">Список всех подключенных клиентов</CardDescription>
               </div>
-              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => syncMutation.mutate()}
-                  disabled={syncMutation.isPending}
-                  className="w-full sm:w-auto"
-                >
-                  <RefreshCw className={`w-4 h-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-                  Синхронизировать
-                </Button>
-                <Button onClick={() => setAddDialogOpen(true)} className="w-full sm:w-auto">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Добавить клиента
-                </Button>
-              </div>
+              <Button onClick={() => setAddDialogOpen(true)} className="w-full sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" />
+                Добавить клиента
+              </Button>
             </div>
           </CardHeader>
           <CardContent>

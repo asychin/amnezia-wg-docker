@@ -289,7 +289,12 @@ router.get('/clients/:name/config', requireAuth, async (req: Request, res: Respo
     }
     
     const configPath = path.join(CLIENTS_DIR, `${name}.conf`);
-    const config = await fs.readFile(configPath, 'utf-8');
+    const rawConfig = await fs.readFile(configPath, 'utf-8');
+    // Strip comment lines from config
+    const config = rawConfig
+      .split('\n')
+      .filter(line => !line.trim().startsWith('#'))
+      .join('\n');
     
     res.type('text/plain').send(config);
   } catch (error: any) {
@@ -316,7 +321,12 @@ router.get('/clients/:name/qr', requireAuth, async (req: Request, res: Response)
     }
     
     const configPath = path.join(CLIENTS_DIR, `${name}.conf`);
-    const config = await fs.readFile(configPath, 'utf-8');
+    const rawConfig = await fs.readFile(configPath, 'utf-8');
+    // Strip comment lines from config
+    const config = rawConfig
+      .split('\n')
+      .filter(line => !line.trim().startsWith('#'))
+      .join('\n');
     
     const qrCodeDataUrl = await QRCode.toDataURL(config);
     
