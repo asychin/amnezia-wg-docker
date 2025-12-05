@@ -24,8 +24,10 @@ clients/
 # Backups
 *.backup
 *.bak
+backups/
 amneziawg-backup-*.tar.gz
 amneziawg-auto-backup-*.tar.gz
+postgres-backup-*.sql
 
 # ============================================================================
 # DOCKER AND CONTAINERS

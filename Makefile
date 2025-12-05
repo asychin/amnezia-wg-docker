@@ -14,6 +14,11 @@ WEB_SERVICE := amneziawg-web
 DB_SERVICE := amneziawg-db
 PROJECT_NAME := docker-wg
 
+# Папки для бэкапов
+BACKUP_DIR := backups
+BACKUP_FILES_DIR := $(BACKUP_DIR)/files
+BACKUP_DB_DIR := $(BACKUP_DIR)/db
+
 # Команды Docker (для переиспользования)
 DOCKER_COMPOSE := docker compose
 DOCKER_EXEC := docker exec $(SERVICE_NAME)
@@ -69,14 +74,15 @@ init-submodules:
 # Автоматическое создание бэкапа конфигурации
 auto-backup:
 	@if [ -d "config" ] || [ -d "clients" ] || [ -f ".env" ]; then \
-	        BACKUP_FILE="amneziawg-auto-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz"; \
+	        mkdir -p $(BACKUP_FILES_DIR); \
+	        BACKUP_FILE="$(BACKUP_FILES_DIR)/amneziawg-auto-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz"; \
 	        echo "$(YELLOW)💾 Автоматическое создание резервной копии...$(NC)"; \
 	        tar -czf $$BACKUP_FILE config/ clients/ .env 2>/dev/null || true; \
 	        echo "$(GREEN)✅ Автобэкап создан: $$BACKUP_FILE$(NC)"; \
 	        # Автоматическая очистка старых бэкапов (оставляем последние 10) \
-	        BACKUP_COUNT=$$(ls amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
+	        BACKUP_COUNT=$$(ls $(BACKUP_FILES_DIR)/amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
 	        if [ $$BACKUP_COUNT -gt 10 ]; then \
-	                ls -t amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f 2>/dev/null || true; \
+	                ls -t $(BACKUP_FILES_DIR)/amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f 2>/dev/null || true; \
 	        fi; \
 	fi
 
@@ -352,7 +358,8 @@ update-fast: check-compose init-submodules check-server-running auto-backup ## �
 
 .PHONY: backup
 backup: check-compose ## Создать резервную копию конфигураций
-	@BACKUP_FILE="amneziawg-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz"; \
+	@mkdir -p $(BACKUP_FILES_DIR); \
+	BACKUP_FILE="$(BACKUP_FILES_DIR)/amneziawg-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz"; \
 	echo "$(BLUE)💾 Создание резервной копии...$(NC)"; \
 	tar -czf $$BACKUP_FILE config/ clients/ .env 2>/dev/null || true; \
 	echo "$(GREEN)✅ Резервная копия создана: $$BACKUP_FILE$(NC)"
@@ -360,9 +367,9 @@ backup: check-compose ## Создать резервную копию конфи
 .PHONY: backup-cleanup
 backup-cleanup: ## Очистка старых автоматических бэкапов (оставляет последние 10)
 	@echo "$(BLUE)🧹 Очистка старых автоматических бэкапов...$(NC)"; \
-	BACKUP_COUNT=$$(ls amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
+	BACKUP_COUNT=$$(ls $(BACKUP_FILES_DIR)/amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
 	if [ $$BACKUP_COUNT -gt 10 ]; then \
-	        ls -t amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f; \
+	        ls -t $(BACKUP_FILES_DIR)/amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f; \
 	        echo "$(GREEN)✅ Удалено $$(($$BACKUP_COUNT - 10)) старых бэкапов$(NC)"; \
 	else \
 	        echo "$(YELLOW)ℹ️  Количество бэкапов ($$BACKUP_COUNT) в пределах нормы$(NC)"; \
@@ -611,7 +618,8 @@ db-psql: check-compose ## Подключиться к PostgreSQL через psql
 	docker exec -it $(DB_SERVICE) psql -U $$PGUSER -d $$PGDB
 
 db-backup: check-compose ## Создать бэкап PostgreSQL
-	@BACKUP_FILE="postgres-backup-$$(date +%Y%m%d-%H%M%S).sql"; \
+	@mkdir -p $(BACKUP_DB_DIR); \
+	BACKUP_FILE="$(BACKUP_DB_DIR)/postgres-backup-$$(date +%Y%m%d-%H%M%S).sql"; \
 	PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
 	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
 	docker exec $(DB_SERVICE) pg_dump -U $$PGUSER $$PGDB > $$BACKUP_FILE 2>/dev/null && \
