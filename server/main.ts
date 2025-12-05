@@ -37,7 +37,8 @@ app.get('/health', (req, res) => {
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../dist')));
   
-  app.get('*', (req, res) => {
+  // Express 5 requires named parameter for catch-all routes
+  app.get('/{*path}', (req, res) => {
     res.sendFile(path.join(__dirname, '../dist/index.html'));
   });
 } else {
@@ -49,6 +50,22 @@ async function initializeDatabase() {
     console.log('🔄 Initializing database...');
     await db.execute(sql`SELECT 1`);
     console.log('✅ Database connection established');
+    
+    // Create vpn_clients table if it doesn't exist
+    console.log('🔄 Ensuring database schema exists...');
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS vpn_clients (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL UNIQUE,
+        ip_address VARCHAR(50) NOT NULL,
+        public_key VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
+        enabled BOOLEAN DEFAULT TRUE NOT NULL,
+        last_handshake TIMESTAMP
+      )
+    `);
+    console.log('✅ Database schema ready');
     
     console.log('🔄 Syncing clients from filesystem...');
     await syncClientsFromFilesystem();

@@ -1,4 +1,4 @@
-import type { VpnClient, CreateClientRequest, QRCodeResponse } from '../types';
+import type { VpnClient, CreateClientRequest, QRCodeResponse, ClientStats, LegacyClientsResponse } from '../types';
 
 const API_BASE = '/api';
 
@@ -58,4 +58,51 @@ export async function syncClients(): Promise<void> {
   if (!response.ok) {
     throw new Error('Failed to sync clients');
   }
+}
+
+export async function fetchClientStats(name: string): Promise<ClientStats> {
+  const response = await fetch(`${API_BASE}/clients/${name}/stats`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch client stats');
+  }
+  return response.json();
+}
+
+export async function fetchLegacyClients(): Promise<LegacyClientsResponse> {
+  const response = await fetch(`${API_BASE}/migration/legacy-clients`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch legacy clients');
+  }
+  return response.json();
+}
+
+export async function migrateAllClients(): Promise<{ success: boolean; migratedCount: number }> {
+  const response = await fetch(`${API_BASE}/migration/migrate-all`, {
+    method: 'POST',
+  });
+  if (!response.ok) {
+    throw new Error('Failed to migrate clients');
+  }
+  return response.json();
+}
+
+export function downloadConfig(name: string, config: string): void {
+  const blob = new Blob([config], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}.conf`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+export function downloadQRCode(name: string, qrCodeDataUrl: string): void {
+  const a = document.createElement('a');
+  a.href = qrCodeDataUrl;
+  a.download = `${name}-qr.png`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }

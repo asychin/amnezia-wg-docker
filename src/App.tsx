@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Trash2, QrCode, FileText, RefreshCw, Shield } from 'lucide-react';
+import { Plus, Trash2, QrCode, FileText, RefreshCw, Shield, Settings, Download } from 'lucide-react';
 import { useToast } from './hooks/use-toast';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
@@ -14,11 +14,9 @@ import {
 } from './components/ui/dialog';
 import { Input } from './components/ui/input';
 import { Label } from './components/ui/label';
-import { Badge } from './components/ui/badge';
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -30,12 +28,17 @@ import {
   fetchClientQR,
   fetchClientConfig,
   syncClients,
+  downloadConfig,
+  downloadQRCode,
 } from './api/client';
+import { ClientRow } from './components/ClientRow';
+import { SettingsPage } from './components/SettingsPage';
 import type { VpnClient } from './types';
 
 function App() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState<'clients' | 'settings'>('clients');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [qrDialogOpen, setQrDialogOpen] = useState(false);
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
@@ -159,20 +162,46 @@ function App() {
     setDeleteDialogOpen(true);
   };
 
+  const handleDownloadConfig = async () => {
+    if (selectedClient && configData) {
+      downloadConfig(selectedClient.name, configData);
+    }
+  };
+
+  const handleDownloadQR = async () => {
+    if (selectedClient && qrCodeData) {
+      downloadQRCode(selectedClient.name, qrCodeData);
+    }
+  };
+
+  if (currentPage === 'settings') {
+    return <SettingsPage onBack={() => setCurrentPage('clients')} />;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg">
-              <Shield className="w-8 h-8 text-white" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg">
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <div>
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
+                  AmneziaWG VPN
+                </h1>
+                <p className="text-slate-600 font-medium">Управление VPN клиентами</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-700 to-indigo-700 bg-clip-text text-transparent">
-                AmneziaWG VPN
-              </h1>
-              <p className="text-slate-600 font-medium">Управление VPN клиентами</p>
-            </div>
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage('settings')}
+              className="hidden sm:flex"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Настройки
+            </Button>
           </div>
         </div>
 
@@ -220,51 +249,15 @@ function App() {
                     <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
                 </TableHeader>
-                {/* SECURITY: Отображаем ТОЛЬКО безопасные данные (name, ipAddress, enabled, createdAt) */}
-                {/* НЕ отображаем приватные ключи! publicKey также не показывается. */}
-                {/* QR код и конфигурация загружаются ТОЛЬКО при явном клике пользователя */}
                 <TableBody>
                   {clients.map((client) => (
-                    <TableRow key={client.id}>
-                      <TableCell className="font-medium">{client.name}</TableCell>
-                      <TableCell>{client.ipAddress}</TableCell>
-                      <TableCell>
-                        <Badge variant={client.enabled ? 'success' : 'secondary'}>
-                          {client.enabled ? 'Активен' : 'Неактивен'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(client.createdAt).toLocaleDateString('ru-RU')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex flex-col sm:flex-row justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleShowQR(client)}
-                            className="w-full sm:w-auto"
-                          >
-                            <QrCode className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleShowConfig(client)}
-                            className="w-full sm:w-auto"
-                          >
-                            <FileText className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleDeleteClick(client)}
-                            className="w-full sm:w-auto"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                    <ClientRow
+                      key={client.id}
+                      client={client}
+                      onShowQR={handleShowQR}
+                      onShowConfig={handleShowConfig}
+                      onDelete={handleDeleteClick}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -325,6 +318,12 @@ function App() {
                 <img src={qrCodeData} alt="QR Code" className="max-w-full h-auto" />
               )}
             </div>
+            <DialogFooter>
+              <Button onClick={handleDownloadQR} className="w-full">
+                <Download className="w-4 h-4 mr-2" />
+                Скачать QR (PNG)
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -341,6 +340,12 @@ function App() {
                 {configData}
               </pre>
             </div>
+            <DialogFooter>
+              <Button onClick={handleDownloadConfig} className="w-full">
+                <Download className="w-4 h-4 mr-2" />
+                Скачать .conf
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

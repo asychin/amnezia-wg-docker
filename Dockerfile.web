@@ -58,8 +58,8 @@ COPY --from=builder /app/server ./server
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/views ./views
 
-# Устанавливаем curl для healthcheck
-RUN apk add --no-cache curl
+# Устанавливаем curl для healthcheck и docker-cli для управления VPN контейнером
+RUN apk add --no-cache curl docker-cli
 
 # Открываем порт
 EXPOSE 3001

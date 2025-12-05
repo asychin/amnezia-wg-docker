@@ -154,6 +154,7 @@ services:
     volumes:
       - ./clients:/app/clients:ro
       - ./config:/app/config:ro
+      - /var/run/docker.sock:/var/run/docker.sock  # Для управления VPN контейнером
     environment:
       # Database Connection
       - DATABASE_URL=postgresql://${POSTGRES_USER:-amneziawg}:${POSTGRES_PASSWORD:-change_this_password_to_secure_one}@postgres:5432/${POSTGRES_DB:-amneziawg}
