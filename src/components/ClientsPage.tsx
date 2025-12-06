@@ -23,9 +23,15 @@ import {
   fetchClients,
   createClient,
   deleteClient,
+  fetchClientQR,
+  fetchClientConfig,
+  downloadConfig,
+  downloadQRCode,
 } from '../api/client';
 import { ClientRow } from './ClientRow';
 import { AddClientDialog } from './AddClientDialog';
+import { QRDialog } from './QRDialog';
+import { ConfigDialog } from './ConfigDialog';
 import { DeleteDialog } from './DeleteDialog';
 import type { VpnClient } from '../types';
 
@@ -45,10 +51,15 @@ export function ClientsPage({ addDialogOpen, setAddDialogOpen }: ClientsPageProp
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<VpnClient | null>(null);
   const [newClientName, setNewClientName] = useState('');
   const [newClientIp, setNewClientIp] = useState('');
+  const [newClientAllowedIps, setNewClientAllowedIps] = useState('');
+  const [qrCodeData, setQrCodeData] = useState('');
+  const [configData, setConfigData] = useState('');
 
   const { data: clients = [], isLoading } = useQuery({
     queryKey: ['clients'],
@@ -62,6 +73,7 @@ export function ClientsPage({ addDialogOpen, setAddDialogOpen }: ClientsPageProp
       setAddDialogOpen(false);
       setNewClientName('');
       setNewClientIp('');
+      setNewClientAllowedIps('');
       toast({
         title: 'Клиент создан',
         description: 'VPN клиент успешно создан',
@@ -151,6 +163,7 @@ export function ClientsPage({ addDialogOpen, setAddDialogOpen }: ClientsPageProp
       createMutation.mutate({
         name: newClientName.trim(),
         ipAddress: newClientIp.trim() || undefined,
+        allowedIps: newClientAllowedIps.trim() || undefined,
       });
     }
   };
@@ -161,9 +174,51 @@ export function ClientsPage({ addDialogOpen, setAddDialogOpen }: ClientsPageProp
     }
   };
 
+  const handleShowQR = async (client: VpnClient) => {
+    try {
+      const { qrCode } = await fetchClientQR(client.name);
+      setQrCodeData(qrCode);
+      setSelectedClient(client);
+      setQrDialogOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch QR code:', error);
+      toast({
+        title: 'Ошибка загрузки QR кода',
+        description: 'Не удалось загрузить QR код',
+      });
+    }
+  };
+
+  const handleShowConfig = async (client: VpnClient) => {
+    try {
+      const config = await fetchClientConfig(client.name);
+      setConfigData(config);
+      setSelectedClient(client);
+      setConfigDialogOpen(true);
+    } catch (error) {
+      console.error('Failed to fetch config:', error);
+      toast({
+        title: 'Ошибка загрузки конфигурации',
+        description: 'Не удалось загрузить конфигурацию',
+      });
+    }
+  };
+
   const handleDeleteClick = (client: VpnClient) => {
     setSelectedClient(client);
     setDeleteDialogOpen(true);
+  };
+
+  const handleDownloadConfig = async () => {
+    if (selectedClient && configData) {
+      downloadConfig(selectedClient.name, configData);
+    }
+  };
+
+  const handleDownloadQR = async () => {
+    if (selectedClient && qrCodeData) {
+      downloadQRCode(selectedClient.name, qrCodeData);
+    }
   };
 
   return (
@@ -260,6 +315,8 @@ export function ClientsPage({ addDialogOpen, setAddDialogOpen }: ClientsPageProp
                     <ClientRow
                       key={client.id}
                       client={client}
+                      onShowQR={handleShowQR}
+                      onShowConfig={handleShowConfig}
                       onDelete={handleDeleteClick}
                     />
                   ))}
@@ -277,8 +334,26 @@ export function ClientsPage({ addDialogOpen, setAddDialogOpen }: ClientsPageProp
         setClientName={setNewClientName}
         clientIp={newClientIp}
         setClientIp={setNewClientIp}
+        clientAllowedIps={newClientAllowedIps}
+        setClientAllowedIps={setNewClientAllowedIps}
         onSubmit={handleAddClient}
         isPending={createMutation.isPending}
+      />
+
+      <QRDialog
+        open={qrDialogOpen}
+        onOpenChange={setQrDialogOpen}
+        clientName={selectedClient?.name || ''}
+        qrCodeData={qrCodeData}
+        onDownload={handleDownloadQR}
+      />
+
+      <ConfigDialog
+        open={configDialogOpen}
+        onOpenChange={setConfigDialogOpen}
+        clientName={selectedClient?.name || ''}
+        configData={configData}
+        onDownload={handleDownloadConfig}
       />
 
       <DeleteDialog

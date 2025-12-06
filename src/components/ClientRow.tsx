@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, Trash2, Wifi, WifiOff, ArrowDownToLine, ArrowUpFromLine, Package, Lock } from 'lucide-react';
+import { ChevronDown, ChevronUp, QrCode, FileText, Trash2, Download, Wifi, WifiOff, ArrowDownToLine, ArrowUpFromLine, Package } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { TableCell, TableRow } from './ui/table';
-import { fetchClientStats, downloadBundle } from '../api/client';
+import { fetchClientStats, fetchClientQR, fetchClientConfig, downloadConfig, downloadQRCode, downloadBundle } from '../api/client';
 import type { VpnClient, ClientStats } from '../types';
 
 interface ClientRowProps {
   client: VpnClient;
+  onShowQR: (client: VpnClient) => void;
+  onShowConfig: (client: VpnClient) => void;
   onDelete: (client: VpnClient) => void;
 }
 
@@ -31,7 +33,7 @@ function formatTimeAgo(timestamp: number | null): string {
   return `${days} дн. назад`;
 }
 
-export function ClientRow({ client, onDelete }: ClientRowProps) {
+export function ClientRow({ client, onShowQR, onShowConfig, onDelete }: ClientRowProps) {
   const [expanded, setExpanded] = useState(false);
   const [stats, setStats] = useState<ClientStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -52,6 +54,30 @@ export function ClientRow({ client, onDelete }: ClientRowProps) {
     setExpanded(!expanded);
   };
 
+  const handleDownloadConfig = async () => {
+    setDownloading(true);
+    try {
+      const config = await fetchClientConfig(client.name);
+      downloadConfig(client.name, config);
+    } catch (error) {
+      console.error('Failed to download config:', error);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleDownloadQR = async () => {
+    setDownloading(true);
+    try {
+      const { qrCode } = await fetchClientQR(client.name);
+      downloadQRCode(client.name, qrCode);
+    } catch (error) {
+      console.error('Failed to download QR:', error);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   const handleDownloadBundle = async () => {
     setDownloading(true);
     try {
@@ -69,8 +95,6 @@ export function ClientRow({ client, onDelete }: ClientRowProps) {
     }
   };
 
-  const isConfigDownloaded = !!client.configDownloadedAt;
-
   return (
     <>
       <TableRow 
@@ -85,41 +109,44 @@ export function ClientRow({ client, onDelete }: ClientRowProps) {
         </TableCell>
         <TableCell>{client.ipAddress}</TableCell>
                 <TableCell>
-                  <div className="flex flex-col gap-1">
-                    <Badge variant={client.enabled ? 'success' : 'secondary'}>
-                      {client.enabled ? 'Активен' : 'Неактивен'}
-                    </Badge>
-                    {isConfigDownloaded && (
-                      <Badge variant="outline" className="text-xs">
-                        <Lock className="w-3 h-3 mr-1" />
-                        Скачан
-                      </Badge>
-                    )}
-                  </div>
+                  <Badge variant={client.enabled ? 'success' : 'secondary'}>
+                    {client.enabled ? 'Активен' : 'Неактивен'}
+                  </Badge>
                 </TableCell>
         <TableCell>
           {new Date(client.createdAt).toLocaleDateString('ru-RU')}
         </TableCell>
                 <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex flex-col sm:flex-row justify-end gap-2">
-                    {!isConfigDownloaded ? (
-                      <Button
-                        variant="default"
-                        size="sm"
-                        onClick={handleDownloadBundle}
-                        disabled={downloading}
-                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
-                        title="Скачать ZIP с конфигом и QR кодом (одноразово)"
-                      >
-                        <Package className="w-4 h-4 mr-1" />
-                        {downloading ? 'Скачивание...' : 'Скачать'}
-                      </Button>
-                    ) : (
-                      <Badge variant="outline" className="text-xs text-slate-500">
-                        <Lock className="w-3 h-3 mr-1" />
-                        Конфиг скачан {new Date(client.configDownloadedAt!).toLocaleDateString('ru-RU')}
-                      </Badge>
-                    )}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleDownloadBundle}
+                      disabled={downloading}
+                      className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+                      title="Скачать ZIP с конфигом и QR кодом"
+                    >
+                      <Package className="w-4 h-4 mr-1" />
+                      {downloading ? '...' : 'ZIP'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onShowQR(client)}
+                      className="w-full sm:w-auto"
+                      title="Показать QR код"
+                    >
+                      <QrCode className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onShowConfig(client)}
+                      className="w-full sm:w-auto"
+                      title="Показать конфигурацию"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
                     <Button
                       variant="destructive"
                       size="sm"
@@ -204,29 +231,36 @@ export function ClientRow({ client, onDelete }: ClientRowProps) {
                 </div>
               )}
               
-                            {!isConfigDownloaded && (
-                              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-200">
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  onClick={handleDownloadBundle}
-                                  disabled={downloading}
-                                  className="bg-green-600 hover:bg-green-700"
-                                >
-                                  <Package className="w-4 h-4 mr-2" />
-                                  {downloading ? 'Скачивание...' : 'Скачать ZIP (конфиг + QR)'}
-                                </Button>
-                              </div>
-                            )}
-                            {isConfigDownloaded && (
-                              <div className="flex items-center gap-2 pt-2 border-t border-slate-200 text-slate-500">
-                                <Lock className="w-4 h-4" />
-                                <span className="text-sm">
-                                  Конфигурация была скачана {new Date(client.configDownloadedAt!).toLocaleString('ru-RU')}. 
-                                  Повторное скачивание недоступно из соображений безопасности.
-                                </span>
-                              </div>
-                            )}
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-200">
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={handleDownloadBundle}
+                                disabled={downloading}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Package className="w-4 h-4 mr-2" />
+                                Скачать ZIP (конфиг + QR)
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDownloadConfig}
+                                disabled={downloading}
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Скачать .conf
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDownloadQR}
+                                disabled={downloading}
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Скачать QR (PNG)
+                              </Button>
+                            </div>
             </div>
           </TableCell>
         </TableRow>

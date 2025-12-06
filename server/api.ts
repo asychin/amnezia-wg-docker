@@ -12,6 +12,9 @@ import {
   deleteClient,
   syncClientFromFilesystem,
   markConfigDownloaded,
+  getSetting,
+  setSetting,
+  getAllSettings,
   db
 } from './storage';
 import archiver from 'archiver';
@@ -339,9 +342,8 @@ router.get('/clients/:name/qr', requireAuth, async (req: Request, res: Response)
   }
 });
 
-// ONE-TIME DOWNLOAD: Скачивание ZIP-архива с конфигом и QR-кодом
-// После скачивания конфиг помечается как скачанный и повторное скачивание невозможно
-// Это обеспечивает безопасность - конфиг можно получить только один раз
+// Скачивание ZIP-архива с конфигом и QR-кодом
+// Можно скачивать неограниченное количество раз
 router.get('/clients/:name/bundle', requireAuth, async (req: Request, res: Response) => {
   try {
     const { name } = req.params;
@@ -356,15 +358,6 @@ router.get('/clients/:name/bundle', requireAuth, async (req: Request, res: Respo
       return res.status(404).json({ error: 'Client not found' });
     }
     
-    // Проверяем, был ли конфиг уже скачан
-    if (client.configDownloadedAt) {
-      return res.status(403).json({ 
-        error: 'Config already downloaded',
-        message: 'This configuration was already downloaded and cannot be downloaded again for security reasons.',
-        downloadedAt: client.configDownloadedAt
-      });
-    }
-    
     const configPath = path.join(CLIENTS_DIR, `${name}.conf`);
     const rawConfig = await fs.readFile(configPath, 'utf-8');
     // Strip comment lines from config
@@ -375,9 +368,6 @@ router.get('/clients/:name/bundle', requireAuth, async (req: Request, res: Respo
     
     // Generate QR code as PNG buffer
     const qrCodeBuffer = await QRCode.toBuffer(config, { type: 'png', width: 400 });
-    
-    // Mark config as downloaded BEFORE sending the response
-    await markConfigDownloaded(name);
     
     // Create ZIP archive
     res.setHeader('Content-Type', 'application/zip');
@@ -414,9 +404,7 @@ For Mobile (iOS/Android):
 SECURITY WARNING:
 -----------------
 This configuration contains your private VPN key.
-- Keep it secure and do not share with others
-- This configuration can only be downloaded ONCE
-- If you lose it, you will need to create a new client
+Keep it secure and do not share with others.
 
 Generated: ${new Date().toISOString()}
 `;
@@ -529,6 +517,45 @@ router.post('/migration/migrate-all', requireAuth, async (req: Request, res: Res
   } catch (error: any) {
     console.error('Error migrating clients:', error);
     res.status(500).json({ error: error.message || 'Failed to migrate clients' });
+  }
+});
+
+// Settings endpoints
+router.get('/settings', async (req: Request, res: Response) => {
+  try {
+    const settings = await getAllSettings();
+    res.json(settings);
+  } catch (error: any) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch settings' });
+  }
+});
+
+router.get('/settings/:key', async (req: Request, res: Response) => {
+  try {
+    const { key } = req.params;
+    const value = await getSetting(key);
+    res.json({ key, value });
+  } catch (error: any) {
+    console.error('Error fetching setting:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch setting' });
+  }
+});
+
+router.post('/settings/:key', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { key } = req.params;
+    const { value } = req.body;
+    
+    if (typeof value !== 'string') {
+      return res.status(400).json({ error: 'Value must be a string' });
+    }
+    
+    const setting = await setSetting(key, value);
+    res.json(setting);
+  } catch (error: any) {
+    console.error('Error saving setting:', error);
+    res.status(500).json({ error: error.message || 'Failed to save setting' });
   }
 });
 

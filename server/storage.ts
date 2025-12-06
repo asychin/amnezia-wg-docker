@@ -1,6 +1,6 @@
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
-import { vpnClients, type VpnClient, type NewVpnClient } from '../shared/schema';
+import { vpnClients, vpnSettings, type VpnClient, type NewVpnClient, type VpnSetting } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 import * as dotenv from 'dotenv';
 
@@ -15,7 +15,7 @@ export const db = drizzle(pool);
 export async function getAllClients(): Promise<VpnClient[]> {
   // SECURITY: Возвращаем только безопасные метаданные из БД
   // Приватные ключи НЕ хранятся в БД - только в файлах
-  // Возвращаемые поля: id, name, ipAddress, publicKey (клиента), createdAt, updatedAt, enabled, lastHandshake, configDownloadedAt
+  // Возвращаемые поля: id, name, ipAddress, publicKey (клиента), createdAt, updatedAt, enabled, lastHandshake, configDownloadedAt, allowedIps
   return await db.select({
     id: vpnClients.id,
     name: vpnClients.name,
@@ -26,6 +26,7 @@ export async function getAllClients(): Promise<VpnClient[]> {
     enabled: vpnClients.enabled,
     lastHandshake: vpnClients.lastHandshake,
     configDownloadedAt: vpnClients.configDownloadedAt,
+    allowedIps: vpnClients.allowedIps,
   }).from(vpnClients);
 }
 
@@ -41,8 +42,35 @@ export async function getClientByName(name: string): Promise<VpnClient | undefin
     enabled: vpnClients.enabled,
     lastHandshake: vpnClients.lastHandshake,
     configDownloadedAt: vpnClients.configDownloadedAt,
+    allowedIps: vpnClients.allowedIps,
   }).from(vpnClients).where(eq(vpnClients.name, name));
   return results[0];
+}
+
+// Settings functions
+export async function getSetting(key: string): Promise<string | null> {
+  const results = await db.select().from(vpnSettings).where(eq(vpnSettings.key, key));
+  return results[0]?.value || null;
+}
+
+export async function setSetting(key: string, value: string): Promise<VpnSetting> {
+  const existing = await db.select().from(vpnSettings).where(eq(vpnSettings.key, key));
+  
+  if (existing.length > 0) {
+    const results = await db
+      .update(vpnSettings)
+      .set({ value, updatedAt: new Date() })
+      .where(eq(vpnSettings.key, key))
+      .returning();
+    return results[0];
+  }
+  
+  const results = await db.insert(vpnSettings).values({ key, value }).returning();
+  return results[0];
+}
+
+export async function getAllSettings(): Promise<VpnSetting[]> {
+  return await db.select().from(vpnSettings);
 }
 
 export async function markConfigDownloaded(name: string): Promise<VpnClient | undefined> {

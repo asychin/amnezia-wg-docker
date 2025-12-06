@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Settings, AlertTriangle, Database, ArrowRight, RefreshCw, Shield } from 'lucide-react';
+import { Settings, AlertTriangle, Database, ArrowRight, RefreshCw, Shield, Network, Save } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import {
@@ -11,8 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
-import { fetchLegacyClients, migrateAllClients, syncClients } from '../api/client';
+import { fetchLegacyClients, migrateAllClients, syncClients, fetchSetting, saveSetting } from '../api/client';
 
 interface SettingsPageProps {
   onBack: () => void;
@@ -21,6 +23,44 @@ interface SettingsPageProps {
 export function SettingsPage({ onBack }: SettingsPageProps) {
   const { toast } = useToast();
   const [migrateDialogOpen, setMigrateDialogOpen] = useState(false);
+  const [globalAllowedIps, setGlobalAllowedIps] = useState('0.0.0.0/0');
+  const [allowedIpsLoading, setAllowedIpsLoading] = useState(true);
+  const [allowedIpsSaving, setAllowedIpsSaving] = useState(false);
+
+  // Load global AllowedIPs setting on mount
+  useEffect(() => {
+    async function loadAllowedIps() {
+      try {
+        const result = await fetchSetting('global_allowed_ips');
+        if (result.value) {
+          setGlobalAllowedIps(result.value);
+        }
+      } catch (error) {
+        console.error('Failed to load AllowedIPs setting:', error);
+      } finally {
+        setAllowedIpsLoading(false);
+      }
+    }
+    loadAllowedIps();
+  }, []);
+
+  const handleSaveAllowedIps = async () => {
+    setAllowedIpsSaving(true);
+    try {
+      await saveSetting('global_allowed_ips', globalAllowedIps);
+      toast({
+        title: 'Настройки сохранены',
+        description: 'Глобальный AllowedIPs успешно обновлен',
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка сохранения',
+        description: 'Не удалось сохранить настройки',
+      });
+    } finally {
+      setAllowedIpsSaving(false);
+    }
+  };
 
   const { data: legacyData, isLoading: legacyLoading, refetch: refetchLegacy } = useQuery({
     queryKey: ['legacy-clients'],
@@ -163,6 +203,62 @@ export function SettingsPage({ onBack }: SettingsPageProps) {
                   <RefreshCw className={`w-4 h-4 mr-2 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
                   Синхронизировать
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-xl border-green-200/50 backdrop-blur-sm bg-white/80">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Network className="w-5 h-5 text-green-600" />
+                <CardTitle className="text-xl">Split Tunneling (AllowedIPs)</CardTitle>
+              </div>
+              <CardDescription className="text-base">
+                Настройка маршрутизации трафика через VPN
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 className="font-semibold text-green-800 mb-2">Что такое AllowedIPs?</h4>
+                <ul className="text-sm text-green-700 space-y-1">
+                  <li>- <code className="bg-green-100 px-1 rounded">0.0.0.0/0</code> - весь трафик через VPN (по умолчанию)</li>
+                  <li>- <code className="bg-green-100 px-1 rounded">10.0.0.0/8</code> - только корпоративная сеть через VPN</li>
+                  <li>- <code className="bg-green-100 px-1 rounded">10.0.0.0/8, 192.168.1.0/24</code> - несколько сетей через VPN</li>
+                </ul>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                <p className="text-sm text-amber-700">
+                  <strong>Важно:</strong> Эта настройка применяется только к новым клиентам. 
+                  Для существующих клиентов нужно пересоздать конфигурацию.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="allowedIps" className="text-slate-700">
+                  Глобальный AllowedIPs (для новых клиентов)
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="allowedIps"
+                    value={globalAllowedIps}
+                    onChange={(e) => setGlobalAllowedIps(e.target.value)}
+                    placeholder="0.0.0.0/0"
+                    disabled={allowedIpsLoading}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={handleSaveAllowedIps}
+                    disabled={allowedIpsLoading || allowedIpsSaving}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {allowedIpsSaving ? 'Сохранение...' : 'Сохранить'}
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Укажите сети через запятую. Пример: 10.0.0.0/8, 192.168.0.0/16
+                </p>
               </div>
             </CardContent>
           </Card>

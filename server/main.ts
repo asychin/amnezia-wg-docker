@@ -63,7 +63,18 @@ async function initializeDatabase() {
         updated_at TIMESTAMP DEFAULT NOW() NOT NULL,
         enabled BOOLEAN DEFAULT TRUE NOT NULL,
         last_handshake TIMESTAMP,
-        config_downloaded_at TIMESTAMP
+        config_downloaded_at TIMESTAMP,
+        allowed_ips TEXT
+      )
+    `);
+    
+    // Create vpn_settings table if it doesn't exist
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS vpn_settings (
+        id SERIAL PRIMARY KEY,
+        key VARCHAR(255) NOT NULL UNIQUE,
+        value TEXT,
+        updated_at TIMESTAMP DEFAULT NOW() NOT NULL
       )
     `);
     
@@ -78,6 +89,14 @@ async function initializeDatabase() {
         ) THEN 
           ALTER TABLE vpn_clients ADD COLUMN config_downloaded_at TIMESTAMP;
           RAISE NOTICE 'Added config_downloaded_at column';
+        END IF;
+        
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'vpn_clients' AND column_name = 'allowed_ips'
+        ) THEN 
+          ALTER TABLE vpn_clients ADD COLUMN allowed_ips TEXT;
+          RAISE NOTICE 'Added allowed_ips column';
         END IF;
       END $$;
     `);

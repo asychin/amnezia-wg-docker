@@ -17,6 +17,8 @@ interface AddClientDialogProps {
   setClientName: (name: string) => void;
   clientIp: string;
   setClientIp: (ip: string) => void;
+  clientAllowedIps: string;
+  setClientAllowedIps: (allowedIps: string) => void;
   onSubmit: () => void;
   isPending: boolean;
 }
@@ -28,6 +30,8 @@ export function AddClientDialog({
   setClientName,
   clientIp,
   setClientIp,
+  clientAllowedIps,
+  setClientAllowedIps,
   onSubmit,
   isPending,
 }: AddClientDialogProps) {
@@ -62,6 +66,21 @@ export function AddClientDialog({
               onChange={(e) => setClientIp(e.target.value)}
               className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
             />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="allowedIps" className="text-slate-700 dark:text-slate-300">
+              Дополнительные AllowedIPs (опционально)
+            </Label>
+            <Input
+              id="allowedIps"
+              placeholder="192.168.1.0/24"
+              value={clientAllowedIps}
+              onChange={(e) => setClientAllowedIps(e.target.value)}
+              className="bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white"
+            />
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Эти сети будут добавлены к глобальному AllowedIPs. Через запятую.
+            </p>
           </div>
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
