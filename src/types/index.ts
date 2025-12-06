@@ -7,11 +7,21 @@ export interface VpnClient {
   updatedAt: string;
   enabled: boolean;
   lastHandshake: string | null;
+  configDownloadedAt: string | null;
+  allowedIps: string | null;
 }
 
 export interface CreateClientRequest {
   name: string;
   ipAddress?: string;
+  allowedIps?: string;
+}
+
+export interface VpnSetting {
+  id: number;
+  key: string;
+  value: string | null;
+  updatedAt: string;
 }
 
 export interface QRCodeResponse {

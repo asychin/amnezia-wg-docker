@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, QrCode, FileText, Trash2, Download, Wifi, WifiOff, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { ChevronDown, ChevronUp, QrCode, FileText, Trash2, Download, Wifi, WifiOff, ArrowDownToLine, ArrowUpFromLine, Package } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { TableCell, TableRow } from './ui/table';
-import { fetchClientStats, fetchClientQR, fetchClientConfig, downloadConfig, downloadQRCode } from '../api/client';
+import { fetchClientStats, fetchClientQR, fetchClientConfig, downloadConfig, downloadQRCode, downloadBundle } from '../api/client';
 import type { VpnClient, ClientStats } from '../types';
 
 interface ClientRowProps {
@@ -78,6 +78,23 @@ export function ClientRow({ client, onShowQR, onShowConfig, onDelete }: ClientRo
     }
   };
 
+  const handleDownloadBundle = async () => {
+    setDownloading(true);
+    try {
+      const result = await downloadBundle(client.name);
+      if (!result.success) {
+        alert(result.error || 'Не удалось скачать конфигурацию');
+      } else {
+        window.location.reload();
+      }
+    } catch (error) {
+      console.error('Failed to download bundle:', error);
+      alert('Не удалось скачать конфигурацию');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <>
       <TableRow 
@@ -91,45 +108,56 @@ export function ClientRow({ client, onShowQR, onShowConfig, onDelete }: ClientRo
           </div>
         </TableCell>
         <TableCell>{client.ipAddress}</TableCell>
-        <TableCell>
-          <Badge variant={client.enabled ? 'success' : 'secondary'}>
-            {client.enabled ? 'Активен' : 'Неактивен'}
-          </Badge>
-        </TableCell>
+                <TableCell>
+                  <Badge variant={client.enabled ? 'success' : 'secondary'}>
+                    {client.enabled ? 'Активен' : 'Неактивен'}
+                  </Badge>
+                </TableCell>
         <TableCell>
           {new Date(client.createdAt).toLocaleDateString('ru-RU')}
         </TableCell>
-        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-          <div className="flex flex-col sm:flex-row justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onShowQR(client)}
-              className="w-full sm:w-auto"
-              title="Показать QR код"
-            >
-              <QrCode className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onShowConfig(client)}
-              className="w-full sm:w-auto"
-              title="Показать конфигурацию"
-            >
-              <FileText className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => onDelete(client)}
-              className="w-full sm:w-auto"
-              title="Удалить клиента"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        </TableCell>
+                <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex flex-col sm:flex-row justify-end gap-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleDownloadBundle}
+                      disabled={downloading}
+                      className="w-full sm:w-auto bg-green-600 hover:bg-green-700"
+                      title="Скачать ZIP с конфигом и QR кодом"
+                    >
+                      <Package className="w-4 h-4 mr-1" />
+                      {downloading ? '...' : 'ZIP'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onShowQR(client)}
+                      className="w-full sm:w-auto"
+                      title="Показать QR код"
+                    >
+                      <QrCode className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onShowConfig(client)}
+                      className="w-full sm:w-auto"
+                      title="Показать конфигурацию"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => onDelete(client)}
+                      className="w-full sm:w-auto"
+                      title="Удалить клиента"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </TableCell>
       </TableRow>
       
       {expanded && (
@@ -203,26 +231,36 @@ export function ClientRow({ client, onShowQR, onShowConfig, onDelete }: ClientRo
                 </div>
               )}
               
-              <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-200">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadConfig}
-                  disabled={downloading}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Скачать .conf
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDownloadQR}
-                  disabled={downloading}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Скачать QR (PNG)
-                </Button>
-              </div>
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-200">
+                              <Button
+                                variant="default"
+                                size="sm"
+                                onClick={handleDownloadBundle}
+                                disabled={downloading}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <Package className="w-4 h-4 mr-2" />
+                                Скачать ZIP (конфиг + QR)
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDownloadConfig}
+                                disabled={downloading}
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Скачать .conf
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleDownloadQR}
+                                disabled={downloading}
+                              >
+                                <Download className="w-4 h-4 mr-2" />
+                                Скачать QR (PNG)
+                              </Button>
+                            </div>
             </div>
           </TableCell>
         </TableRow>

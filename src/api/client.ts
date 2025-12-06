@@ -1,4 +1,4 @@
-import type { VpnClient, CreateClientRequest, QRCodeResponse, ClientStats, LegacyClientsResponse } from '../types';
+import type { VpnClient, CreateClientRequest, QRCodeResponse, ClientStats, LegacyClientsResponse, VpnSetting } from '../types';
 
 const API_BASE = '/api';
 
@@ -105,4 +105,60 @@ export function downloadQRCode(name: string, qrCodeDataUrl: string): void {
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
+}
+
+export async function downloadBundle(name: string): Promise<{ success: boolean; error?: string }> {
+  const response = await fetch(`${API_BASE}/clients/${name}/bundle`);
+  
+  if (!response.ok) {
+    const error = await response.json();
+    return { 
+      success: false, 
+      error: error.message || error.error || 'Failed to download bundle' 
+    };
+  }
+  
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}-vpn-config.zip`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  
+  return { success: true };
+}
+
+// Settings API functions
+export async function fetchSettings(): Promise<VpnSetting[]> {
+  const response = await fetch(`${API_BASE}/settings`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch settings');
+  }
+  return response.json();
+}
+
+export async function fetchSetting(key: string): Promise<{ key: string; value: string | null }> {
+  const response = await fetch(`${API_BASE}/settings/${key}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch setting');
+  }
+  return response.json();
+}
+
+export async function saveSetting(key: string, value: string): Promise<VpnSetting> {
+  const response = await fetch(`${API_BASE}/settings/${key}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ value }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to save setting');
+  }
+  return response.json();
 }

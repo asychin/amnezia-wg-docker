@@ -11,8 +11,13 @@ import {
   createClient,
   deleteClient,
   syncClientFromFilesystem,
+  markConfigDownloaded,
+  getSetting,
+  setSetting,
+  getAllSettings,
   db
 } from './storage';
+import archiver from 'archiver';
 import { vpnClients } from '../shared/schema';
 import { sql } from 'drizzle-orm';
 
@@ -337,6 +342,81 @@ router.get('/clients/:name/qr', requireAuth, async (req: Request, res: Response)
   }
 });
 
+// Скачивание ZIP-архива с конфигом и QR-кодом
+// Можно скачивать неограниченное количество раз
+router.get('/clients/:name/bundle', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { name } = req.params;
+    
+    const validation = isValidClientName(name);
+    if (!validation.valid) {
+      return res.status(400).json({ error: validation.error });
+    }
+    
+    const client = await getClientByName(name);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    
+    const configPath = path.join(CLIENTS_DIR, `${name}.conf`);
+    const rawConfig = await fs.readFile(configPath, 'utf-8');
+    // Strip comment lines from config
+    const config = rawConfig
+      .split('\n')
+      .filter(line => !line.trim().startsWith('#'))
+      .join('\n');
+    
+    // Generate QR code as PNG buffer
+    const qrCodeBuffer = await QRCode.toBuffer(config, { type: 'png', width: 400 });
+    
+    // Create ZIP archive
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${name}-vpn-config.zip"`);
+    
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    archive.pipe(res);
+    
+    // Add config file to archive
+    archive.append(config, { name: `${name}.conf` });
+    
+    // Add QR code image to archive
+    archive.append(qrCodeBuffer, { name: `${name}-qr.png` });
+    
+    // Add README with instructions
+    const readme = `AmneziaWG VPN Configuration for ${name}
+========================================
+
+This archive contains:
+- ${name}.conf - VPN configuration file
+- ${name}-qr.png - QR code for mobile app
+
+Installation Instructions:
+--------------------------
+
+For Desktop (Windows/macOS/Linux):
+1. Install AmneziaVPN client from https://amnezia.org
+2. Import the ${name}.conf file
+
+For Mobile (iOS/Android):
+1. Install AmneziaVPN app from App Store / Google Play
+2. Scan the QR code (${name}-qr.png) or import the config file
+
+SECURITY WARNING:
+-----------------
+This configuration contains your private VPN key.
+Keep it secure and do not share with others.
+
+Generated: ${new Date().toISOString()}
+`;
+    archive.append(readme, { name: 'README.txt' });
+    
+    await archive.finalize();
+  } catch (error: any) {
+    console.error('Error generating bundle:', error);
+    res.status(500).json({ error: error.message || 'Failed to generate bundle' });
+  }
+});
+
 router.post('/sync', async (req: Request, res: Response) => {
   try {
     await syncClientsFromFilesystem();
@@ -437,6 +517,45 @@ router.post('/migration/migrate-all', requireAuth, async (req: Request, res: Res
   } catch (error: any) {
     console.error('Error migrating clients:', error);
     res.status(500).json({ error: error.message || 'Failed to migrate clients' });
+  }
+});
+
+// Settings endpoints
+router.get('/settings', async (req: Request, res: Response) => {
+  try {
+    const settings = await getAllSettings();
+    res.json(settings);
+  } catch (error: any) {
+    console.error('Error fetching settings:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch settings' });
+  }
+});
+
+router.get('/settings/:key', async (req: Request, res: Response) => {
+  try {
+    const { key } = req.params;
+    const value = await getSetting(key);
+    res.json({ key, value });
+  } catch (error: any) {
+    console.error('Error fetching setting:', error);
+    res.status(500).json({ error: error.message || 'Failed to fetch setting' });
+  }
+});
+
+router.post('/settings/:key', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { key } = req.params;
+    const { value } = req.body;
+    
+    if (typeof value !== 'string') {
+      return res.status(400).json({ error: 'Value must be a string' });
+    }
+    
+    const setting = await setSetting(key, value);
+    res.json(setting);
+  } catch (error: any) {
+    console.error('Error saving setting:', error);
+    res.status(500).json({ error: error.message || 'Failed to save setting' });
   }
 });
 

@@ -14,6 +14,11 @@ WEB_SERVICE := amneziawg-web
 DB_SERVICE := amneziawg-db
 PROJECT_NAME := docker-wg
 
+# Папки для бэкапов
+BACKUP_DIR := backups
+BACKUP_FILES_DIR := $(BACKUP_DIR)/files
+BACKUP_DB_DIR := $(BACKUP_DIR)/db
+
 # Команды Docker (для переиспользования)
 DOCKER_COMPOSE := docker compose
 DOCKER_EXEC := docker exec $(SERVICE_NAME)
@@ -41,119 +46,121 @@ MSG_SERVER_NOT_RUNNING := $(RED)❌ Контейнер $(SERVICE_NAME) не за
 
 # Проверка наличия docker compose
 check-compose:
-        @$(DOCKER_COMPOSE) version > /dev/null 2>&1 || (echo "$(RED)Error: Docker Compose не установлен$(NC)" && exit 1)
+	@$(DOCKER_COMPOSE) version > /dev/null 2>&1 || (echo "$(RED)Error: Docker Compose не установлен$(NC)" && exit 1)
 
 # Проверка запущенности контейнера для команд клиентов
 check-container:
-        @if ! $(DOCKER_COMPOSE) ps | grep -q "$(SERVICE_NAME).*Up"; then \
-                echo -e "$(MSG_SERVER_NOT_RUNNING)"; \
-                exit 1; \
-        fi
+	@if ! $(DOCKER_COMPOSE) ps | grep -q "$(SERVICE_NAME).*Up"; then \
+	        echo -e "$(MSG_SERVER_NOT_RUNNING)"; \
+	        exit 1; \
+	fi
 
 # Проверка имени клиента
 check-client-name:
-        @if [ -z "$(name)" ]; then \
-                echo "$(RED)❌ Необходимо указать имя клиента$(NC)"; \
-                echo "$(YELLOW)Пример: make client-add name=john ip=10.13.13.5$(NC)"; \
-                exit 1; \
-        fi
+	@if [ -z "$(name)" ]; then \
+	        echo "$(RED)❌ Необходимо указать имя клиента$(NC)"; \
+	        echo "$(YELLOW)Пример: make client-add name=john ip=10.13.13.5$(NC)"; \
+	        exit 1; \
+	fi
 
 # Автоматическая инициализация git submodules
 init-submodules:
-        @if [ ! -d "amneziawg-go/.git" ] || [ ! -d "amneziawg-tools/.git" ]; then \
-                echo "$(YELLOW)🔧 Инициализация git submodules...$(NC)"; \
-                git submodule update --init --recursive; \
-                echo "$(GREEN)✅ Submodules инициализированы$(NC)"; \
-        fi
+	@if [ ! -d "amneziawg-go/.git" ] || [ ! -d "amneziawg-tools/.git" ]; then \
+	        echo "$(YELLOW)🔧 Инициализация git submodules...$(NC)"; \
+	        git submodule update --init --recursive; \
+	        echo "$(GREEN)✅ Submodules инициализированы$(NC)"; \
+	fi
 
 # Автоматическое создание бэкапа конфигурации
 auto-backup:
-        @if [ -d "config" ] || [ -d "clients" ] || [ -f ".env" ]; then \
-                BACKUP_FILE="amneziawg-auto-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz"; \
-                echo "$(YELLOW)💾 Автоматическое создание резервной копии...$(NC)"; \
-                tar -czf $$BACKUP_FILE config/ clients/ .env 2>/dev/null || true; \
-                echo "$(GREEN)✅ Автобэкап создан: $$BACKUP_FILE$(NC)"; \
-                # Автоматическая очистка старых бэкапов (оставляем последние 10) \
-                BACKUP_COUNT=$$(ls amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
-                if [ $$BACKUP_COUNT -gt 10 ]; then \
-                        ls -t amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f 2>/dev/null || true; \
-                fi; \
-        fi
+	@if [ -d "config" ] || [ -d "clients" ] || [ -f ".env" ]; then \
+	        mkdir -p $(BACKUP_FILES_DIR); \
+	        BACKUP_FILE="$(BACKUP_FILES_DIR)/amneziawg-auto-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz"; \
+	        echo "$(YELLOW)💾 Автоматическое создание резервной копии...$(NC)"; \
+	        tar -czf $$BACKUP_FILE config/ clients/ .env 2>/dev/null || true; \
+	        echo "$(GREEN)✅ Автобэкап создан: $$BACKUP_FILE$(NC)"; \
+	        # Автоматическая очистка старых бэкапов (оставляем последние 10) \
+	        BACKUP_COUNT=$$(ls $(BACKUP_FILES_DIR)/amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
+	        if [ $$BACKUP_COUNT -gt 10 ]; then \
+	                ls -t $(BACKUP_FILES_DIR)/amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f 2>/dev/null || true; \
+	        fi; \
+	fi
 
 # Проверка что сервер запущен
 check-server-running:
-        @if ! $(DOCKER_COMPOSE) ps | grep -q "$(SERVICE_NAME).*Up"; then \
-                echo "$(RED)❌ Сервер не запущен$(NC)"; \
-                echo "$(YELLOW)💡 Используйте 'make up' для запуска сервера$(NC)"; \
-                exit 1; \
-        fi
+	@if ! $(DOCKER_COMPOSE) ps | grep -q "$(SERVICE_NAME).*Up"; then \
+	        echo "$(RED)❌ Сервер не запущен$(NC)"; \
+	        echo "$(YELLOW)💡 Используйте 'make up' для запуска сервера$(NC)"; \
+	        exit 1; \
+	fi
 
 # Проверка что сервер остановлен
 check-server-stopped:
-        @if $(DOCKER_COMPOSE) ps | grep -q "$(SERVICE_NAME).*Up"; then \
-                echo "$(YELLOW)⚠️  Сервер уже запущен$(NC)"; \
-                echo "$(YELLOW)💡 Используйте 'make down' для остановки сервера$(NC)"; \
-                exit 1; \
-        fi
+	@if $(DOCKER_COMPOSE) ps | grep -q "$(SERVICE_NAME).*Up"; then \
+	        echo "$(YELLOW)⚠️  Сервер уже запущен$(NC)"; \
+	        echo "$(YELLOW)💡 Используйте 'make down' для остановки сервера$(NC)"; \
+	        exit 1; \
+	fi
 
 # Проверка что контейнер существует
 check-container-exists:
-        @if ! $(DOCKER_COMPOSE) ps -a | grep -q "$(SERVICE_NAME)"; then \
-                echo "$(RED)❌ Контейнер $(SERVICE_NAME) не найден$(NC)"; \
-                echo "$(YELLOW)💡 Используйте 'make build' для создания контейнера$(NC)"; \
-                exit 1; \
-        fi
+	@if ! $(DOCKER_COMPOSE) ps -a | grep -q "$(SERVICE_NAME)"; then \
+	        echo "$(RED)❌ Контейнер $(SERVICE_NAME) не найден$(NC)"; \
+	        echo "$(YELLOW)💡 Используйте 'make build' для создания контейнера$(NC)"; \
+	        exit 1; \
+	fi
 
 # Проверка что есть конфигурация
 check-config-exists:
-        @if [ ! -d "config" ] && [ ! -d "clients" ] && [ ! -f ".env" ]; then \
-                echo "$(YELLOW)⚠️  Конфигурация не найдена$(NC)"; \
-                echo "$(YELLOW)💡 Используйте 'make init' для инициализации проекта$(NC)"; \
-        fi
+	@if [ ! -d "config" ] && [ ! -d "clients" ] && [ ! -f ".env" ]; then \
+	        echo "$(YELLOW)⚠️  Конфигурация не найдена$(NC)"; \
+	        echo "$(YELLOW)💡 Используйте 'make init' для инициализации проекта$(NC)"; \
+	fi
 
 .PHONY: help
 help: ## Показать эту справку
-        @echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-        @echo "$(PURPLE)║         AmneziaWG v2.0.0 - Docker Server Commands            ║$(NC)"
-        @echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-        @echo ""
-        @echo "$(CYAN)📋 ОСНОВНЫЕ КОМАНДЫ:$(NC)"
-        @grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-                awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-                grep -E "(init|build|up|down|restart|status|logs)" | grep -v -E "(web-|db-|stack-)"
-        @echo ""
-        @echo "$(CYAN)👥 УПРАВЛЕНИЕ КЛИЕНТАМИ:$(NC)"
-        @grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-                awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-                grep -E "(client-)"
-        @echo ""
-        @echo "$(CYAN)🌐 ВЕБ-ИНТЕРФЕЙС (v2.0.0+):$(NC)"
-        @grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-                awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-                grep -E "(web-)"
-        @echo ""
-        @echo "$(CYAN)💾 POSTGRESQL (v2.0.0+):$(NC)"
-        @grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-                awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-                grep -E "(db-)"
-        @echo ""
-        @echo "$(CYAN)📦 СТЕК (v2.0.0+):$(NC)"
-        @grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-                awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-                grep -E "(stack-)"
-        @echo ""
-        @echo "$(CYAN)🔧 УТИЛИТЫ:$(NC)"
-        @grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-                awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
-                grep -E "(shell|clean|update|backup|restore|autocomplete)" | grep -v -E "(web-|db-)"
-        @echo ""
-        @echo "$(YELLOW)💡 Примеры использования:$(NC)"
-        @echo "  make stack-status                            # Статус всего стека (VPN + Web + DB)"
-        @echo "  make web-url                                 # Показать URL веб-интерфейса"
-        @echo "  make client-add name=john                    # Добавить клиента john"
-        @echo "  make client-qr name=john                     # Показать QR код"
-        @echo "  make db-backup                               # Создать бэкап PostgreSQL"
-        @echo ""
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║         AmneziaWG v2.0.0 - Docker Server Commands            ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(CYAN)📦 СТЕК v2.0 (VPN + Web + PostgreSQL):$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+	        grep -E "(stack-)"
+	@echo ""
+	@echo "$(CYAN)🌐 ВЕБ-ИНТЕРФЕЙС v2.0:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+	        grep -E "(web-)"
+	@echo ""
+	@echo "$(CYAN)💾 POSTGRESQL v2.0:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+	        grep -E "(db-)"
+	@echo ""
+	@echo "$(CYAN)📋 ОСНОВНЫЕ КОМАНДЫ:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+	        grep -E "(init|build|up|down|restart|status|logs)" | grep -v -E "(web-|db-|stack-)"
+	@echo ""
+	@echo "$(CYAN)👥 УПРАВЛЕНИЕ КЛИЕНТАМИ:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+	        grep -E "(client-)"
+	@echo ""
+	@echo "$(CYAN)🔧 УТИЛИТЫ:$(NC)"
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
+	        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-20s$(NC) %s\n", $$1, $$2}' | \
+	        grep -E "(shell|clean|update|backup|restore|autocomplete)" | grep -v -E "(web-|db-)"
+	@echo ""
+	@echo "$(YELLOW)💡 Примеры использования:$(NC)"
+	@echo "  make up                                      # Запуск полного стека v2.0"
+	@echo "  make stack-status                            # Статус всего стека (VPN + Web + DB)"
+	@echo "  make web-url                                 # Показать URL веб-интерфейса"
+	@echo "  make client-add name=john                    # Добавить клиента john"
+	@echo "  make client-qr name=john                     # Показать QR код"
+	@echo "  make up-vpn                                  # Режим совместимости с v1.x (только VPN)"
+	@echo ""
 
 # ============================================================================
 # ОСНОВНЫЕ КОМАНДЫ
@@ -163,105 +170,108 @@ help: ## Показать эту справку
 
 .PHONY: init
 init: check-compose init-submodules ## Инициализация проекта (сабмодули + конфигурация)
-        @echo "$(BLUE)📦 Инициализация проекта...$(NC)"
-        @if [ ! -f ".env" ]; then \
-                echo "$(YELLOW)Создаем конфигурацию из шаблона...$(NC)"; \
-                cp env.example .env; \
-                echo "$(GREEN)✅ Файл .env создан. Отредактируйте его при необходимости.$(NC)"; \
-        fi
-        @echo "$(CYAN)💡 Команда init автоматически вызывается при:$(NC)"
-        @echo "$(CYAN)   - make up (если .env отсутствует)$(NC)"
-        @echo "$(CYAN)   - make build (если .env отсутствует)$(NC)"
-        @echo "$(CYAN)   - make build-safe (если .env отсутствует)$(NC)"
+	@echo "$(BLUE)📦 Инициализация проекта...$(NC)"
+	@if [ ! -f ".env" ]; then \
+	        echo "$(YELLOW)Создаем конфигурацию из шаблона...$(NC)"; \
+	        cp env.example .env; \
+	        echo "$(GREEN)✅ Файл .env создан. Отредактируйте его при необходимости.$(NC)"; \
+	fi
+	@echo "$(CYAN)💡 Команда init автоматически вызывается при:$(NC)"
+	@echo "$(CYAN)   - make up (если .env отсутствует)$(NC)"
+	@echo "$(CYAN)   - make build (если .env отсутствует)$(NC)"
+	@echo "$(CYAN)   - make build-safe (если .env отсутствует)$(NC)"
 
 .PHONY: build build-safe
 build: check-compose init-submodules check-config-exists auto-backup ## Сборка Docker образа (полная пересборка)
-        @echo "$(BLUE)🔨 Сборка Docker образа...$(NC)"
-        @# Автоматическая инициализация если нужно
-        @if [ ! -f ".env" ]; then \
-                echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
-                $(MAKE) init; \
-        fi
-        @$(DOCKER_COMPOSE) build --no-cache
-        @echo "$(GREEN)✅ Образ собран успешно$(NC)"
+	@echo "$(BLUE)🔨 Сборка Docker образа...$(NC)"
+	@# Автоматическая инициализация если нужно
+	@if [ ! -f ".env" ]; then \
+	        echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
+	        $(MAKE) init; \
+	fi
+	@$(DOCKER_COMPOSE) build --no-cache
+	@echo "$(GREEN)✅ Образ собран успешно$(NC)"
 
 build-safe: check-compose init-submodules check-config-exists auto-backup ## Безопасная сборка Docker образа (с использованием кеша)
-        @echo "$(BLUE)🔨 Безопасная сборка Docker образа...$(NC)"
-        @# Автоматическая инициализация если нужно
-        @if [ ! -f ".env" ]; then \
-                echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
-                $(MAKE) init; \
-        fi
-        @$(DOCKER_COMPOSE) build
-        @echo "$(GREEN)✅ Образ собран успешно$(NC)"
+	@echo "$(BLUE)🔨 Безопасная сборка Docker образа...$(NC)"
+	@# Автоматическая инициализация если нужно
+	@if [ ! -f ".env" ]; then \
+	        echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
+	        $(MAKE) init; \
+	fi
+	@$(DOCKER_COMPOSE) build
+	@echo "$(GREEN)✅ Образ собран успешно$(NC)"
 
 
 
 
 
 .PHONY: up
-up: check-compose init-submodules check-server-stopped ## Запуск сервера (VPN-only, v1.x совместимость)
-        @echo "$(BLUE)🚀 Запуск AmneziaWG сервера (VPN-only)...$(NC)"
-        @# Автоматическая инициализация если нужно
-        @if [ ! -f ".env" ]; then \
-                echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
-                $(MAKE) init; \
-        fi
-        @$(DOCKER_COMPOSE) up -d
-        @echo "$(GREEN)✅ VPN сервер запущен$(NC)"
-        @echo "$(YELLOW)💡 Для запуска с веб-интерфейсом: docker compose --profile web up -d$(NC)"
-        @sleep 5
-        @$(MAKE) status
+up: check-compose init-submodules check-server-stopped ## Запуск полного стека v2.0 (VPN + Web + PostgreSQL)
+	@echo "$(BLUE)🚀 Запуск AmneziaWG v2.0 (VPN + Web + PostgreSQL)...$(NC)"
+	@# Автоматическая инициализация если нужно
+	@if [ ! -f ".env" ]; then \
+	        echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
+	        $(MAKE) init; \
+	fi
+	@$(DOCKER_COMPOSE) --profile web up -d
+	@echo "$(GREEN)✅ Полный стек запущен$(NC)"
+	@echo "$(CYAN)🌐 Веб-интерфейс: http://localhost:8080$(NC)"
+	@echo "$(CYAN)🔒 VPN порт: 51820/UDP$(NC)"
+	@echo "$(YELLOW)💡 Для запуска только VPN (без веб-интерфейса): make up-vpn$(NC)"
+	@sleep 5
+	@$(DOCKER_COMPOSE) ps
 
-.PHONY: up-web
-up-web: check-compose init-submodules check-server-stopped ## Запуск полного стека (VPN + Web + PostgreSQL)
-        @echo "$(BLUE)🚀 Запуск полного стека (VPN + Web + PostgreSQL)...$(NC)"
-        @# Автоматическая инициализация если нужно
-        @if [ ! -f ".env" ]; then \
-                echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
-                $(MAKE) init; \
-        fi
-        @$(DOCKER_COMPOSE) --profile web up -d
-        @echo "$(GREEN)✅ Полный стек запущен$(NC)"
-        @sleep 5
-        @$(DOCKER_COMPOSE) ps
+.PHONY: up-vpn
+up-vpn: check-compose init-submodules check-server-stopped ## Запуск только VPN (без веб-интерфейса, совместимость с v1.x)
+	@echo "$(BLUE)🚀 Запуск AmneziaWG сервера (VPN-only)...$(NC)"
+	@# Автоматическая инициализация если нужно
+	@if [ ! -f ".env" ]; then \
+	        echo "$(YELLOW)🔧 Автоматическая инициализация проекта...$(NC)"; \
+	        $(MAKE) init; \
+	fi
+	@$(DOCKER_COMPOSE) up -d
+	@echo "$(GREEN)✅ VPN сервер запущен$(NC)"
+	@echo "$(YELLOW)💡 Для запуска с веб-интерфейсом: make up$(NC)"
+	@sleep 5
+	@$(MAKE) status
 
 .PHONY: down
 down: check-compose check-server-running auto-backup ## Остановка сервера
-        @echo "$(BLUE)🛑 Остановка AmneziaWG сервера...$(NC)"
-        @$(DOCKER_COMPOSE) down
-        @echo "$(GREEN)✅ Сервер остановлен$(NC)"
+	@echo "$(BLUE)🛑 Остановка AmneziaWG сервера...$(NC)"
+	@$(DOCKER_COMPOSE) down
+	@echo "$(GREEN)✅ Сервер остановлен$(NC)"
 
 .PHONY: restart
 restart: check-compose check-server-running auto-backup ## Перезапуск сервера
-        @echo "$(BLUE)🔄 Перезапуск сервера...$(NC)"
-        @$(DOCKER_COMPOSE) down
-        @sleep 2
-        @$(MAKE) up
+	@echo "$(BLUE)🔄 Перезапуск сервера...$(NC)"
+	@$(DOCKER_COMPOSE) down
+	@sleep 2
+	@$(MAKE) up
 
 .PHONY: logs
 logs: check-compose check-server-running ## Просмотр логов в реальном времени
-        @echo "$(BLUE)📄 Логи AmneziaWG сервера (Ctrl+C для выхода):$(NC)"
-        @$(DOCKER_LOGS) -f $(SERVICE_NAME)
+	@echo "$(BLUE)📄 Логи AmneziaWG сервера (Ctrl+C для выхода):$(NC)"
+	@$(DOCKER_LOGS) -f $(SERVICE_NAME)
 
 .PHONY: status
 status: check-compose ## Статус сервера и соединений
-        @echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-        @echo "$(PURPLE)║                    Статус AmneziaWG Сервера                  ║$(NC)"
-        @echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-        @echo ""
-        @echo "$(CYAN)📊 Статус контейнера:$(NC)"
-        @$(DOCKER_COMPOSE) ps || echo "$(RED)Контейнер не запущен$(NC)"
-        @echo ""
-        @if $(DOCKER_COMPOSE) ps | grep -q "Up"; then \
-                echo "$(CYAN)🔗 Статус AmneziaWG интерфейса:$(NC)"; \
-                $(DOCKER_EXEC) awg show awg0 2>/dev/null || echo "$(YELLOW)Интерфейс недоступен$(NC)"; \
-                echo ""; \
-                echo "$(CYAN)🌐 Активные соединения:$(NC)"; \
-                $(DOCKER_EXEC) awg show awg0 latest-handshakes 2>/dev/null || echo "$(YELLOW)Нет активных соединений$(NC)"; \
-        else \
-                echo "$(RED)❌ Сервер не запущен. Используйте 'make up' для запуска$(NC)"; \
-        fi
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║                    Статус AmneziaWG Сервера                  ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(CYAN)📊 Статус контейнера:$(NC)"
+	@$(DOCKER_COMPOSE) ps || echo "$(RED)Контейнер не запущен$(NC)"
+	@echo ""
+	@if $(DOCKER_COMPOSE) ps | grep -q "Up"; then \
+	        echo "$(CYAN)🔗 Статус AmneziaWG интерфейса:$(NC)"; \
+	        $(DOCKER_EXEC) awg show awg0 2>/dev/null || echo "$(YELLOW)Интерфейс недоступен$(NC)"; \
+	        echo ""; \
+	        echo "$(CYAN)🌐 Активные соединения:$(NC)"; \
+	        $(DOCKER_EXEC) awg show awg0 latest-handshakes 2>/dev/null || echo "$(YELLOW)Нет активных соединений$(NC)"; \
+	else \
+	        echo "$(RED)❌ Сервер не запущен. Используйте 'make up' для запуска$(NC)"; \
+	fi
 
 # ============================================================================
 # УПРАВЛЕНИЕ КЛИЕНТАМИ
@@ -269,37 +279,37 @@ status: check-compose ## Статус сервера и соединений
 
 .PHONY: client-add
 client-add: check-compose check-server-running check-client-name auto-backup ## Добавить клиента (name=имя [ip=IP])
-        @if [ -z "$(ip)" ]; then \
-                echo "$(YELLOW)⚠️  IP не указан, будет выбран автоматически$(NC)"; \
-                $(DOCKER_EXEC) /app/scripts/manage-clients.sh add $(name) || exit 1; \
-        else \
-                $(DOCKER_EXEC) /app/scripts/manage-clients.sh add $(name) $(ip) || exit 1; \
-        fi
-        @echo "$(GREEN)✅ Клиент $(name) добавлен$(NC)"
+	@if [ -z "$(ip)" ]; then \
+	        echo "$(YELLOW)⚠️  IP не указан, будет выбран автоматически$(NC)"; \
+	        $(DOCKER_EXEC) /app/scripts/manage-clients.sh add $(name) || exit 1; \
+	else \
+	        $(DOCKER_EXEC) /app/scripts/manage-clients.sh add $(name) $(ip) || exit 1; \
+	fi
+	@echo "$(GREEN)✅ Клиент $(name) добавлен$(NC)"
 
 .PHONY: client-rm
 client-rm: check-compose check-server-running check-client-name auto-backup ## Удалить клиента (name=имя)
-        @$(DOCKER_EXEC) /app/scripts/manage-clients.sh remove $(name) || exit 1
-        @echo "$(GREEN)✅ Клиент $(name) удален$(NC)"
+	@$(DOCKER_EXEC) /app/scripts/manage-clients.sh remove $(name) || exit 1
+	@echo "$(GREEN)✅ Клиент $(name) удален$(NC)"
 
 .PHONY: client-qr
 client-qr: check-compose check-server-running check-client-name ## Показать QR код клиента (name=имя)
-        @echo "$(BLUE)📱 QR код для клиента '$(name)':$(NC)"
-        @$(DOCKER_EXEC) /app/scripts/manage-clients.sh qr $(name)
+	@echo "$(BLUE)📱 QR код для клиента '$(name)':$(NC)"
+	@$(DOCKER_EXEC) /app/scripts/manage-clients.sh qr $(name)
 
 .PHONY: client-config
 client-config: check-compose check-server-running check-client-name ## Показать конфигурацию клиента (name=имя)
-        @$(DOCKER_EXEC) /app/scripts/manage-clients.sh show $(name)
+	@$(DOCKER_EXEC) /app/scripts/manage-clients.sh show $(name)
 
 .PHONY: client-list
 client-list: check-compose check-server-running ## Список всех клиентов
-        @$(DOCKER_EXEC) /app/scripts/manage-clients.sh list
+	@$(DOCKER_EXEC) /app/scripts/manage-clients.sh list
 
 .PHONY: client-info
 client-info: check-compose check-server-running ## Информация о подключениях клиентов
-        @echo "$(BLUE)📊 Информация о клиентах:$(NC)"
-        @$(DOCKER_EXEC) awg show awg0 dump 2>/dev/null || \
-                echo "$(YELLOW)Информация недоступна$(NC)"
+	@echo "$(BLUE)📊 Информация о клиентах:$(NC)"
+	@$(DOCKER_EXEC) awg show awg0 dump 2>/dev/null || \
+	        echo "$(YELLOW)Информация недоступна$(NC)"
 
 # ============================================================================
 # УТИЛИТЫ
@@ -307,214 +317,215 @@ client-info: check-compose check-server-running ## Информация о по�
 
 .PHONY: shell
 shell: check-compose check-server-running ## Войти в контейнер
-        @echo "$(BLUE)🐚 Вход в контейнер AmneziaWG...$(NC)"
-        @docker exec -it $(SERVICE_NAME) /bin/bash
+	@echo "$(BLUE)🐚 Вход в контейнер AmneziaWG...$(NC)"
+	@docker exec -it $(SERVICE_NAME) /bin/bash
 
 .PHONY: clean
 clean: check-compose check-container-exists auto-backup ## Полная очистка (остановка + удаление данных)
-        @echo "$(YELLOW)⚠️  Это удалит все данные сервера и клиентов!$(NC)"
-        @echo "$(GREEN)💾 Резервная копия уже создана автоматически$(NC)"
-        @read -p "Продолжить? [y/N]: " confirm && [ "$$confirm" = "y" ]
-        @$(DOCKER_COMPOSE) down -v --remove-orphans
-        @docker system prune -f
-        @rm -rf config/ clients/
-        @echo "$(GREEN)✅ Очистка завершена$(NC)"
+	@echo "$(YELLOW)⚠️  Это удалит все данные сервера и клиентов!$(NC)"
+	@echo "$(GREEN)💾 Резервная копия уже создана автоматически$(NC)"
+	@read -p "Продолжить? [y/N]: " confirm && [ "$$confirm" = "y" ]
+	@$(DOCKER_COMPOSE) down -v --remove-orphans
+	@docker system prune -f
+	@rm -rf config/ clients/
+	@echo "$(GREEN)✅ Очистка завершена$(NC)"
 
 .PHONY: update
 update: check-compose init-submodules check-server-running auto-backup ## Обновление сабмодулей и пересборка (с сохранением настроек)
-        @echo "$(BLUE)🔄 Обновление проекта...$(NC)"
-        @echo "$(BLUE)📥 Обновляем сабмодули...$(NC)"
-        @git submodule update --remote --recursive
-        @echo "$(BLUE)🛑 Останавливаем сервер...$(NC)"
-        @$(DOCKER_COMPOSE) down
-        @echo "$(BLUE)🔨 Пересобираем образ...$(NC)"
-        @$(MAKE) build-safe
-        @echo "$(BLUE)🚀 Запускаем сервер...$(NC)"
-        @$(MAKE) up
-        @echo "$(GREEN)✅ Обновление завершено$(NC)"
-        @echo "$(YELLOW)💡 Если возникли проблемы с конфигурацией, используйте 'make restore file=<backup_file>'$(NC)"
+	@echo "$(BLUE)🔄 Обновление проекта...$(NC)"
+	@echo "$(BLUE)📥 Обновляем сабмодули...$(NC)"
+	@git submodule update --remote --recursive
+	@echo "$(BLUE)🛑 Останавливаем сервер...$(NC)"
+	@$(DOCKER_COMPOSE) down
+	@echo "$(BLUE)🔨 Пересобираем образ...$(NC)"
+	@$(MAKE) build-safe
+	@echo "$(BLUE)🚀 Запускаем сервер...$(NC)"
+	@$(MAKE) up
+	@echo "$(GREEN)✅ Обновление завершено$(NC)"
+	@echo "$(YELLOW)💡 Если возникли проблемы с конфигурацией, используйте 'make restore file=<backup_file>'$(NC)"
 
 .PHONY: update-fast
 update-fast: check-compose init-submodules check-server-running auto-backup ## Быстрое обновление сабмодулей без пересборки образа
-        @echo "$(BLUE)⚡ Быстрое обновление проекта...$(NC)"
-        @echo "$(BLUE)📥 Обновляем сабмодули...$(NC)"
-        @git submodule update --remote --recursive
-        @echo "$(BLUE)🔄 Перезапускаем сервер...$(NC)"
-        @$(DOCKER_COMPOSE) down
-        @sleep 2
-        @$(MAKE) up
-        @echo "$(GREEN)✅ Быстрое обновление завершено$(NC)"
-        @echo "$(YELLOW)💡 Если обновления сабмодулей требуют пересборки, используйте 'make update'$(NC)"
+	@echo "$(BLUE)⚡ Быстрое обновление проекта...$(NC)"
+	@echo "$(BLUE)📥 Обновляем сабмодули...$(NC)"
+	@git submodule update --remote --recursive
+	@echo "$(BLUE)🔄 Перезапускаем сервер...$(NC)"
+	@$(DOCKER_COMPOSE) down
+	@sleep 2
+	@$(MAKE) up
+	@echo "$(GREEN)✅ Быстрое обновление завершено$(NC)"
+	@echo "$(YELLOW)💡 Если обновления сабмодулей требуют пересборки, используйте 'make update'$(NC)"
 
 .PHONY: backup
 backup: check-compose ## Создать резервную копию конфигураций
-        @BACKUP_FILE="amneziawg-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz"; \
-        echo "$(BLUE)💾 Создание резервной копии...$(NC)"; \
-        tar -czf $$BACKUP_FILE config/ clients/ .env 2>/dev/null || true; \
-        echo "$(GREEN)✅ Резервная копия создана: $$BACKUP_FILE$(NC)"
+	@mkdir -p $(BACKUP_FILES_DIR); \
+	BACKUP_FILE="$(BACKUP_FILES_DIR)/amneziawg-backup-$(shell date +%Y%m%d-%H%M%S).tar.gz"; \
+	echo "$(BLUE)💾 Создание резервной копии...$(NC)"; \
+	tar -czf $$BACKUP_FILE config/ clients/ .env 2>/dev/null || true; \
+	echo "$(GREEN)✅ Резервная копия создана: $$BACKUP_FILE$(NC)"
 
 .PHONY: backup-cleanup
 backup-cleanup: ## Очистка старых автоматических бэкапов (оставляет последние 10)
-        @echo "$(BLUE)🧹 Очистка старых автоматических бэкапов...$(NC)"; \
-        BACKUP_COUNT=$$(ls amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
-        if [ $$BACKUP_COUNT -gt 10 ]; then \
-                ls -t amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f; \
-                echo "$(GREEN)✅ Удалено $$(($$BACKUP_COUNT - 10)) старых бэкапов$(NC)"; \
-        else \
-                echo "$(YELLOW)ℹ️  Количество бэкапов ($$BACKUP_COUNT) в пределах нормы$(NC)"; \
-        fi
+	@echo "$(BLUE)🧹 Очистка старых автоматических бэкапов...$(NC)"; \
+	BACKUP_COUNT=$$(ls $(BACKUP_FILES_DIR)/amneziawg-auto-backup-*.tar.gz 2>/dev/null | wc -l); \
+	if [ $$BACKUP_COUNT -gt 10 ]; then \
+	        ls -t $(BACKUP_FILES_DIR)/amneziawg-auto-backup-*.tar.gz | tail -n +11 | xargs rm -f; \
+	        echo "$(GREEN)✅ Удалено $$(($$BACKUP_COUNT - 10)) старых бэкапов$(NC)"; \
+	else \
+	        echo "$(YELLOW)ℹ️  Количество бэкапов ($$BACKUP_COUNT) в пределах нормы$(NC)"; \
+	fi
 
 .PHONY: autocomplete-install autocomplete-remove autocomplete-status
 autocomplete-install: ## Установить автокомплит в ~/.bashrc
-        @echo "$(BLUE)🔧 Установка автокомплита AmneziaWG...$(NC)"; \
-        if [ ! -f "amneziawg-autocomplete.bash" ]; then \
-                echo "$(RED)❌ Файл amneziawg-autocomplete.bash не найден$(NC)"; \
-                exit 1; \
-        fi; \
-        AUTOCOMPLETE_PATH="$$(readlink -f amneziawg-autocomplete.bash)"; \
-        BASHRC_PATH="$$HOME/.bashrc"; \
-        if grep -q "amneziawg-autocomplete.bash" "$$BASHRC_PATH" 2>/dev/null; then \
-                echo "$(YELLOW)⚠️  Автокомплит уже установлен в $$BASHRC_PATH$(NC)"; \
-                echo "$(CYAN)💡 Используйте 'make autocomplete-status' для проверки$(NC)"; \
-        else \
-                echo "" >> "$$BASHRC_PATH"; \
-                echo "# AmneziaWG Docker Server Autocomplete" >> "$$BASHRC_PATH"; \
-                echo "source \"$$AUTOCOMPLETE_PATH\"" >> "$$BASHRC_PATH"; \
-                echo "$(GREEN)✅ Автокомплит установлен в $$BASHRC_PATH$(NC)"; \
-                echo "$(CYAN)💡 Перезапустите терминал или выполните: source $$BASHRC_PATH$(NC)"; \
-        fi
+	@echo "$(BLUE)🔧 Установка автокомплита AmneziaWG...$(NC)"; \
+	if [ ! -f "amneziawg-autocomplete.bash" ]; then \
+	        echo "$(RED)❌ Файл amneziawg-autocomplete.bash не найден$(NC)"; \
+	        exit 1; \
+	fi; \
+	AUTOCOMPLETE_PATH="$$(readlink -f amneziawg-autocomplete.bash)"; \
+	BASHRC_PATH="$$HOME/.bashrc"; \
+	if grep -q "amneziawg-autocomplete.bash" "$$BASHRC_PATH" 2>/dev/null; then \
+	        echo "$(YELLOW)⚠️  Автокомплит уже установлен в $$BASHRC_PATH$(NC)"; \
+	        echo "$(CYAN)💡 Используйте 'make autocomplete-status' для проверки$(NC)"; \
+	else \
+	        echo "" >> "$$BASHRC_PATH"; \
+	        echo "# AmneziaWG Docker Server Autocomplete" >> "$$BASHRC_PATH"; \
+	        echo "source \"$$AUTOCOMPLETE_PATH\"" >> "$$BASHRC_PATH"; \
+	        echo "$(GREEN)✅ Автокомплит установлен в $$BASHRC_PATH$(NC)"; \
+	        echo "$(CYAN)💡 Перезапустите терминал или выполните: source $$BASHRC_PATH$(NC)"; \
+	fi
 
 autocomplete-remove: ## Удалить автокомплит из ~/.bashrc
-        @echo "$(BLUE)🗑️ Удаление автокомплита AmneziaWG...$(NC)"; \
-        BASHRC_PATH="$$HOME/.bashrc"; \
-        if [ ! -f "$$BASHRC_PATH" ]; then \
-                echo "$(RED)❌ Файл $$BASHRC_PATH не найден$(NC)"; \
-                exit 1; \
-        fi; \
-        if grep -q "amneziawg-autocomplete.bash" "$$BASHRC_PATH" 2>/dev/null; then \
-                echo "$(YELLOW)Удаляем строки автокомплита...$(NC)"; \
-                grep -v "amneziawg-autocomplete.bash" "$$BASHRC_PATH" | \
-                grep -v "AmneziaWG Docker Server Autocomplete" > "$$BASHRC_PATH.tmp"; \
-                mv "$$BASHRC_PATH.tmp" "$$BASHRC_PATH"; \
-                echo "$(GREEN)✅ Автокомплит удален из $$BASHRC_PATH$(NC)"; \
-                echo "$(CYAN)💡 Перезапустите терминал для применения изменений$(NC)"; \
-        else \
-                echo "$(YELLOW)ℹ️  Автокомплит не найден в $$BASHRC_PATH$(NC)"; \
-        fi
+	@echo "$(BLUE)🗑️ Удаление автокомплита AmneziaWG...$(NC)"; \
+	BASHRC_PATH="$$HOME/.bashrc"; \
+	if [ ! -f "$$BASHRC_PATH" ]; then \
+	        echo "$(RED)❌ Файл $$BASHRC_PATH не найден$(NC)"; \
+	        exit 1; \
+	fi; \
+	if grep -q "amneziawg-autocomplete.bash" "$$BASHRC_PATH" 2>/dev/null; then \
+	        echo "$(YELLOW)Удаляем строки автокомплита...$(NC)"; \
+	        grep -v "amneziawg-autocomplete.bash" "$$BASHRC_PATH" | \
+	        grep -v "AmneziaWG Docker Server Autocomplete" > "$$BASHRC_PATH.tmp"; \
+	        mv "$$BASHRC_PATH.tmp" "$$BASHRC_PATH"; \
+	        echo "$(GREEN)✅ Автокомплит удален из $$BASHRC_PATH$(NC)"; \
+	        echo "$(CYAN)💡 Перезапустите терминал для применения изменений$(NC)"; \
+	else \
+	        echo "$(YELLOW)ℹ️  Автокомплит не найден в $$BASHRC_PATH$(NC)"; \
+	fi
 
 autocomplete-status: ## Проверить статус автокомплита
-        @echo "$(BLUE)🔍 Проверка статуса автокомплита...$(NC)"; \
-        AUTOCOMPLETE_PATH="$$(readlink -f amneziawg-autocomplete.bash 2>/dev/null || echo '')"; \
-        BASHRC_PATH="$$HOME/.bashrc"; \
-        echo "$(CYAN)📁 Файл автокомплита:$(NC)"; \
-        if [ -f "amneziawg-autocomplete.bash" ]; then \
-                echo "$(GREEN)✅ amneziawg-autocomplete.bash найден$(NC)"; \
-                echo "   Путь: $$AUTOCOMPLETE_PATH"; \
-        else \
-                echo "$(RED)❌ amneziawg-autocomplete.bash не найден$(NC)"; \
-        fi; \
-        echo ""; \
-        echo "$(CYAN)📝 Интеграция в bashrc:$(NC)"; \
-        if [ -f "$$BASHRC_PATH" ] && grep -q "amneziawg-autocomplete.bash" "$$BASHRC_PATH" 2>/dev/null; then \
-                echo "$(GREEN)✅ Автокомплит интегрирован в $$BASHRC_PATH$(NC)"; \
-                grep "amneziawg-autocomplete.bash" "$$BASHRC_PATH" | head -1; \
-        else \
-                echo "$(RED)❌ Автокомплит НЕ интегрирован в $$BASHRC_PATH$(NC)"; \
-                echo "$(YELLOW)💡 Используйте 'make autocomplete-install' для установки$(NC)"; \
-        fi; \
-        echo ""; \
-        echo "$(CYAN)🔧 Текущая сессия:$(NC)"; \
-        if command -v _amneziawg_make &>/dev/null; then \
-                echo "$(GREEN)✅ Автокомплит активен в текущей сессии$(NC)"; \
-        else \
-                echo "$(YELLOW)⚠️  Автокомплит НЕ активен в текущей сессии$(NC)"; \
-                echo "$(CYAN)💡 Выполните: source amneziawg-autocomplete.bash$(NC)"; \
-        fi
+	@echo "$(BLUE)🔍 Проверка статуса автокомплита...$(NC)"; \
+	AUTOCOMPLETE_PATH="$$(readlink -f amneziawg-autocomplete.bash 2>/dev/null || echo '')"; \
+	BASHRC_PATH="$$HOME/.bashrc"; \
+	echo "$(CYAN)📁 Файл автокомплита:$(NC)"; \
+	if [ -f "amneziawg-autocomplete.bash" ]; then \
+	        echo "$(GREEN)✅ amneziawg-autocomplete.bash найден$(NC)"; \
+	        echo "   Путь: $$AUTOCOMPLETE_PATH"; \
+	else \
+	        echo "$(RED)❌ amneziawg-autocomplete.bash не найден$(NC)"; \
+	fi; \
+	echo ""; \
+	echo "$(CYAN)📝 Интеграция в bashrc:$(NC)"; \
+	if [ -f "$$BASHRC_PATH" ] && grep -q "amneziawg-autocomplete.bash" "$$BASHRC_PATH" 2>/dev/null; then \
+	        echo "$(GREEN)✅ Автокомплит интегрирован в $$BASHRC_PATH$(NC)"; \
+	        grep "amneziawg-autocomplete.bash" "$$BASHRC_PATH" | head -1; \
+	else \
+	        echo "$(RED)❌ Автокомплит НЕ интегрирован в $$BASHRC_PATH$(NC)"; \
+	        echo "$(YELLOW)💡 Используйте 'make autocomplete-install' для установки$(NC)"; \
+	fi; \
+	echo ""; \
+	echo "$(CYAN)🔧 Текущая сессия:$(NC)"; \
+	if command -v _amneziawg_make &>/dev/null; then \
+	        echo "$(GREEN)✅ Автокомплит активен в текущей сессии$(NC)"; \
+	else \
+	        echo "$(YELLOW)⚠️  Автокомплит НЕ активен в текущей сессии$(NC)"; \
+	        echo "$(CYAN)💡 Выполните: source amneziawg-autocomplete.bash$(NC)"; \
+	fi
 
 autocomplete-test: ## Протестировать автокомплит
-        @echo "$(BLUE)🧪 Тестирование автокомплита...$(NC)"; \
-        if [ ! -f "amneziawg-autocomplete.bash" ]; then \
-                echo "$(RED)❌ Файл amneziawg-autocomplete.bash не найден$(NC)"; \
-                exit 1; \
-        fi; \
-        echo "$(CYAN)📋 Загружаем автокомплит...$(NC)"; \
-        echo "$(GREEN)✅ Автокомплит готов к тестированию$(NC)"; \
-        echo ""; \
-        echo "$(CYAN)🎯 Инструкции для тестирования:$(NC)"; \
-        echo "   1. Выполните: source amneziawg-autocomplete.bash"; \
-        echo "   2. Попробуйте: make <TAB>"; \
-        echo "   3. Попробуйте: make client-add name=<TAB>"; \
-        echo "   4. Попробуйте: awg_add_client <TAB>"; \
-        echo ""; \
-        echo "$(YELLOW)💡 Для постоянной установки используйте: make autocomplete-install$(NC)"
-        @echo "$(CYAN)💡 Автокомплит предоставляет:$(NC)"
-        @echo "$(CYAN)   - Автодополнение всех make команд$(NC)"
-        @echo "$(CYAN)   - Умный подбор имен клиентов и IP адресов$(NC)"
-        @echo "$(CYAN)   - Быстрые команды awg_* для частых операций$(NC)"
+	@echo "$(BLUE)🧪 Тестирование автокомплита...$(NC)"; \
+	if [ ! -f "amneziawg-autocomplete.bash" ]; then \
+	        echo "$(RED)❌ Файл amneziawg-autocomplete.bash не найден$(NC)"; \
+	        exit 1; \
+	fi; \
+	echo "$(CYAN)📋 Загружаем автокомплит...$(NC)"; \
+	echo "$(GREEN)✅ Автокомплит готов к тестированию$(NC)"; \
+	echo ""; \
+	echo "$(CYAN)🎯 Инструкции для тестирования:$(NC)"; \
+	echo "   1. Выполните: source amneziawg-autocomplete.bash"; \
+	echo "   2. Попробуйте: make <TAB>"; \
+	echo "   3. Попробуйте: make client-add name=<TAB>"; \
+	echo "   4. Попробуйте: awg_add_client <TAB>"; \
+	echo ""; \
+	echo "$(YELLOW)💡 Для постоянной установки используйте: make autocomplete-install$(NC)"
+	@echo "$(CYAN)💡 Автокомплит предоставляет:$(NC)"
+	@echo "$(CYAN)   - Автодополнение всех make команд$(NC)"
+	@echo "$(CYAN)   - Умный подбор имен клиентов и IP адресов$(NC)"
+	@echo "$(CYAN)   - Быстрые команды awg_* для частых операций$(NC)"
 
 .PHONY: restore
 restore: ## Восстановить из резервной копии (file=путь_к_архиву)
-        @if [ -z "$(file)" ]; then \
-                echo "$(RED)❌ Укажите файл: make restore file=backup.tar.gz$(NC)"; \
-                exit 1; \
-        fi
-        @echo "$(BLUE)📥 Восстановление из $(file)...$(NC)"
-        @$(MAKE) down
-        @tar -xzf $(file)
-        @$(MAKE) up
-        @echo "$(GREEN)✅ Восстановление завершено$(NC)"
+	@if [ -z "$(file)" ]; then \
+	        echo "$(RED)❌ Укажите файл: make restore file=backup.tar.gz$(NC)"; \
+	        exit 1; \
+	fi
+	@echo "$(BLUE)📥 Восстановление из $(file)...$(NC)"
+	@$(MAKE) down
+	@tar -xzf $(file)
+	@$(MAKE) up
+	@echo "$(GREEN)✅ Восстановление завершено$(NC)"
 
 .PHONY: test
 test: check-compose ## Тест соединения и конфигурации
-        @echo "$(BLUE)🧪 Тестирование AmneziaWG сервера...$(NC)"
-        @echo ""
-        @echo "$(CYAN)1. Проверка контейнера:$(NC)"
-        @$(DOCKER_COMPOSE) ps | grep $(SERVICE_NAME) | grep Up && echo "$(GREEN)✅ Контейнер запущен$(NC)" || echo "$(RED)❌ Контейнер не запущен$(NC)"
-        @echo ""
-        @echo "$(CYAN)2. Проверка интерфейса:$(NC)"
-        @$(DOCKER_EXEC) ip link show awg0 >/dev/null 2>&1 && echo "$(GREEN)✅ Интерфейс awg0 активен$(NC)" || echo "$(RED)❌ Интерфейс awg0 неактивен$(NC)"
-        @echo ""
-        @echo "$(CYAN)3. Проверка порта:$(NC)"
-        @$(DOCKER_EXEC) netstat -ulnp | grep :51820 >/dev/null 2>&1 && echo "$(GREEN)✅ Порт 51820 прослушивается$(NC)" || echo "$(RED)❌ Порт 51820 не прослушивается$(NC)"
-        @echo ""
-        @echo "$(CYAN)4. Проверка DNS:$(NC)"
-        @$(DOCKER_EXEC) nslookup google.com >/dev/null 2>&1 && echo "$(GREEN)✅ DNS работает$(NC)" || echo "$(RED)❌ Проблемы с DNS$(NC)"
+	@echo "$(BLUE)🧪 Тестирование AmneziaWG сервера...$(NC)"
+	@echo ""
+	@echo "$(CYAN)1. Проверка контейнера:$(NC)"
+	@$(DOCKER_COMPOSE) ps | grep $(SERVICE_NAME) | grep Up && echo "$(GREEN)✅ Контейнер запущен$(NC)" || echo "$(RED)❌ Контейнер не запущен$(NC)"
+	@echo ""
+	@echo "$(CYAN)2. Проверка интерфейса:$(NC)"
+	@$(DOCKER_EXEC) ip link show awg0 >/dev/null 2>&1 && echo "$(GREEN)✅ Интерфейс awg0 активен$(NC)" || echo "$(RED)❌ Интерфейс awg0 неактивен$(NC)"
+	@echo ""
+	@echo "$(CYAN)3. Проверка порта:$(NC)"
+	@$(DOCKER_EXEC) netstat -ulnp | grep :51820 >/dev/null 2>&1 && echo "$(GREEN)✅ Порт 51820 прослушивается$(NC)" || echo "$(RED)❌ Порт 51820 не прослушивается$(NC)"
+	@echo ""
+	@echo "$(CYAN)4. Проверка DNS:$(NC)"
+	@$(DOCKER_EXEC) nslookup google.com >/dev/null 2>&1 && echo "$(GREEN)✅ DNS работает$(NC)" || echo "$(RED)❌ Проблемы с DNS$(NC)"
 
 .PHONY: debug
 debug: check-compose ## Отладочная информация
-        @echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-        @echo "$(PURPLE)║                    Отладочная информация                    ║$(NC)"
-        @echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-        @echo ""
-        @echo "$(CYAN)🐳 Docker версия:$(NC)"
-        @docker --version
-        @$(DOCKER_COMPOSE) version
-        @echo ""
-        @echo "$(CYAN)📊 Статус контейнера:$(NC)"
-        @$(DOCKER_COMPOSE) ps
-        @echo ""
-        @echo "$(CYAN)🔍 Последние логи:$(NC)"
-        @$(DOCKER_LOGS) --tail=20 $(SERVICE_NAME) 2>/dev/null || echo "$(YELLOW)Логи недоступны$(NC)"
-        @echo ""
-        @echo "$(CYAN)🌐 Сетевые интерфейсы:$(NC)"
-        @$(DOCKER_EXEC) ip addr show 2>/dev/null || echo "Контейнер недоступен"
-        @echo ""
-        @echo "$(CYAN)🔥 iptables правила:$(NC)"
-        @$(DOCKER_EXEC) iptables -L -n 2>/dev/null || echo "Контейнер недоступен"
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║                    Отладочная информация                    ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(CYAN)🐳 Docker версия:$(NC)"
+	@docker --version
+	@$(DOCKER_COMPOSE) version
+	@echo ""
+	@echo "$(CYAN)📊 Статус контейнера:$(NC)"
+	@$(DOCKER_COMPOSE) ps
+	@echo ""
+	@echo "$(CYAN)🔍 Последние логи:$(NC)"
+	@$(DOCKER_LOGS) --tail=20 $(SERVICE_NAME) 2>/dev/null || echo "$(YELLOW)Логи недоступны$(NC)"
+	@echo ""
+	@echo "$(CYAN)🌐 Сетевые интерфейсы:$(NC)"
+	@$(DOCKER_EXEC) ip addr show 2>/dev/null || echo "Контейнер недоступен"
+	@echo ""
+	@echo "$(CYAN)🔥 iptables правила:$(NC)"
+	@$(DOCKER_EXEC) iptables -L -n 2>/dev/null || echo "Контейнер недоступен"
 
 .PHONY: monitor
 monitor: check-compose ## Мониторинг в реальном времени
-        @echo "$(BLUE)📈 Мониторинг AmneziaWG (Ctrl+C для выхода)$(NC)"
-        @while true; do \
-                clear; \
-                echo "$(PURPLE)═══════════════════ AmneziaWG Monitor $(shell date) ═══════════════════$(NC)"; \
-                echo ""; \
-                $(MAKE) status --no-print-directory; \
-                echo ""; \
-                echo "$(CYAN)💾 Использование ресурсов:$(NC)"; \
-                docker stats $(SERVICE_NAME) --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" 2>/dev/null || echo "Контейнер недоступен"; \
-                sleep 5; \
-        done
+	@echo "$(BLUE)📈 Мониторинг AmneziaWG (Ctrl+C для выхода)$(NC)"
+	@while true; do \
+	        clear; \
+	        echo "$(PURPLE)═══════════════════ AmneziaWG Monitor $(shell date) ═══════════════════$(NC)"; \
+	        echo ""; \
+	        $(MAKE) status --no-print-directory; \
+	        echo ""; \
+	        echo "$(CYAN)💾 Использование ресурсов:$(NC)"; \
+	        docker stats $(SERVICE_NAME) --no-stream --format "table {{.Container}}\t{{.CPUPerc}}\t{{.MemUsage}}\t{{.NetIO}}" 2>/dev/null || echo "Контейнер недоступен"; \
+	        sleep 5; \
+	done
 
 # ============================================================================
 # НАСТРОЙКИ ПО УМОЛЧАНИЮ
@@ -541,27 +552,27 @@ monitor: check-compose ## Мониторинг в реальном времен�
 
 .PHONY: release-info
 release-info: ## Показать информацию о релизах (теперь через GitHub Actions)
-        @echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-        @echo "$(PURPLE)║                    RELEASE INFORMATION                      ║$(NC)"
-        @echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-        @echo ""
-        @echo "$(YELLOW)📢 Релизы теперь создаются через GitHub Actions!$(NC)"
-        @echo ""
-        @echo "$(CYAN)🚀 Как создать релиз:$(NC)"
-        @echo "1. Откройте: https://github.com/$$(git config --get remote.origin.url | sed 's/.*github.com[\/:]//; s/.git$$//')/actions/workflows/release.yml"
-        @echo "2. Нажмите 'Run workflow'"
-        @echo "3. Выберите тип релиза:"
-        @echo "   • patch  - увеличивает версию патча (1.0.0 → 1.0.1)"
-        @echo "   • minor  - увеличивает минорную версию (1.0.0 → 1.1.0)"
-        @echo "   • major  - увеличивает мажорную версию (1.0.0 → 2.0.0)"
-        @echo "   • prerelease - создает предварительную версию (1.0.0 → 1.0.1-rc.1)"
-        @echo "   • custom - позволяет указать произвольную версию"
-        @echo ""
-        @echo "$(CYAN)⚡ Пайплайн автоматически:$(NC)"
-        @echo "   ✓ Вычислит новую версию по семантическому версионированию"
-        @echo "   ✓ Обновит файл VERSION"
-        @echo "   ✓ Создаст git тег"
-        @echo "   ✓ Соберет и опубликует Docker образы"
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║                    RELEASE INFORMATION                      ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@echo ""
+	@echo "$(YELLOW)📢 Релизы теперь создаются через GitHub Actions!$(NC)"
+	@echo ""
+	@echo "$(CYAN)🚀 Как создать релиз:$(NC)"
+	@echo "1. Откройте: https://github.com/$$(git config --get remote.origin.url | sed 's/.*github.com[\/:]//; s/.git$$//')/actions/workflows/release.yml"
+	@echo "2. Нажмите 'Run workflow'"
+	@echo "3. Выберите тип релиза:"
+	@echo "   • patch  - увеличивает версию патча (1.0.0 → 1.0.1)"
+	@echo "   • minor  - увеличивает минорную версию (1.0.0 → 1.1.0)"
+	@echo "   • major  - увеличивает мажорную версию (1.0.0 → 2.0.0)"
+	@echo "   • prerelease - создает предварительную версию (1.0.0 → 1.0.1-rc.1)"
+	@echo "   • custom - позволяет указать произвольную версию"
+	@echo ""
+	@echo "$(CYAN)⚡ Пайплайн автоматически:$(NC)"
+	@echo "   ✓ Вычислит новую версию по семантическому версионированию"
+	@echo "   ✓ Обновит файл VERSION"
+	@echo "   ✓ Создаст git тег"
+	@echo "   ✓ Соберет и опубликует Docker образы"
 
 # ============================================================================
 # ВЕБ-ИНТЕРФЕЙС И POSTGRESQL (v2.0.0+)
@@ -569,74 +580,75 @@ release-info: ## Показать информацию о релизах (теп
 
 .PHONY: web-logs web-shell web-restart web-status web-url
 web-logs: check-compose ## Просмотр логов веб-интерфейса
-        @echo "$(BLUE)📄 Логи веб-интерфейса (Ctrl+C для выхода):$(NC)"
-        @$(DOCKER_LOGS) -f $(WEB_SERVICE)
+	@echo "$(BLUE)📄 Логи веб-интерфейса (Ctrl+C для выхода):$(NC)"
+	@$(DOCKER_LOGS) -f $(WEB_SERVICE)
 
 web-shell: check-compose ## Войти в контейнер веб-интерфейса
-        @echo "$(BLUE)🐚 Вход в контейнер веб-интерфейса...$(NC)"
-        @docker exec -it $(WEB_SERVICE) /bin/sh
+	@echo "$(BLUE)🐚 Вход в контейнер веб-интерфейса...$(NC)"
+	@docker exec -it $(WEB_SERVICE) /bin/sh
 
 web-restart: check-compose ## Перезапустить веб-интерфейс
-        @echo "$(BLUE)🔄 Перезапуск веб-интерфейса...$(NC)"
-        @$(DOCKER_COMPOSE) restart web
-        @sleep 3
-        @echo "$(GREEN)✅ Веб-интерфейс перезапущен$(NC)"
+	@echo "$(BLUE)🔄 Перезапуск веб-интерфейса...$(NC)"
+	@$(DOCKER_COMPOSE) restart web
+	@sleep 3
+	@echo "$(GREEN)✅ Веб-интерфейс перезапущен$(NC)"
 
 web-status: check-compose ## Статус веб-интерфейса и API
-        @echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-        @echo "$(PURPLE)║                  Статус Web Interface & API                  ║$(NC)"
-        @echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-        @$(DOCKER_COMPOSE) ps web db 2>/dev/null || echo "Сервисы не запущены"
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║                  Статус Web Interface & API                  ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@$(DOCKER_COMPOSE) ps web db 2>/dev/null || echo "Сервисы не запущены"
 
 web-url: check-compose ## Показать URL веб-интерфейса
-        @WEB_PORT=$$(grep "^WEB_PORT=" .env 2>/dev/null | cut -d= -f2 || echo "8080"); \
-        SERVER_IP=$$(curl -s -4 https://eth0.me || echo "localhost"); \
-        echo "$(CYAN)🌐 Веб-интерфейс доступен:$(NC) $(GREEN)http://$$SERVER_IP:$$WEB_PORT$(NC)"
+	@WEB_PORT=$$(grep "^WEB_PORT=" .env 2>/dev/null | cut -d= -f2 || echo "8080"); \
+	SERVER_IP=$$(curl -s -4 https://eth0.me || echo "localhost"); \
+	echo "$(CYAN)🌐 Веб-интерфейс доступен:$(NC) $(GREEN)http://$$SERVER_IP:$$WEB_PORT$(NC)"
 
 .PHONY: db-logs db-shell db-backup db-restore db-status db-psql
 db-logs: check-compose ## Просмотр логов PostgreSQL
-        @echo "$(BLUE)📄 Логи PostgreSQL (Ctrl+C для выхода):$(NC)"
-        @$(DOCKER_LOGS) -f $(DB_SERVICE)
+	@echo "$(BLUE)📄 Логи PostgreSQL (Ctrl+C для выхода):$(NC)"
+	@$(DOCKER_LOGS) -f $(DB_SERVICE)
 
 db-shell: check-compose ## Войти в контейнер PostgreSQL
-        @docker exec -it $(DB_SERVICE) /bin/sh
+	@docker exec -it $(DB_SERVICE) /bin/sh
 
 db-psql: check-compose ## Подключиться к PostgreSQL через psql
-        @PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-        PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-        docker exec -it $(DB_SERVICE) psql -U $$PGUSER -d $$PGDB
+	@PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	docker exec -it $(DB_SERVICE) psql -U $$PGUSER -d $$PGDB
 
 db-backup: check-compose ## Создать бэкап PostgreSQL
-        @BACKUP_FILE="postgres-backup-$$(date +%Y%m%d-%H%M%S).sql"; \
-        PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-        PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-        docker exec $(DB_SERVICE) pg_dump -U $$PGUSER $$PGDB > $$BACKUP_FILE 2>/dev/null && \
-        echo "$(GREEN)✅ Бэкап создан: $$BACKUP_FILE$(NC)"
+	@mkdir -p $(BACKUP_DB_DIR); \
+	BACKUP_FILE="$(BACKUP_DB_DIR)/postgres-backup-$$(date +%Y%m%d-%H%M%S).sql"; \
+	PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	docker exec $(DB_SERVICE) pg_dump -U $$PGUSER $$PGDB > $$BACKUP_FILE 2>/dev/null && \
+	echo "$(GREEN)✅ Бэкап создан: $$BACKUP_FILE$(NC)"
 
 db-restore: check-compose ## Восстановить PostgreSQL из бэкапа (file=путь)
-        @[ -n "$(file)" ] || (echo "$(RED)Укажите file=путь_к_файлу$(NC)" && exit 1)
-        @[ -f "$(file)" ] || (echo "$(RED)Файл $(file) не найден$(NC)" && exit 1)
-        @PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-        PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
-        cat $(file) | docker exec -i $(DB_SERVICE) psql -U $$PGUSER $$PGDB && \
-        echo "$(GREEN)✅ Бэкап восстановлен$(NC)"
+	@[ -n "$(file)" ] || (echo "$(RED)Укажите file=путь_к_файлу$(NC)" && exit 1)
+	@[ -f "$(file)" ] || (echo "$(RED)Файл $(file) не найден$(NC)" && exit 1)
+	@PGUSER=$$(grep "^POSTGRES_USER=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	PGDB=$$(grep "^POSTGRES_DB=" .env 2>/dev/null | cut -d= -f2 || echo "amneziawg"); \
+	cat $(file) | docker exec -i $(DB_SERVICE) psql -U $$PGUSER $$PGDB && \
+	echo "$(GREEN)✅ Бэкап восстановлен$(NC)"
 
 db-status: check-compose ## Статус PostgreSQL
-        @echo "$(CYAN)📊 PostgreSQL Status:$(NC)"
-        @$(DOCKER_COMPOSE) ps db 2>/dev/null || echo "PostgreSQL не запущен"
+	@echo "$(CYAN)📊 PostgreSQL Status:$(NC)"
+	@$(DOCKER_COMPOSE) ps db 2>/dev/null || echo "PostgreSQL не запущен"
 
 .PHONY: stack-status stack-logs stack-restart
 stack-status: ## Статус всего стека (VPN + Web + DB)
-        @echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
-        @echo "$(PURPLE)║          AmneziaWG v2.0.0 - Полный статус стека              ║$(NC)"
-        @echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
-        @$(DOCKER_COMPOSE) ps
+	@echo "$(PURPLE)╔══════════════════════════════════════════════════════════════╗$(NC)"
+	@echo "$(PURPLE)║          AmneziaWG v2.0.0 - Полный статус стека              ║$(NC)"
+	@echo "$(PURPLE)╚══════════════════════════════════════════════════════════════╝$(NC)"
+	@$(DOCKER_COMPOSE) ps
 
 stack-logs: check-compose ## Просмотр логов всего стека
-        @$(DOCKER_COMPOSE) logs -f
+	@$(DOCKER_COMPOSE) logs -f
 
 stack-restart: check-compose auto-backup ## Перезапустить весь стек
-        @$(DOCKER_COMPOSE) down && sleep 2 && $(MAKE) up
+	@$(DOCKER_COMPOSE) down && sleep 2 && $(MAKE) up
 
 # По умолчанию показываем справку
 .DEFAULT_GOAL := help
