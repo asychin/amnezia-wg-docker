@@ -365,19 +365,17 @@ restore: ## Restore from backup (file=PATH)
 	@$(DOCKER_COMPOSE) up -d
 	@echo "$(GREEN)Restore complete$(NC)"
 
-.PHONY: backup-start
-backup-start: ## Start scheduled backup service
-	@echo "$(BLUE)Starting backup service...$(NC)"
+.PHONY: backup-restart
+backup-restart: ## Restart backup service
+	@echo "$(BLUE)Restarting backup service...$(NC)"
 	@mkdir -p backups
-	@$(DOCKER_COMPOSE) --profile backup up -d backup
-	@echo "$(GREEN)Backup service started$(NC)"
+	@$(DOCKER_COMPOSE) restart backup 2>/dev/null || $(DOCKER_COMPOSE) up -d backup
+	@echo "$(GREEN)Backup service restarted$(NC)"
 	@echo "$(YELLOW)Interval: $${BACKUP_INTERVAL:-24h}, Keep: $${BACKUP_KEEP:-10} backups$(NC)"
 
-.PHONY: backup-stop
-backup-stop: ## Stop scheduled backup service
-	@echo "$(BLUE)Stopping backup service...$(NC)"
-	@$(DOCKER_COMPOSE) --profile backup stop backup 2>/dev/null || true
-	@echo "$(GREEN)Backup service stopped$(NC)"
+.PHONY: backup-logs
+backup-logs: ## View backup service logs
+	@$(DOCKER_COMPOSE) logs -f backup
 
 .PHONY: test
 test: check-compose ## Test server connectivity
