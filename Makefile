@@ -119,6 +119,10 @@ help: check-autocomplete ## Show this help
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2}' | \
 		grep -E "(shell|clean|update|backup|restore|debug|test)"
 	@echo ""
+	@echo "$(CYAN)Autocomplete:$(NC)"
+	@echo "  $(GREEN)autocomplete-install$(NC)   Install bash autocomplete"
+	@echo "  $(GREEN)autocomplete-uninstall$(NC) Remove bash autocomplete"
+	@echo ""
 	@echo "$(CYAN)Examples:$(NC)"
 	@echo "  make up                      Start VPN server (standard)"
 	@echo "  make up-s2s                  Start VPN server (site-to-site)"
