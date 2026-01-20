@@ -86,7 +86,7 @@ git submodule update --init --recursive
 
 ## Configuration
 
-Copy `env.example` to `.env` and edit as needed. Key settings:
+Copy `.env.example` to `.env` and edit as needed. Key settings:
 
 | Variable | Default | Description |
 |----------|---------|-------------|

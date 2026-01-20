@@ -195,7 +195,7 @@ TASKS.md
 # ============================================================================
 
 # Important files that should NOT be ignored
-!env.example
+!.env.example
 !README.md
 !Makefile
 !docker-compose.yml

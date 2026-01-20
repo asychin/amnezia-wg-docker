@@ -128,7 +128,7 @@ help: check-autocomplete ## Show this help
 init: check-compose init-submodules ## Initialize project
 	@echo "$(BLUE)Initializing project...$(NC)"
 	@if [ ! -f ".env" ]; then \
-		cp env.example .env; \
+		cp .env.example .env; \
 		echo "$(GREEN).env file created$(NC)"; \
 		$(MAKE) generate-obfuscation; \
 	else \
