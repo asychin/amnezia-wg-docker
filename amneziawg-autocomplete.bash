@@ -71,9 +71,9 @@ _get_next_ip() {
     echo "${base_ip}.2"
 }
 
-# Получение списка архивных файлов
+# Get list of backup files from backups/ folder
 _get_backup_files() {
-    ls *.tar.gz 2>/dev/null | sort -r || echo ""
+    ls backups/*.tar.gz 2>/dev/null | sort -r || echo ""
 }
 
 # =============================================================================

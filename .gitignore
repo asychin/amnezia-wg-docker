@@ -24,8 +24,7 @@ clients/
 # Backups
 *.backup
 *.bak
-amneziawg-backup-*.tar.gz
-amneziawg-auto-backup-*.tar.gz
+backups/
 
 # ============================================================================
 # DOCKER AND CONTAINERS

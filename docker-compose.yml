@@ -1,82 +1,8 @@
-# AmneziaWG Docker Server v2.0.0 - Full Stack Configuration
-# Docker-реализация: asychin (https://github.com/asychin)
-# Оригинальный VPN сервер: AmneziaWG Team (https://github.com/amnezia-vpn)
-# Web Interface: React + TypeScript + PostgreSQL
+# AmneziaWG Docker Server
+# VPN server with DPI bypass capabilities
 
 services:
-  # PostgreSQL Database для управления клиентами
-  # Используется только с веб-интерфейсом (профиль "web")
-  postgres:
-    image: postgres:16-alpine
-    container_name: amneziawg-db
-    profiles: ["web"]  # Запускается только с --profile web
-    environment:
-      # Основные настройки БД (из .env)
-      POSTGRES_DB: ${POSTGRES_DB:-amneziawg}
-      POSTGRES_USER: ${POSTGRES_USER:-amneziawg}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password_to_secure_one}
-      
-      # Настройки производительности PostgreSQL
-      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:--E UTF8 --locale=C}
-      
-      # Дополнительные параметры (опционально через .env)
-      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD:-scram-sha-256}
-    command: 
-      - "postgres"
-      - "-c"
-      - "shared_buffers=${PG_SHARED_BUFFERS:-128MB}"
-      - "-c"
-      - "max_connections=${PG_MAX_CONNECTIONS:-100}"
-      - "-c"
-      - "work_mem=${PG_WORK_MEM:-4MB}"
-      - "-c"
-      - "maintenance_work_mem=${PG_MAINTENANCE_WORK_MEM:-64MB}"
-      - "-c"
-      - "effective_cache_size=${PG_EFFECTIVE_CACHE_SIZE:-512MB}"
-      - "-c"
-      - "checkpoint_completion_target=${PG_CHECKPOINT_COMPLETION_TARGET:-0.9}"
-      - "-c"
-      - "wal_buffers=${PG_WAL_BUFFERS:-16MB}"
-      - "-c"
-      - "default_statistics_target=${PG_DEFAULT_STATISTICS_TARGET:-100}"
-      - "-c"
-      - "random_page_cost=${PG_RANDOM_PAGE_COST:-1.1}"
-      - "-c"
-      - "effective_io_concurrency=${PG_EFFECTIVE_IO_CONCURRENCY:-200}"
-      - "-c"
-      - "min_wal_size=${PG_MIN_WAL_SIZE:-1GB}"
-      - "-c"
-      - "max_wal_size=${PG_MAX_WAL_SIZE:-4GB}"
-      - "-c"
-      - "max_worker_processes=${PG_MAX_WORKER_PROCESSES:-4}"
-      - "-c"
-      - "max_parallel_workers_per_gather=${PG_MAX_PARALLEL_WORKERS_PER_GATHER:-2}"
-      - "-c"
-      - "max_parallel_workers=${PG_MAX_PARALLEL_WORKERS:-4}"
-      - "-c"
-      - "max_parallel_maintenance_workers=${PG_MAX_PARALLEL_MAINTENANCE_WORKERS:-2}"
-      - "-c"
-      - "log_timezone=UTC"
-      - "-c"
-      - "timezone=UTC"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    networks:
-      - amneziawg-net
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-amneziawg}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
-    shm_size: ${PG_SHM_SIZE:-128MB}
-
-  # VPN Server с AmneziaWG
+  # VPN Server
   vpn:
     build: .
     container_name: amneziawg-server
@@ -98,14 +24,11 @@ services:
       - ./clients:/app/clients
       - /lib/modules:/lib/modules:ro
     environment:
-      # Основные настройки VPN
       - AWG_INTERFACE=${AWG_INTERFACE:-awg0}
       - AWG_PORT=${AWG_PORT:-51820}
       - AWG_NET=${AWG_NET:-10.13.13.0/24}
       - AWG_SERVER_IP=${AWG_SERVER_IP:-10.13.13.1}
       - AWG_DNS=${AWG_DNS:-8.8.8.8,8.8.4.4}
-      
-      # Параметры обфускации AmneziaWG для обхода DPI
       - AWG_JC=${AWG_JC:-7}
       - AWG_JMIN=${AWG_JMIN:-50}
       - AWG_JMAX=${AWG_JMAX:-1000}
@@ -115,15 +38,9 @@ services:
       - AWG_H2=${AWG_H2:-2}
       - AWG_H3=${AWG_H3:-3}
       - AWG_H4=${AWG_H4:-4}
-      
-      # Настройки сервера
       - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP:-auto}
       - CLIENTS_SUBNET=${CLIENTS_SUBNET:-10.13.13.0/24}
       - ALLOWED_IPS=${ALLOWED_IPS:-0.0.0.0/0}
-      
-      # Настройки хелсчека
-      - HEALTHCHECK_TIMEOUT=${HEALTHCHECK_TIMEOUT:-5}
-      - HEALTHCHECK_VERBOSE=${HEALTHCHECK_VERBOSE:-false}
     restart: unless-stopped
     logging:
       driver: "json-file"
@@ -136,64 +53,41 @@ services:
       timeout: 15s
       start_period: 60s
       retries: 3
-    # VPN НЕ зависит от PostgreSQL (только веб-интерфейс использует БД)
-    # depends_on закомментирован для обратной совместимости с v1.x
 
-  # Web Interface & API Server (Node.js + TypeScript)
-  # Запускается только с профилем "web"
-  web:
-    profiles: ["web"]  # Запускается только с --profile web
-    build:
-      context: .
-      dockerfile: Dockerfile.web
-    container_name: amneziawg-web
-    networks:
-      - amneziawg-net
-    ports:
-      - "${WEB_PORT:-8080}:3001"
+  # Backup sidecar container (optional, use --profile backup)
+  backup:
+    image: alpine:3.19
+    container_name: amneziawg-backup
+    profiles: ["backup"]
     volumes:
-      - ./clients:/app/clients:ro
-      - ./config:/app/config:ro
+      - ./config:/data/config:ro
+      - ./clients:/data/clients:ro
+      - ./backups:/backups
     environment:
-      # Database Connection
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-amneziawg}:${POSTGRES_PASSWORD:-change_this_password_to_secure_one}@postgres:5432/${POSTGRES_DB:-amneziawg}
-      
-      # API Configuration
-      - API_PORT=3001
-      - FRONTEND_PORT=5000
-      - NODE_ENV=${NODE_ENV:-production}
-      
-      # Security (ВАЖНО: Установите для продакшена!)
-      - API_SECRET=${API_SECRET:-}
-      
-      # Paths
-      - CLIENTS_DIR=/app/clients
-      - CONFIG_DIR=/app/config
+      - BACKUP_INTERVAL=${BACKUP_INTERVAL:-24h}
+      - BACKUP_KEEP=${BACKUP_KEEP:-10}
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        echo "Backup service started. Interval: $${BACKUP_INTERVAL}, Keep: $${BACKUP_KEEP} backups"
+        mkdir -p /backups
+        while true; do
+          sleep $${BACKUP_INTERVAL}
+          BACKUP_FILE="/backups/amneziawg-$$(date +%Y%m%d-%H%M%S).tar.gz"
+          echo "Creating backup: $${BACKUP_FILE}"
+          tar -czf "$${BACKUP_FILE}" -C /data config clients 2>/dev/null
+          if [ -f "$${BACKUP_FILE}" ]; then
+            echo "Backup created successfully"
+            cd /backups && ls -t amneziawg-*.tar.gz 2>/dev/null | tail -n +$$((BACKUP_KEEP + 1)) | xargs rm -f 2>/dev/null
+          else
+            echo "Backup failed"
+          fi
+        done
     restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "5m"
-        max-file: "2"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
     depends_on:
-      postgres:
-        condition: service_healthy
-      vpn:
-        condition: service_healthy
+      - vpn
 
 networks:
   amneziawg-net:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
-
-volumes:
-  postgres-data:
-    driver: local
