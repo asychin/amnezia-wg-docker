@@ -98,20 +98,35 @@ generate-obfuscation:
 help: check-autocomplete ## Show this help
 	@echo "$(CYAN)AmneziaWG Docker Server$(NC)"
 	@echo ""
-	@echo "$(CYAN)Main commands:$(NC)"
-	@echo "  $(GREEN)init$(NC)               Initialize project (standard VPN mode)"
-	@echo "  $(GREEN)build$(NC)              Build Docker image"
-	@echo "  $(GREEN)up$(NC)                 Start VPN server (bridge network)"
-	@echo "  $(GREEN)down$(NC)               Stop server"
-	@echo "  $(GREEN)restart$(NC)            Restart server"
-	@echo "  $(GREEN)status$(NC)             Show server status"
-	@echo "  $(GREEN)logs$(NC)               View logs (Ctrl+C to exit)"
-	@echo ""
-	@echo "$(CYAN)Site-to-site VPN (access to server's local network):$(NC)"
-	@echo "  $(GREEN)init-s2s$(NC)           Initialize for site-to-site VPN"
-	@echo "  $(GREEN)up-s2s$(NC)             Start server (host network mode)"
-	@echo "  $(GREEN)down-s2s$(NC)           Stop site-to-site server"
-	@echo "  $(GREEN)status-s2s$(NC)         Show site-to-site server status"
+	@# Detect current mode: check if container is running and its network mode
+	@CONTAINER_RUNNING=$$(docker ps --filter "name=amneziawg-server" --format "{{.Names}}" 2>/dev/null | grep -q "amneziawg-server" && echo "yes" || echo "no"); \
+	if [ "$$CONTAINER_RUNNING" = "yes" ]; then \
+		NETWORK_MODE=$$(docker inspect amneziawg-server --format '{{.HostConfig.NetworkMode}}' 2>/dev/null); \
+		if [ "$$NETWORK_MODE" = "host" ]; then \
+			STANDARD_STATUS="$(YELLOW)inactive$(NC)"; \
+			S2S_STATUS="$(GREEN)active$(NC)"; \
+		else \
+			STANDARD_STATUS="$(GREEN)active$(NC)"; \
+			S2S_STATUS="$(YELLOW)inactive$(NC)"; \
+		fi; \
+	else \
+		STANDARD_STATUS="$(YELLOW)inactive$(NC)"; \
+		S2S_STATUS="$(YELLOW)inactive$(NC)"; \
+	fi; \
+	echo "$(CYAN)Standard VPN (all traffic through VPN):$(NC) $$STANDARD_STATUS"; \
+	echo "  $(GREEN)init$(NC)               Initialize project (standard VPN mode)"; \
+	echo "  $(GREEN)build$(NC)              Build Docker image"; \
+	echo "  $(GREEN)up$(NC)                 Start VPN server (bridge network)"; \
+	echo "  $(GREEN)down$(NC)               Stop server"; \
+	echo "  $(GREEN)restart$(NC)            Restart server"; \
+	echo "  $(GREEN)status$(NC)             Show server status"; \
+	echo "  $(GREEN)logs$(NC)               View logs (Ctrl+C to exit)"; \
+	echo ""; \
+	echo "$(CYAN)Site-to-site VPN (access to server's local network):$(NC) $$S2S_STATUS"; \
+	echo "  $(GREEN)init-s2s$(NC)           Initialize for site-to-site VPN"; \
+	echo "  $(GREEN)up-s2s$(NC)             Start server (host network mode)"; \
+	echo "  $(GREEN)down-s2s$(NC)           Stop site-to-site server"; \
+	echo "  $(GREEN)status-s2s$(NC)         Show site-to-site server status"
 	@echo ""
 	@echo "$(CYAN)Client management:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
