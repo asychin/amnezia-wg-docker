@@ -101,7 +101,13 @@ help: check-autocomplete ## Show this help
 	@echo "$(CYAN)Main commands:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2}' | \
-		grep -E "(init|build|up|down|restart|status|logs)" | head -7
+		grep -E "^  (init|build|up|down|restart|status|logs) " | head -7
+	@echo ""
+	@echo "$(CYAN)Site-to-site VPN (access to server's local network):$(NC)"
+	@echo "  $(GREEN)init-s2s$(NC)           Initialize for site-to-site VPN"
+	@echo "  $(GREEN)up-s2s$(NC)             Start server (host network mode)"
+	@echo "  $(GREEN)down-s2s$(NC)           Stop site-to-site server"
+	@echo "  $(GREEN)status-s2s$(NC)         Show site-to-site server status"
 	@echo ""
 	@echo "$(CYAN)Client management:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -114,7 +120,8 @@ help: check-autocomplete ## Show this help
 		grep -E "(shell|clean|update|backup|restore|debug|test)"
 	@echo ""
 	@echo "$(CYAN)Examples:$(NC)"
-	@echo "  make up                      Start VPN server"
+	@echo "  make up                      Start VPN server (standard)"
+	@echo "  make up-s2s                  Start VPN server (site-to-site)"
 	@echo "  make client-add john         Add client (simple)"
 	@echo "  make client-add john 10.13.13.5  Add client with IP"
 	@echo "  make client-qr john          Show QR code"
