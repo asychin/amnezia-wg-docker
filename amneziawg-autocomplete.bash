@@ -71,9 +71,9 @@ _get_next_ip() {
     echo "${base_ip}.2"
 }
 
-# Получение списка архивных файлов
+# Get list of backup files from backups/ folder
 _get_backup_files() {
-    ls *.tar.gz 2>/dev/null | sort -r || echo ""
+    ls backups/*.tar.gz 2>/dev/null | sort -r || echo ""
 }
 
 # =============================================================================
@@ -94,10 +94,13 @@ _amneziawg_make() {
         makefile_targets=$(grep -E '^[a-zA-Z_-]+:.*?##.*$$' Makefile 2>/dev/null | \
                           awk -F: '{print $1}' | sort)
     else
-        # Fallback список основных команд
-        makefile_targets="help init build up down restart logs status 
+        # Fallback список основных команд v2.0
+        makefile_targets="help init build build-safe up up-vpn down restart logs status 
                          client-add client-rm client-qr client-config client-list client-info
-                         shell clean update backup restore test debug monitor
+                         shell clean update update-fast backup backup-cleanup restore test debug monitor
+                         web-logs web-shell web-restart web-status web-url
+                         db-logs db-shell db-psql db-backup db-restore db-status
+                         stack-status stack-logs stack-restart
                          autocomplete-install autocomplete-remove autocomplete-status autocomplete-test"
     fi
 
@@ -437,7 +440,7 @@ _amneziawg_docker_compose() {
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     
     local compose_commands="build up down restart logs ps exec pull push config version"
-    local service_name="amneziawg-server"
+    local service_names="amneziawg-server amneziawg-web amneziawg-db"
     
     case "$prev" in
         compose)
@@ -445,11 +448,11 @@ _amneziawg_docker_compose() {
             return 0
             ;;
         exec)
-            COMPREPLY=($(compgen -W "$service_name" -- "$cur"))
+            COMPREPLY=($(compgen -W "$service_names" -- "$cur"))
             return 0
             ;;
         logs)
-            COMPREPLY=($(compgen -W "$service_name -f --tail" -- "$cur"))
+            COMPREPLY=($(compgen -W "$service_names -f --tail" -- "$cur"))
             return 0
             ;;
     esac

@@ -1,8 +1,8 @@
-# AmneziaWG Docker Server
-# VPN server with DPI bypass capabilities
+# AmneziaWG Docker Server - Site-to-Site Mode
+# Uses host network for direct access to server's local network
+# Usage: docker compose -f docker-compose.s2s.yml up -d
 
 services:
-  # VPN Server
   vpn:
     build: .
     container_name: amneziawg-server
@@ -10,15 +10,8 @@ services:
     cap_add:
       - NET_ADMIN
       - SYS_MODULE
-    sysctls:
-      - net.ipv4.ip_forward=1
-      - net.ipv4.conf.all.src_valid_mark=1
-    devices:
-      - /dev/net/tun
-    networks:
-      - amneziawg-net
-    ports:
-      - "${AWG_PORT:-51820}:${AWG_PORT:-51820}/udp"
+    # Host network mode for direct access to local network
+    network_mode: host
     volumes:
       - ./config:/app/config
       - ./clients:/app/clients
@@ -41,7 +34,7 @@ services:
       - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP:-auto}
       - CLIENTS_SUBNET=${CLIENTS_SUBNET:-10.13.13.0/24}
       - ALLOWED_IPS=${ALLOWED_IPS:-0.0.0.0/0}
-      # Site-to-site VPN (optional)
+      # Site-to-site VPN settings
       - SERVER_SUBNET=${SERVER_SUBNET:-}
       - SERVER_INTERFACE=${SERVER_INTERFACE:-}
     restart: unless-stopped
@@ -62,6 +55,7 @@ services:
     image: alpine:3.19
     container_name: amneziawg-backup
     profiles: ["backup"]
+    network_mode: host
     volumes:
       - ./config:/data/config:ro
       - ./clients:/data/clients:ro
@@ -88,9 +82,3 @@ services:
           fi
         done
     restart: unless-stopped
-    depends_on:
-      - vpn
-
-networks:
-  amneziawg-net:
-    driver: bridge

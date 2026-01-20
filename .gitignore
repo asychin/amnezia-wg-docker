@@ -24,8 +24,7 @@ clients/
 # Backups
 *.backup
 *.bak
-amneziawg-backup-*.tar.gz
-amneziawg-auto-backup-*.tar.gz
+backups/
 
 # ============================================================================
 # DOCKER AND CONTAINERS
@@ -196,7 +195,7 @@ TASKS.md
 # ============================================================================
 
 # Important files that should NOT be ignored
-!env.example
+!.env.example
 !README.md
 !Makefile
 !docker-compose.yml

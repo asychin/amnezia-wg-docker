@@ -62,7 +62,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     AWG_NET=10.13.13.0/24 \
     AWG_SERVER_IP=10.13.13.1 \
     LANG=C.UTF-8 \
-    LC_ALL=C.UTF-8
+    LC_ALL=C.UTF-8 \
+    UMASK=077
 
 # Установка системных зависимостей
 RUN set -ex && \
@@ -132,7 +133,8 @@ RUN set -ex && \
     chmod +x /app/scripts/*.sh && \
     # Безопасные права для директорий конфигурации
     chmod 750 /app/config && \
-    chmod 750 /app/clients && \
+    # БЕЗОПАСНОСТЬ: Строгие права для директории клиентов (приватные ключи)
+    chmod 700 /app/clients && \
     chmod 755 /var/run/amneziawg && \
     # Создание символических ссылок для удобства
     ln -sf /app/scripts/healthcheck.sh /usr/local/bin/healthcheck && \
