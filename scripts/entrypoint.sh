@@ -282,15 +282,51 @@ setup_iptables() {
     # Пытаемся настроить iptables с обработкой ошибок
     log "Попытка настройки iptables..."
     
+    # Определяем интерфейс для маршрутизации (SERVER_INTERFACE или автоопределение)
+    local out_interface="${SERVER_INTERFACE:-}"
+    if [ -z "$out_interface" ]; then
+        # Автоопределение основного интерфейса
+        out_interface=$(ip route | grep default | awk '{print $5}' | head -1)
+        if [ -z "$out_interface" ]; then
+            out_interface="eth0"
+        fi
+    fi
+    log "Используем интерфейс для NAT: $out_interface"
+    
     # Очистка старых правил (игнорируем ошибки)
     iptables -t nat -F 2>/dev/null || warn "Не удалось очистить NAT правила"
     iptables -t filter -F FORWARD 2>/dev/null || warn "Не удалось очистить FORWARD правила"
     
-    # Пытаемся включить NAT для клиентов
-    if iptables -t nat -A POSTROUTING -s ${AWG_NET} -o eth0 -j MASQUERADE 2>/dev/null; then
-        log "✅ NAT правило добавлено"
+    # Пытаемся включить NAT для клиентов (доступ в интернет)
+    if iptables -t nat -A POSTROUTING -s ${AWG_NET} -o $out_interface -j MASQUERADE 2>/dev/null; then
+        log "✅ NAT правило добавлено (VPN -> интернет)"
     else
         warn "❌ Не удалось добавить NAT правило"
+    fi
+    
+    # Site-to-site: если SERVER_SUBNET задан, добавляем маршрутизацию к локальной сети
+    if [ -n "${SERVER_SUBNET:-}" ]; then
+        log "Site-to-site режим: настраиваем доступ к локальной сети $SERVER_SUBNET"
+        
+        # NAT для доступа VPN клиентов к локальной сети сервера
+        if iptables -t nat -A POSTROUTING -s ${AWG_NET} -d ${SERVER_SUBNET} -j MASQUERADE 2>/dev/null; then
+            log "✅ NAT правило добавлено (VPN -> локальная сеть $SERVER_SUBNET)"
+        else
+            warn "❌ Не удалось добавить NAT правило для локальной сети"
+        fi
+        
+        # Forward правила для трафика между VPN и локальной сетью
+        if iptables -A FORWARD -s ${AWG_NET} -d ${SERVER_SUBNET} -j ACCEPT 2>/dev/null; then
+            log "✅ FORWARD правило добавлено (VPN -> локальная сеть)"
+        else
+            warn "❌ Не удалось добавить FORWARD правило (VPN -> локальная сеть)"
+        fi
+        
+        if iptables -A FORWARD -s ${SERVER_SUBNET} -d ${AWG_NET} -j ACCEPT 2>/dev/null; then
+            log "✅ FORWARD правило добавлено (локальная сеть -> VPN)"
+        else
+            warn "❌ Не удалось добавить FORWARD правило (локальная сеть -> VPN)"
+        fi
     fi
     
     # Пытаемся настроить forward правила

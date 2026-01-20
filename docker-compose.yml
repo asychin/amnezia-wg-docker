@@ -41,6 +41,9 @@ services:
       - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP:-auto}
       - CLIENTS_SUBNET=${CLIENTS_SUBNET:-10.13.13.0/24}
       - ALLOWED_IPS=${ALLOWED_IPS:-0.0.0.0/0}
+      # Site-to-site VPN (optional)
+      - SERVER_SUBNET=${SERVER_SUBNET:-}
+      - SERVER_INTERFACE=${SERVER_INTERFACE:-}
     restart: unless-stopped
     logging:
       driver: "json-file"

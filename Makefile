@@ -125,7 +125,7 @@ help: check-autocomplete ## Show this help
 # ============================================================================
 
 .PHONY: init
-init: check-compose init-submodules ## Initialize project
+init: check-compose init-submodules ## Initialize project (standard VPN mode)
 	@echo "$(BLUE)Initializing project...$(NC)"
 	@if [ ! -f ".env" ]; then \
 		cp .env.example .env; \
@@ -135,7 +135,33 @@ init: check-compose init-submodules ## Initialize project
 		echo "$(YELLOW).env already exists$(NC)"; \
 	fi
 	@mkdir -p backups
-	@echo "$(GREEN)Project initialized$(NC)"
+	@echo "$(GREEN)Project initialized (standard mode)$(NC)"
+
+.PHONY: init-s2s
+init-s2s: check-compose init-submodules ## Initialize for site-to-site VPN (access to server's local network)
+	@echo "$(BLUE)Initializing project for site-to-site VPN...$(NC)"
+	@if [ -f ".env" ]; then \
+		echo "$(YELLOW).env already exists. Remove it first or edit manually.$(NC)"; \
+		exit 1; \
+	fi
+	@cp .env.example .env
+	@echo "$(GREEN).env file created$(NC)"
+	@$(MAKE) generate-obfuscation
+	@echo ""
+	@echo "$(CYAN)Site-to-site configuration:$(NC)"
+	@read -p "Enter server's local network subnet (e.g., 192.168.1.0/24): " subnet; \
+	if [ -n "$$subnet" ]; then \
+		sed -i "s|^# SERVER_SUBNET=.*|SERVER_SUBNET=$$subnet|" .env; \
+		sed -i "s|^ALLOWED_IPS=.*|ALLOWED_IPS=$$subnet,10.13.13.0/24|" .env; \
+		echo "$(GREEN)SERVER_SUBNET=$$subnet$(NC)"; \
+		echo "$(GREEN)ALLOWED_IPS=$$subnet,10.13.13.0/24$(NC)"; \
+	else \
+		echo "$(YELLOW)No subnet entered, using defaults$(NC)"; \
+	fi
+	@mkdir -p backups
+	@echo ""
+	@echo "$(GREEN)Project initialized for site-to-site mode$(NC)"
+	@echo "$(YELLOW)Run 'make up' to start the server$(NC)"
 
 .PHONY: build
 build: check-compose init-submodules ## Build Docker image

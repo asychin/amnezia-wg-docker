@@ -33,6 +33,41 @@ If you forgot `--recursive` when cloning:
 git submodule update --init --recursive
 ```
 
+## VPN Scenarios
+
+This project supports two VPN scenarios:
+
+### Scenario 1: Standard VPN (default)
+
+All client traffic goes through the VPN server. Use this for accessing blocked websites or protecting your traffic.
+
+```bash
+make init    # Standard initialization
+make up      # Start server
+```
+
+Client configuration uses `AllowedIPs = 0.0.0.0/0` to route all traffic through VPN.
+
+### Scenario 2: Site-to-Site VPN
+
+VPN clients can access devices in the server's local network. Use this when you need to access servers, printers, or other devices on the VPN server's LAN.
+
+```bash
+make init-s2s    # Site-to-site initialization (prompts for local subnet)
+make up          # Start server
+```
+
+During `init-s2s`, you'll be asked for the server's local network subnet (e.g., `192.168.1.0/24`). The script will:
+- Set `SERVER_SUBNET` to your local network
+- Configure `AllowedIPs` to include the local subnet
+- Enable masquerading for local network access
+
+You can also configure manually in `.env`:
+```bash
+SERVER_SUBNET=192.168.1.0/24
+ALLOWED_IPS=192.168.1.0/24,10.13.13.0/24
+```
+
 ## Requirements
 
 - Docker 20.10+
