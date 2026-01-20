@@ -99,9 +99,13 @@ help: check-autocomplete ## Show this help
 	@echo "$(CYAN)AmneziaWG Docker Server$(NC)"
 	@echo ""
 	@echo "$(CYAN)Main commands:$(NC)"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-		awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-18s$(NC) %s\n", $$1, $$2}' | \
-		grep -E "^  (init|build|up|down|restart|status|logs) " | head -7
+	@echo "  $(GREEN)init$(NC)               Initialize project (standard VPN mode)"
+	@echo "  $(GREEN)build$(NC)              Build Docker image"
+	@echo "  $(GREEN)up$(NC)                 Start VPN server (bridge network)"
+	@echo "  $(GREEN)down$(NC)               Stop server"
+	@echo "  $(GREEN)restart$(NC)            Restart server"
+	@echo "  $(GREEN)status$(NC)             Show server status"
+	@echo "  $(GREEN)logs$(NC)               View logs (Ctrl+C to exit)"
 	@echo ""
 	@echo "$(CYAN)Site-to-site VPN (access to server's local network):$(NC)"
 	@echo "  $(GREEN)init-s2s$(NC)           Initialize for site-to-site VPN"
