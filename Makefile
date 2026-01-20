@@ -171,13 +171,41 @@ build: check-compose init-submodules ## Build Docker image
 	@echo "$(GREEN)Build complete$(NC)"
 
 .PHONY: up
-up: check-compose init-submodules ## Start VPN server
+up: check-compose init-submodules ## Start VPN server (bridge network)
 	@echo "$(BLUE)Starting AmneziaWG server...$(NC)"
 	@if [ ! -f ".env" ]; then $(MAKE) init; fi
 	@$(DOCKER_COMPOSE) up -d
 	@echo "$(GREEN)Server started$(NC)"
 	@sleep 3
 	@$(MAKE) status
+
+.PHONY: up-s2s
+up-s2s: check-compose init-submodules ## Start VPN server in site-to-site mode (host network)
+	@echo "$(BLUE)Starting AmneziaWG server in site-to-site mode...$(NC)"
+	@if [ ! -f ".env" ]; then $(MAKE) init-s2s; fi
+	@docker compose -f docker-compose.s2s.yml up -d
+	@echo "$(GREEN)Server started in site-to-site mode (host network)$(NC)"
+	@sleep 3
+	@$(MAKE) status-s2s
+
+.PHONY: down-s2s
+down-s2s: check-compose ## Stop site-to-site server
+	@echo "$(BLUE)Stopping site-to-site server...$(NC)"
+	@docker compose -f docker-compose.s2s.yml down
+	@echo "$(GREEN)Server stopped$(NC)"
+
+.PHONY: status-s2s
+status-s2s: check-compose ## Show site-to-site server status
+	@echo "$(CYAN)Container status (site-to-site mode):$(NC)"
+	@docker compose -f docker-compose.s2s.yml ps || echo "$(RED)Container not running$(NC)"
+	@echo ""
+	@if docker compose -f docker-compose.s2s.yml ps | grep -q "Up"; then \
+		echo "$(CYAN)AmneziaWG interface:$(NC)"; \
+		$(DOCKER_EXEC) awg show awg0 2>/dev/null || echo "$(YELLOW)Interface not available$(NC)"; \
+		echo ""; \
+		echo "$(CYAN)Active connections:$(NC)"; \
+		$(DOCKER_EXEC) awg show awg0 latest-handshakes 2>/dev/null || echo "$(YELLOW)No active connections$(NC)"; \
+	fi
 
 .PHONY: down
 down: check-compose check-container ## Stop server

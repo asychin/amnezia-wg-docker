@@ -54,13 +54,20 @@ VPN clients can access devices in the server's local network. Use this when you 
 
 ```bash
 make init-s2s    # Site-to-site initialization (prompts for local subnet)
-make up          # Start server
+make up-s2s      # Start server with host network
 ```
+
+This mode uses `network_mode: host` so the container has direct access to the server's local network.
 
 During `init-s2s`, you'll be asked for the server's local network subnet (e.g., `192.168.1.0/24`). The script will:
 - Set `SERVER_SUBNET` to your local network
 - Configure `AllowedIPs` to include the local subnet
 - Enable masquerading for local network access
+
+Site-to-site commands:
+- `make up-s2s` - Start server with host network
+- `make down-s2s` - Stop site-to-site server
+- `make status-s2s` - Show site-to-site server status
 
 You can also configure manually in `.env`:
 ```bash
