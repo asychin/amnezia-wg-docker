@@ -110,22 +110,12 @@ generate-obfuscation:
 help: check-autocomplete ## Show this help
 	@echo "$(CYAN)AmneziaWG Docker Server$(NC)"
 	@echo ""
-	@# Detect current mode: check if container is running and its network mode
-	@CONTAINER_RUNNING=$$(docker ps --filter "name=amneziawg-server" --format "{{.Names}}" 2>/dev/null | grep -q "amneziawg-server" && echo "yes" || echo "no"); \
-	if [ "$$CONTAINER_RUNNING" = "yes" ]; then \
-		NETWORK_MODE=$$(docker inspect amneziawg-server --format '{{.HostConfig.NetworkMode}}' 2>/dev/null); \
-		if [ "$$NETWORK_MODE" = "host" ]; then \
-			STANDARD_STATUS="$(YELLOW)inactive$(NC)"; \
-			S2S_STATUS="$(GREEN)active$(NC)"; \
-		else \
-			STANDARD_STATUS="$(GREEN)active$(NC)"; \
-			S2S_STATUS="$(YELLOW)inactive$(NC)"; \
-		fi; \
-	else \
-		STANDARD_STATUS="$(YELLOW)inactive$(NC)"; \
-		S2S_STATUS="$(YELLOW)inactive$(NC)"; \
+	@# Detect if Docker container is running
+	@STANDARD_STATUS="$(YELLOW)inactive$(NC)"; \
+	if docker ps --filter "name=amneziawg-server" --format "{{.Names}}" 2>/dev/null | grep -q "amneziawg-server"; then \
+		STANDARD_STATUS="$(GREEN)active$(NC)"; \
 	fi; \
-	echo "$(CYAN)Standard VPN (all traffic through VPN):$(NC) $$STANDARD_STATUS"; \
+	echo "$(CYAN)Standard VPN (all traffic through VPN):$(NC) $$STANDARD_STATUS";\
 	echo "  $(GREEN)init$(NC)               Initialize project (standard VPN mode)"; \
 	echo "  $(GREEN)build$(NC)              Build Docker image"; \
 	echo "  $(GREEN)up$(NC)                 Start VPN server (bridge network)"; \
@@ -134,23 +124,21 @@ help: check-autocomplete ## Show this help
 	echo "  $(GREEN)status$(NC)             Show server status"; \
 	echo "  $(GREEN)logs$(NC)               View logs (Ctrl+C to exit)"; \
 	echo ""; \
-	echo "$(CYAN)Site-to-site VPN (Docker mode - may have connection issues):$(NC) $$S2S_STATUS"; \
-	echo "  $(GREEN)init-s2s$(NC)           Initialize for site-to-site VPN"; \
-	echo "  $(GREEN)up-s2s$(NC)             Start server (Docker host network)"; \
-	echo "  $(GREEN)down-s2s$(NC)           Stop site-to-site server"; \
-	echo "  $(GREEN)status-s2s$(NC)         Show site-to-site server status"; \
-	echo ""; \
 	NATIVE_STATUS="$(YELLOW)inactive$(NC)"; \
 	if systemctl is-active --quiet amneziawg-s2s 2>/dev/null; then \
 		NATIVE_STATUS="$(GREEN)active$(NC)"; \
 	fi; \
-	echo "$(CYAN)Native S2S (recommended - no Docker, stable connections):$(NC) $$NATIVE_STATUS"; \
+	echo "$(CYAN)Site-to-site VPN (native mode):$(NC) $$NATIVE_STATUS"; \
+	echo "  $(GREEN)init-s2s$(NC)           Initialize for site-to-site VPN"; \
 	echo "  $(GREEN)install-s2s$(NC)        Install native S2S mode"; \
 	echo "  $(GREEN)uninstall-s2s$(NC)      Uninstall native S2S mode"; \
-	echo "  $(GREEN)start-s2s-native$(NC)   Start native S2S server"; \
-	echo "  $(GREEN)stop-s2s-native$(NC)    Stop native S2S server"; \
-	echo "  $(GREEN)status-s2s-native$(NC)  Show native S2S status"; \
-	echo "  $(GREEN)enable-s2s-native$(NC)  Enable auto-start on boot"
+	echo "  $(GREEN)start-s2s$(NC)          Start native S2S server"; \
+	echo "  $(GREEN)stop-s2s$(NC)           Stop native S2S server"; \
+	echo "  $(GREEN)status-s2s$(NC)         Show native S2S status"; \
+	echo "  $(GREEN)restart-s2s$(NC)        Restart native S2S server"; \
+	echo "  $(GREEN)logs-s2s$(NC)           View native S2S logs"; \
+	echo "  $(GREEN)enable-s2s$(NC)         Enable auto-start on boot"; \
+	echo "  $(GREEN)disable-s2s$(NC)        Disable auto-start"
 	@echo ""
 	@echo "$(CYAN)Client management:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -168,7 +156,8 @@ help: check-autocomplete ## Show this help
 	@echo ""
 	@echo "$(CYAN)Examples:$(NC)"
 	@echo "  make up                      Start VPN server (standard)"
-	@echo "  make up-s2s                  Start VPN server (site-to-site)"
+	@echo "  make install-s2s             Install S2S mode (native)"
+	@echo "  make start-s2s               Start S2S server"
 	@echo "  make client-add john         Add client (simple)"
 	@echo "  make client-add john 10.13.13.5  Add client with IP"
 	@echo "  make client-qr john          Show QR code"
@@ -233,95 +222,67 @@ up: check-compose init-submodules ## Start VPN server (bridge network)
 	@sleep 3
 	@$(MAKE) status
 
-.PHONY: up-s2s
-up-s2s: check-compose init-submodules ## Start VPN server in site-to-site mode (host network)
-	@echo "$(BLUE)Starting AmneziaWG server in site-to-site mode...$(NC)"
-	@if [ ! -f ".env" ]; then $(MAKE) init-s2s; fi
-	@docker compose -f docker-compose.s2s.yml up -d
-	@echo "$(GREEN)Server started in site-to-site mode (host network)$(NC)"
-	@sleep 3
-	@$(MAKE) status-s2s
-
-.PHONY: down-s2s
-down-s2s: check-compose ## Stop site-to-site server
-	@echo "$(BLUE)Stopping site-to-site server...$(NC)"
-	@docker compose -f docker-compose.s2s.yml down
-	@echo "$(GREEN)Server stopped$(NC)"
-
-.PHONY: status-s2s
-status-s2s: check-compose ## Show site-to-site server status
-	@echo "$(CYAN)Container status (site-to-site mode):$(NC)"
-	@docker compose -f docker-compose.s2s.yml ps || echo "$(RED)Container not running$(NC)"
-	@echo ""
-	@if docker compose -f docker-compose.s2s.yml ps | grep -q "Up"; then \
-		echo "$(CYAN)AmneziaWG interface:$(NC)"; \
-		$(DOCKER_EXEC) awg show awg0 2>/dev/null || echo "$(YELLOW)Interface not available$(NC)"; \
-		echo ""; \
-		echo "$(CYAN)Active connections:$(NC)"; \
-		$(DOCKER_EXEC) awg show awg0 latest-handshakes 2>/dev/null || echo "$(YELLOW)No active connections$(NC)"; \
-	fi
-
 # ============================================================================
-# NATIVE S2S MODE (without Docker - avoids iptables conflicts)
+# SITE-TO-SITE VPN MODE (native, without Docker)
 # ============================================================================
 
 .PHONY: install-s2s
-install-s2s: init-submodules ## Install native S2S mode (no Docker, avoids connection drops)
-	@echo "$(BLUE)Installing native S2S mode...$(NC)"
+install-s2s: init-submodules ## Install S2S mode (compiles amneziawg-go)
+	@echo "$(BLUE)Installing S2S mode...$(NC)"
 	@if [ ! -f ".env" ]; then $(MAKE) init-s2s; fi
 	@sudo ./scripts/install-s2s.sh
-	@echo "$(GREEN)Native S2S installation complete$(NC)"
-	@echo "$(YELLOW)Run 'make start-s2s-native' to start the server$(NC)"
+	@echo "$(GREEN)S2S installation complete$(NC)"
+	@echo "$(YELLOW)Run 'make start-s2s' to start the server$(NC)"
 
 .PHONY: uninstall-s2s
-uninstall-s2s: ## Uninstall native S2S mode
-	@echo "$(BLUE)Uninstalling native S2S mode...$(NC)"
+uninstall-s2s: ## Uninstall S2S mode
+	@echo "$(BLUE)Uninstalling S2S mode...$(NC)"
 	@sudo ./scripts/uninstall-s2s.sh
-	@echo "$(GREEN)Native S2S uninstalled$(NC)"
+	@echo "$(GREEN)S2S uninstalled$(NC)"
 
-.PHONY: start-s2s-native
-start-s2s-native: ## Start native S2S server (systemd)
-	@echo "$(BLUE)Starting native S2S server...$(NC)"
+.PHONY: start-s2s
+start-s2s: ## Start S2S server (systemd)
+	@echo "$(BLUE)Starting S2S server...$(NC)"
 	@sudo systemctl start amneziawg-s2s
 	@sleep 3
-	@$(MAKE) status-s2s-native
+	@$(MAKE) status-s2s
 
-.PHONY: stop-s2s-native
-stop-s2s-native: ## Stop native S2S server (systemd)
-	@echo "$(BLUE)Stopping native S2S server...$(NC)"
+.PHONY: stop-s2s
+stop-s2s: ## Stop S2S server (systemd)
+	@echo "$(BLUE)Stopping S2S server...$(NC)"
 	@sudo systemctl stop amneziawg-s2s
-	@echo "$(GREEN)Native S2S server stopped$(NC)"
+	@echo "$(GREEN)S2S server stopped$(NC)"
 
-.PHONY: restart-s2s-native
-restart-s2s-native: ## Restart native S2S server (systemd)
-	@echo "$(BLUE)Restarting native S2S server...$(NC)"
+.PHONY: restart-s2s
+restart-s2s: ## Restart S2S server (systemd)
+	@echo "$(BLUE)Restarting S2S server...$(NC)"
 	@sudo systemctl restart amneziawg-s2s
 	@sleep 3
-	@$(MAKE) status-s2s-native
+	@$(MAKE) status-s2s
 
-.PHONY: status-s2s-native
-status-s2s-native: ## Show native S2S server status
+.PHONY: status-s2s
+status-s2s: ## Show S2S server status
 	@echo "$(CYAN)Systemd service status:$(NC)"
 	@systemctl status amneziawg-s2s --no-pager 2>/dev/null || echo "$(RED)Service not running$(NC)"
 	@echo ""
 	@echo "$(CYAN)AmneziaWG interface:$(NC)"
 	@awg show awg0 2>/dev/null || echo "$(YELLOW)Interface not available$(NC)"
 
-.PHONY: logs-s2s-native
-logs-s2s-native: ## View native S2S server logs
+.PHONY: logs-s2s
+logs-s2s: ## View S2S server logs
 	@sudo journalctl -u amneziawg-s2s -f
 
-.PHONY: enable-s2s-native
-enable-s2s-native: ## Enable native S2S auto-start on boot
-	@echo "$(BLUE)Enabling native S2S auto-start...$(NC)"
+.PHONY: enable-s2s
+enable-s2s: ## Enable S2S auto-start on boot
+	@echo "$(BLUE)Enabling S2S auto-start...$(NC)"
 	@sudo systemctl enable amneziawg-s2s
-	@echo "$(GREEN)Native S2S will start automatically on boot$(NC)"
+	@echo "$(GREEN)S2S will start automatically on boot$(NC)"
 
-.PHONY: disable-s2s-native
-disable-s2s-native: ## Disable native S2S auto-start
-	@echo "$(BLUE)Disabling native S2S auto-start...$(NC)"
+.PHONY: disable-s2s
+disable-s2s: ## Disable S2S auto-start
+	@echo "$(BLUE)Disabling S2S auto-start...$(NC)"
 	@sudo systemctl disable amneziawg-s2s
-	@echo "$(GREEN)Native S2S auto-start disabled$(NC)"
+	@echo "$(GREEN)S2S auto-start disabled$(NC)"
 
 .PHONY: down
 down: check-compose check-container ## Stop server

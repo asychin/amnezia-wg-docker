@@ -52,41 +52,25 @@ Client configuration uses `AllowedIPs = 0.0.0.0/0` to route all traffic through 
 
 VPN clients can access devices in the server's local network. Use this when you need to access servers, printers, or other devices on the VPN server's LAN.
 
-**Recommended: Native S2S Mode (without Docker)**
-
-For stable S2S connections, use native installation which avoids Docker iptables conflicts:
+S2S mode runs natively on the host (without Docker) for stable connections:
 
 ```bash
 make init-s2s        # Initialize S2S configuration (prompts for local subnet)
-make install-s2s     # Install native S2S mode (builds and installs AmneziaWG)
-make start-s2s-native    # Start the server
-make enable-s2s-native   # Enable auto-start on boot
+make install-s2s     # Install S2S mode (compiles AmneziaWG, creates systemd service)
+make start-s2s       # Start the server
+make enable-s2s      # Enable auto-start on boot
 ```
 
-Native S2S commands:
-- `make install-s2s` - Install native S2S mode (compiles AmneziaWG, creates systemd service)
-- `make uninstall-s2s` - Uninstall native S2S mode
-- `make start-s2s-native` - Start native S2S server
-- `make stop-s2s-native` - Stop native S2S server
-- `make restart-s2s-native` - Restart native S2S server
-- `make status-s2s-native` - Show native S2S status
-- `make logs-s2s-native` - View native S2S logs
-- `make enable-s2s-native` - Enable auto-start on boot
-- `make disable-s2s-native` - Disable auto-start
-
-**Alternative: Docker S2S Mode**
-
-Docker-based S2S mode is also available but may experience connection drops due to Docker iptables conflicts:
-
-```bash
-make init-s2s    # Site-to-site initialization (prompts for local subnet)
-make up-s2s      # Start server with Docker host network
-```
-
-Docker S2S commands:
-- `make up-s2s` - Start server with host network
-- `make down-s2s` - Stop site-to-site server
-- `make status-s2s` - Show site-to-site server status
+S2S commands:
+- `make install-s2s` - Install S2S mode (compiles AmneziaWG, creates systemd service)
+- `make uninstall-s2s` - Uninstall S2S mode
+- `make start-s2s` - Start S2S server
+- `make stop-s2s` - Stop S2S server
+- `make restart-s2s` - Restart S2S server
+- `make status-s2s` - Show S2S status
+- `make logs-s2s` - View S2S logs
+- `make enable-s2s` - Enable auto-start on boot
+- `make disable-s2s` - Disable auto-start
 
 **Configuration**
 
