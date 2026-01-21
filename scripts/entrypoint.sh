@@ -466,26 +466,26 @@ create_client_config() {
     
     log "Создаем конфигурацию для клиента: $client_name"
     
-    # Убеждаемся что директория clients существует
+    # Убеждаемся что директория clients существует (755 for user access)
     mkdir -p /app/clients
-    chmod 750 /app/clients
+    chmod 755 /app/clients
     
     # Генерируем ключи клиента
     CLIENT_PRIVATE_KEY=$(awg genkey)
     CLIENT_PUBLIC_KEY=$(echo "$CLIENT_PRIVATE_KEY" | awg pubkey)
     
-    # Сохраняем ключи
+    # Сохраняем ключи (private key secure, public key readable)
     echo "$CLIENT_PRIVATE_KEY" > "/app/clients/${client_name}_private.key"
+    chmod 600 "/app/clients/${client_name}_private.key"
     echo "$CLIENT_PUBLIC_KEY" > "/app/clients/${client_name}_public.key"
+    chmod 644 "/app/clients/${client_name}_public.key"
     
     # Создаем конфигурацию клиента
     cat > "/app/clients/${client_name}.conf" << EOF
 [Interface]
 PrivateKey = ${CLIENT_PRIVATE_KEY}
-Address = ${client_ip}/24
+Address = ${client_ip}/32
 DNS = ${AWG_DNS}
-
-# Параметры обфускации AmneziaWG
 Jc = ${AWG_JC}
 Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
@@ -502,6 +502,9 @@ Endpoint = ${SERVER_PUBLIC_IP}:${AWG_PORT}
 AllowedIPs = ${ALLOWED_IPS:-0.0.0.0/0}
 PersistentKeepalive = 25
 EOF
+    
+    # Make client config readable for users to import
+    chmod 644 "/app/clients/${client_name}.conf"
     
     # Добавляем peer в конфигурацию сервера
     cat >> "$CONFIG_FILE" << EOF

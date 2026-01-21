@@ -371,9 +371,14 @@ AllowedIPs = ${ALLOWED_IPS:-0.0.0.0/0}
 PersistentKeepalive = 25
 EOF
     
-    # Сохраняем ключи отдельно
+    # Make client config readable for users to import
+    chmod 644 "${CLIENTS_DIR}/${client_name}.conf"
+    
+    # Сохраняем ключи отдельно (keep private key secure)
     echo "$CLIENT_PRIVATE_KEY" > "${CLIENTS_DIR}/${client_name}_private.key"
+    chmod 600 "${CLIENTS_DIR}/${client_name}_private.key"
     echo "$CLIENT_PUBLIC_KEY" > "${CLIENTS_DIR}/${client_name}_public.key"
+    chmod 644 "${CLIENTS_DIR}/${client_name}_public.key"
     
     # Добавляем peer в конфигурацию сервера
     cat >> "$CONFIG_FILE" << EOF
