@@ -18,7 +18,7 @@ services:
       - /lib/modules:/lib/modules:ro
     environment:
       - AWG_INTERFACE=${AWG_INTERFACE:-awg0}
-      - AWG_PORT=${AWG_PORT:-51820}
+      - AWG_PORT=${AWG_PORT:-443}
       - AWG_NET=${AWG_NET:-10.13.13.0/24}
       - AWG_SERVER_IP=${AWG_SERVER_IP:-10.13.13.1}
       - AWG_DNS=${AWG_DNS:-8.8.8.8,8.8.4.4}
