@@ -55,30 +55,30 @@ VPN clients can access devices in the server's local network. Use this when you 
 Native S2S mode runs directly on the host (without Docker) for stable connections:
 
 ```bash
-make up-native-s2s   # Start server (auto-init and install if needed)
+make up-s2s   # Start server (auto-init and install if needed)
 ```
 
-That's it! The `up-native-s2s` command will automatically:
+That's it! The `up-s2s` command will automatically:
 1. Initialize configuration (prompts for local subnet)
 2. Compile and install AmneziaWG
 3. Start the systemd service
 
 Native S2S commands:
-- `make up-native-s2s` - Start native S2S server (auto-init/install)
-- `make down-native-s2s` - Stop native S2S server
-- `make restart-native-s2s` - Restart native S2S server
-- `make status-native-s2s` - Show native S2S status
-- `make logs-native-s2s` - View native S2S logs
-- `make enable-native-s2s` - Enable auto-start on boot
-- `make disable-native-s2s` - Disable auto-start
-- `make uninstall-native-s2s` - Uninstall native S2S mode
+- `make up-s2s` - Start native S2S server (auto-init/install)
+- `make down-s2s` - Stop native S2S server
+- `make restart-s2s` - Restart native S2S server
+- `make status-s2s` - Show native S2S status
+- `make logs-s2s` - View native S2S logs
+- `make enable-s2s` - Enable auto-start on boot
+- `make disable-s2s` - Disable auto-start
+- `make uninstall-s2s` - Uninstall native S2S mode
 
 Native S2S client management:
-- `make client-add-native-s2s john` - Add client
-- `make client-rm-native-s2s john` - Remove client
-- `make client-qr-native-s2s john` - Show QR code
-- `make client-config-native-s2s john` - Show config
-- `make client-list-native-s2s` - List all clients
+- `make client-add-s2s john` - Add client
+- `make client-rm-s2s john` - Remove client
+- `make client-qr-s2s john` - Show QR code
+- `make client-config-s2s john` - Show config
+- `make client-list-s2s` - List all clients
 
 **Configuration**
 
