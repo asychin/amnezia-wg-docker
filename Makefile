@@ -65,23 +65,29 @@ init-submodules:
 	fi
 
 # Generate random obfuscation parameters
-# Note: S1 and S2 must result in different final packet sizes to avoid AmneziaWG error
-# "new sizes should differ". WireGuard init packet is 148 bytes, response is 92 bytes.
-# We ensure (148 + S1) != (92 + S2) by regenerating S2 if they match.
+# Official AmneziaWG parameter ranges (from github.com/amnezia-vpn/amneziawg-linux-kernel-module):
+# - Jc: 1-128, recommended 4-12
+# - Jmin: recommended 8
+# - Jmax: recommended 80
+# - S1: 15-150, constraint: S1 + 56 != S2 (ensures different packet sizes)
+# - S2: 15-150
+# - H1/H2/H3/H4: unique 32-bit integers, range 5-2147483647
 generate-obfuscation:
-	@AWG_JC=$$(shuf -i 3-10 -n 1); \
-	AWG_JMIN=$$(shuf -i 40-80 -n 1); \
-	AWG_JMAX=$$(shuf -i 500-1000 -n 1); \
+	@AWG_JC=$$(shuf -i 4-12 -n 1); \
+	AWG_JMIN=$$(shuf -i 8-50 -n 1); \
+	AWG_JMAX=$$(shuf -i 80-250 -n 1); \
 	AWG_S1=$$(shuf -i 15-150 -n 1); \
 	AWG_S2=$$(shuf -i 15-150 -n 1); \
-	while [ $$((148 + AWG_S1)) -eq $$((92 + AWG_S2)) ]; do \
+	while [ $$((AWG_S1 + 56)) -eq $$AWG_S2 ]; do \
 		AWG_S2=$$(shuf -i 15-150 -n 1); \
 	done; \
-	H_VALUES=$$(shuf -i 1-4 -n 4 | tr '\n' ' '); \
-	AWG_H1=$$(echo $$H_VALUES | cut -d' ' -f1); \
-	AWG_H2=$$(echo $$H_VALUES | cut -d' ' -f2); \
-	AWG_H3=$$(echo $$H_VALUES | cut -d' ' -f3); \
-	AWG_H4=$$(echo $$H_VALUES | cut -d' ' -f4); \
+	AWG_H1=$$(shuf -i 5-2147483647 -n 1); \
+	AWG_H2=$$(shuf -i 5-2147483647 -n 1); \
+	while [ $$AWG_H2 -eq $$AWG_H1 ]; do AWG_H2=$$(shuf -i 5-2147483647 -n 1); done; \
+	AWG_H3=$$(shuf -i 5-2147483647 -n 1); \
+	while [ $$AWG_H3 -eq $$AWG_H1 ] || [ $$AWG_H3 -eq $$AWG_H2 ]; do AWG_H3=$$(shuf -i 5-2147483647 -n 1); done; \
+	AWG_H4=$$(shuf -i 5-2147483647 -n 1); \
+	while [ $$AWG_H4 -eq $$AWG_H1 ] || [ $$AWG_H4 -eq $$AWG_H2 ] || [ $$AWG_H4 -eq $$AWG_H3 ]; do AWG_H4=$$(shuf -i 5-2147483647 -n 1); done; \
 	sed -i "s/^AWG_JC=.*/AWG_JC=$$AWG_JC/" .env; \
 	sed -i "s/^AWG_JMIN=.*/AWG_JMIN=$$AWG_JMIN/" .env; \
 	sed -i "s/^AWG_JMAX=.*/AWG_JMAX=$$AWG_JMAX/" .env; \
