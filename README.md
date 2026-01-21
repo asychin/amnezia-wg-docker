@@ -48,45 +48,37 @@ make up      # Start server
 
 Client configuration uses `AllowedIPs = 0.0.0.0/0` to route all traffic through VPN.
 
-### Scenario 2: Site-to-Site VPN
+### Scenario 2: Site-to-Site VPN (Native S2S)
 
 VPN clients can access devices in the server's local network. Use this when you need to access servers, printers, or other devices on the VPN server's LAN.
 
-**Recommended: Native S2S Mode (without Docker)**
-
-For stable S2S connections, use native installation which avoids Docker iptables conflicts:
+Native S2S mode runs directly on the host (without Docker) for stable connections:
 
 ```bash
-make init-s2s        # Initialize S2S configuration (prompts for local subnet)
-make install-s2s     # Install native S2S mode (builds and installs AmneziaWG)
-make start-s2s-native    # Start the server
-make enable-s2s-native   # Enable auto-start on boot
+make up-native-s2s   # Start server (auto-init and install if needed)
 ```
+
+That's it! The `up-native-s2s` command will automatically:
+1. Initialize configuration (prompts for local subnet)
+2. Compile and install AmneziaWG
+3. Start the systemd service
 
 Native S2S commands:
-- `make install-s2s` - Install native S2S mode (compiles AmneziaWG, creates systemd service)
-- `make uninstall-s2s` - Uninstall native S2S mode
-- `make start-s2s-native` - Start native S2S server
-- `make stop-s2s-native` - Stop native S2S server
-- `make restart-s2s-native` - Restart native S2S server
-- `make status-s2s-native` - Show native S2S status
-- `make logs-s2s-native` - View native S2S logs
-- `make enable-s2s-native` - Enable auto-start on boot
-- `make disable-s2s-native` - Disable auto-start
+- `make up-native-s2s` - Start native S2S server (auto-init/install)
+- `make down-native-s2s` - Stop native S2S server
+- `make restart-native-s2s` - Restart native S2S server
+- `make status-native-s2s` - Show native S2S status
+- `make logs-native-s2s` - View native S2S logs
+- `make enable-native-s2s` - Enable auto-start on boot
+- `make disable-native-s2s` - Disable auto-start
+- `make uninstall-native-s2s` - Uninstall native S2S mode
 
-**Alternative: Docker S2S Mode**
-
-Docker-based S2S mode is also available but may experience connection drops due to Docker iptables conflicts:
-
-```bash
-make init-s2s    # Site-to-site initialization (prompts for local subnet)
-make up-s2s      # Start server with Docker host network
-```
-
-Docker S2S commands:
-- `make up-s2s` - Start server with host network
-- `make down-s2s` - Stop site-to-site server
-- `make status-s2s` - Show site-to-site server status
+Native S2S client management:
+- `make client-add-native-s2s john` - Add client
+- `make client-rm-native-s2s john` - Remove client
+- `make client-qr-native-s2s john` - Show QR code
+- `make client-config-native-s2s john` - Show config
+- `make client-list-native-s2s` - List all clients
 
 **Configuration**
 
