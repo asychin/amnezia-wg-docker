@@ -21,7 +21,7 @@ NC := \033[0m
 
 # Get positional arguments (for simplified syntax like: make client-add john 10.13.13.5)
 # Filter out known targets to get just the arguments
-CLIENT_TARGETS := client-add client-rm client-qr client-config
+CLIENT_TARGETS := client-add client-rm client-qr client-config client-add-native-s2s client-rm-native-s2s client-qr-native-s2s client-config-native-s2s
 ARGS := $(filter-out $(CLIENT_TARGETS),$(MAKECMDGOALS))
 ARG1 := $(word 1,$(ARGS))
 ARG2 := $(word 2,$(ARGS))

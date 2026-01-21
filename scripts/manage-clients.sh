@@ -89,8 +89,35 @@ release_lock() {
 # Конфигурация
 AWG_INTERFACE=${AWG_INTERFACE:-awg0}
 AWG_PORT=${AWG_PORT:-51820}
-CONFIG_FILE="/app/config/${AWG_INTERFACE}.conf"
-CLIENTS_DIR="/app/clients"
+
+# Определяем режим работы: Docker или Native S2S
+# Если мы не в Docker контейнере - это Native S2S (запуск напрямую на хосте)
+if [ ! -f "/.dockerenv" ]; then
+    # Native S2S mode - определяем директорию проекта
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+    
+    # Загружаем .env если существует (для получения переменных)
+    if [ -f "$PROJECT_DIR/.env" ]; then
+        set -a
+        source "$PROJECT_DIR/.env"
+        set +a
+    fi
+    
+    CONFIG_FILE="$PROJECT_DIR/config/${AWG_INTERFACE}.conf"
+    CLIENTS_DIR="$PROJECT_DIR/clients"
+    SERVER_KEY_DIR="$PROJECT_DIR/config"
+    NATIVE_S2S_MODE=true
+else
+    # Docker mode - используем пути внутри контейнера
+    CONFIG_FILE="/app/config/${AWG_INTERFACE}.conf"
+    CLIENTS_DIR="/app/clients"
+    SERVER_KEY_DIR="/app/config"
+    NATIVE_S2S_MODE=false
+fi
+
+# Создаем директорию для клиентов если не существует
+mkdir -p "$CLIENTS_DIR" 2>/dev/null || true
 
 # Параметры обфускации
 AWG_JC=${AWG_JC:-7}
@@ -214,10 +241,11 @@ get_public_ip() {
 
 # Получение публичного ключа сервера
 get_server_public_key() {
-    if [ -f "/app/config/server_public.key" ]; then
-        SERVER_PUBLIC_KEY=$(cat /app/config/server_public.key)
+    local key_file="${SERVER_KEY_DIR}/server_public.key"
+    if [ -f "$key_file" ]; then
+        SERVER_PUBLIC_KEY=$(cat "$key_file")
     else
-        error "Файл публичного ключа сервера не найден"
+        error "Файл публичного ключа сервера не найден: $key_file"
         exit 1
     fi
 }
