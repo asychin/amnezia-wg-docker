@@ -50,11 +50,10 @@ services:
       start_period: 60s
       retries: 3
 
-  # Backup sidecar container (optional, use --profile backup)
+  # Backup sidecar container (starts automatically with VPN)
   backup:
     image: alpine:3.19
     container_name: amneziawg-backup
-    profiles: ["backup"]
     network_mode: host
     volumes:
       - ./config:/data/config:ro
