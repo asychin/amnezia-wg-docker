@@ -90,31 +90,10 @@ release_lock() {
 AWG_INTERFACE=${AWG_INTERFACE:-awg0}
 AWG_PORT=${AWG_PORT:-51820}
 
-# Определяем режим работы: Docker или Native S2S
-# Если мы не в Docker контейнере - это Native S2S (запуск напрямую на хосте)
-if [ ! -f "/.dockerenv" ]; then
-    # Native S2S mode - определяем директорию проекта
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-    
-    # Загружаем .env если существует (для получения переменных)
-    if [ -f "$PROJECT_DIR/.env" ]; then
-        set -a
-        source "$PROJECT_DIR/.env"
-        set +a
-    fi
-    
-    CONFIG_FILE="$PROJECT_DIR/config/${AWG_INTERFACE}.conf"
-    CLIENTS_DIR="$PROJECT_DIR/clients"
-    SERVER_KEY_DIR="$PROJECT_DIR/config"
-    NATIVE_S2S_MODE=true
-else
-    # Docker mode - используем пути внутри контейнера
-    CONFIG_FILE="/app/config/${AWG_INTERFACE}.conf"
-    CLIENTS_DIR="/app/clients"
-    SERVER_KEY_DIR="/app/config"
-    NATIVE_S2S_MODE=false
-fi
+# Docker mode - используем пути внутри контейнера
+CONFIG_FILE="/app/config/${AWG_INTERFACE}.conf"
+CLIENTS_DIR="/app/clients"
+SERVER_KEY_DIR="/app/config"
 
 # Создаем директорию для клиентов если не существует
 mkdir -p "$CLIENTS_DIR" 2>/dev/null || true
