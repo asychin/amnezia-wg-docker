@@ -134,11 +134,23 @@ help: check-autocomplete ## Show this help
 	echo "  $(GREEN)status$(NC)             Show server status"; \
 	echo "  $(GREEN)logs$(NC)               View logs (Ctrl+C to exit)"; \
 	echo ""; \
-	echo "$(CYAN)Site-to-site VPN (access to server's local network):$(NC) $$S2S_STATUS"; \
+	echo "$(CYAN)Site-to-site VPN (Docker mode - may have connection issues):$(NC) $$S2S_STATUS"; \
 	echo "  $(GREEN)init-s2s$(NC)           Initialize for site-to-site VPN"; \
-	echo "  $(GREEN)up-s2s$(NC)             Start server (host network mode)"; \
+	echo "  $(GREEN)up-s2s$(NC)             Start server (Docker host network)"; \
 	echo "  $(GREEN)down-s2s$(NC)           Stop site-to-site server"; \
-	echo "  $(GREEN)status-s2s$(NC)         Show site-to-site server status"
+	echo "  $(GREEN)status-s2s$(NC)         Show site-to-site server status"; \
+	echo ""; \
+	NATIVE_STATUS="$(YELLOW)inactive$(NC)"; \
+	if systemctl is-active --quiet amneziawg-s2s 2>/dev/null; then \
+		NATIVE_STATUS="$(GREEN)active$(NC)"; \
+	fi; \
+	echo "$(CYAN)Native S2S (recommended - no Docker, stable connections):$(NC) $$NATIVE_STATUS"; \
+	echo "  $(GREEN)install-s2s$(NC)        Install native S2S mode"; \
+	echo "  $(GREEN)uninstall-s2s$(NC)      Uninstall native S2S mode"; \
+	echo "  $(GREEN)start-s2s-native$(NC)   Start native S2S server"; \
+	echo "  $(GREEN)stop-s2s-native$(NC)    Stop native S2S server"; \
+	echo "  $(GREEN)status-s2s-native$(NC)  Show native S2S status"; \
+	echo "  $(GREEN)enable-s2s-native$(NC)  Enable auto-start on boot"
 	@echo ""
 	@echo "$(CYAN)Client management:$(NC)"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -248,6 +260,68 @@ status-s2s: check-compose ## Show site-to-site server status
 		echo "$(CYAN)Active connections:$(NC)"; \
 		$(DOCKER_EXEC) awg show awg0 latest-handshakes 2>/dev/null || echo "$(YELLOW)No active connections$(NC)"; \
 	fi
+
+# ============================================================================
+# NATIVE S2S MODE (without Docker - avoids iptables conflicts)
+# ============================================================================
+
+.PHONY: install-s2s
+install-s2s: init-submodules ## Install native S2S mode (no Docker, avoids connection drops)
+	@echo "$(BLUE)Installing native S2S mode...$(NC)"
+	@if [ ! -f ".env" ]; then $(MAKE) init-s2s; fi
+	@sudo ./scripts/install-s2s.sh
+	@echo "$(GREEN)Native S2S installation complete$(NC)"
+	@echo "$(YELLOW)Run 'make start-s2s-native' to start the server$(NC)"
+
+.PHONY: uninstall-s2s
+uninstall-s2s: ## Uninstall native S2S mode
+	@echo "$(BLUE)Uninstalling native S2S mode...$(NC)"
+	@sudo ./scripts/uninstall-s2s.sh
+	@echo "$(GREEN)Native S2S uninstalled$(NC)"
+
+.PHONY: start-s2s-native
+start-s2s-native: ## Start native S2S server (systemd)
+	@echo "$(BLUE)Starting native S2S server...$(NC)"
+	@sudo systemctl start amneziawg-s2s
+	@sleep 3
+	@$(MAKE) status-s2s-native
+
+.PHONY: stop-s2s-native
+stop-s2s-native: ## Stop native S2S server (systemd)
+	@echo "$(BLUE)Stopping native S2S server...$(NC)"
+	@sudo systemctl stop amneziawg-s2s
+	@echo "$(GREEN)Native S2S server stopped$(NC)"
+
+.PHONY: restart-s2s-native
+restart-s2s-native: ## Restart native S2S server (systemd)
+	@echo "$(BLUE)Restarting native S2S server...$(NC)"
+	@sudo systemctl restart amneziawg-s2s
+	@sleep 3
+	@$(MAKE) status-s2s-native
+
+.PHONY: status-s2s-native
+status-s2s-native: ## Show native S2S server status
+	@echo "$(CYAN)Systemd service status:$(NC)"
+	@systemctl status amneziawg-s2s --no-pager 2>/dev/null || echo "$(RED)Service not running$(NC)"
+	@echo ""
+	@echo "$(CYAN)AmneziaWG interface:$(NC)"
+	@awg show awg0 2>/dev/null || echo "$(YELLOW)Interface not available$(NC)"
+
+.PHONY: logs-s2s-native
+logs-s2s-native: ## View native S2S server logs
+	@sudo journalctl -u amneziawg-s2s -f
+
+.PHONY: enable-s2s-native
+enable-s2s-native: ## Enable native S2S auto-start on boot
+	@echo "$(BLUE)Enabling native S2S auto-start...$(NC)"
+	@sudo systemctl enable amneziawg-s2s
+	@echo "$(GREEN)Native S2S will start automatically on boot$(NC)"
+
+.PHONY: disable-s2s-native
+disable-s2s-native: ## Disable native S2S auto-start
+	@echo "$(BLUE)Disabling native S2S auto-start...$(NC)"
+	@sudo systemctl disable amneziawg-s2s
+	@echo "$(GREEN)Native S2S auto-start disabled$(NC)"
 
 .PHONY: down
 down: check-compose check-container ## Stop server

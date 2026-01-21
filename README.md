@@ -52,22 +52,48 @@ Client configuration uses `AllowedIPs = 0.0.0.0/0` to route all traffic through 
 
 VPN clients can access devices in the server's local network. Use this when you need to access servers, printers, or other devices on the VPN server's LAN.
 
+**Recommended: Native S2S Mode (without Docker)**
+
+For stable S2S connections, use native installation which avoids Docker iptables conflicts:
+
 ```bash
-make init-s2s    # Site-to-site initialization (prompts for local subnet)
-make up-s2s      # Start server with host network
+make init-s2s        # Initialize S2S configuration (prompts for local subnet)
+make install-s2s     # Install native S2S mode (builds and installs AmneziaWG)
+make start-s2s-native    # Start the server
+make enable-s2s-native   # Enable auto-start on boot
 ```
 
-This mode uses `network_mode: host` so the container has direct access to the server's local network.
+Native S2S commands:
+- `make install-s2s` - Install native S2S mode (compiles AmneziaWG, creates systemd service)
+- `make uninstall-s2s` - Uninstall native S2S mode
+- `make start-s2s-native` - Start native S2S server
+- `make stop-s2s-native` - Stop native S2S server
+- `make restart-s2s-native` - Restart native S2S server
+- `make status-s2s-native` - Show native S2S status
+- `make logs-s2s-native` - View native S2S logs
+- `make enable-s2s-native` - Enable auto-start on boot
+- `make disable-s2s-native` - Disable auto-start
+
+**Alternative: Docker S2S Mode**
+
+Docker-based S2S mode is also available but may experience connection drops due to Docker iptables conflicts:
+
+```bash
+make init-s2s    # Site-to-site initialization (prompts for local subnet)
+make up-s2s      # Start server with Docker host network
+```
+
+Docker S2S commands:
+- `make up-s2s` - Start server with host network
+- `make down-s2s` - Stop site-to-site server
+- `make status-s2s` - Show site-to-site server status
+
+**Configuration**
 
 During `init-s2s`, you'll be asked for the server's local network subnet (e.g., `192.168.1.0/24`). The script will:
 - Set `SERVER_SUBNET` to your local network
 - Configure `AllowedIPs` to include the local subnet
 - Enable masquerading for local network access
-
-Site-to-site commands:
-- `make up-s2s` - Start server with host network
-- `make down-s2s` - Stop site-to-site server
-- `make status-s2s` - Show site-to-site server status
 
 You can also configure manually in `.env`:
 ```bash
@@ -143,12 +169,14 @@ These are randomly generated on first `make init`:
 
 | Variable | Range | Description |
 |----------|-------|-------------|
-| `AWG_JC` | 3-10 | Junk packet count |
-| `AWG_JMIN` | 40-80 | Min junk packet size |
-| `AWG_JMAX` | 500-1000 | Max junk packet size |
-| `AWG_S1` | 50-100 | Header size modifier 1 |
-| `AWG_S2` | 100-200 | Header size modifier 2 |
-| `AWG_H1-H4` | 1-4 | Hash function selectors |
+| `AWG_JC` | 4-12 | Junk packet count |
+| `AWG_JMIN` | 8-50 | Min junk packet size |
+| `AWG_JMAX` | 80-250 | Max junk packet size |
+| `AWG_S1` | 15-150 | Junk data size for init packets |
+| `AWG_S2` | 15-150 | Junk data size for response packets |
+| `AWG_H1-H4` | 5-2147483647 | Magic header values (unique 32-bit integers) |
+
+Note: S1 and S2 are constrained so that `S1 + 56 != S2` to ensure different packet sizes.
 
 ## Scheduled Backups
 
