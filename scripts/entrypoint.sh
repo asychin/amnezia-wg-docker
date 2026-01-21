@@ -342,6 +342,15 @@ setup_iptables() {
         warn "❌ Не удалось добавить FORWARD правило (исходящий)"
     fi
     
+    # MSS clamping для предотвращения PMTUD Black Hole
+    # В режиме host network (S2S) нет Docker-прослойки которая делает это автоматически
+    # Это правило заставляет TCP соединения использовать правильный размер сегмента
+    if iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; then
+        log "✅ MSS clamping правило добавлено (предотвращение PMTUD Black Hole)"
+    else
+        warn "❌ Не удалось добавить MSS clamping правило"
+    fi
+    
     log "Настройка iptables завершена (могут быть предупреждения в CI/CD)"
 }
 
@@ -448,6 +457,12 @@ EOF
         ip link set ${AWG_INTERFACE} up
         ip addr add ${AWG_SERVER_IP}/${AWG_NET##*/} dev ${AWG_INTERFACE}
         
+        # Устанавливаем MTU для предотвращения проблем с фрагментацией
+        # WireGuard/AmneziaWG добавляет ~60 байт overhead, поэтому MTU должен быть меньше 1500
+        # 1280 - безопасное значение, работает везде (минимальный MTU для IPv6)
+        ip link set ${AWG_INTERFACE} mtu 1280
+        log "MTU интерфейса ${AWG_INTERFACE} установлен на 1280"
+        
         # Синхронизируем конфигурацию с peer'ами (клиентами)
         log "Применяем конфигурацию с клиентами..."
         awg syncconf ${AWG_INTERFACE} ${CONFIG_FILE}
@@ -482,10 +497,9 @@ create_client_config() {
     cat > "/app/clients/${client_name}.conf" << EOF
 [Interface]
 PrivateKey = ${CLIENT_PRIVATE_KEY}
-Address = ${client_ip}/24
+Address = ${client_ip}/32
 DNS = ${AWG_DNS}
-
-# Параметры обфускации AmneziaWG
+MTU = 1280
 Jc = ${AWG_JC}
 Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}

@@ -354,6 +354,7 @@ add_client() {
 PrivateKey = ${CLIENT_PRIVATE_KEY}
 Address = ${client_ip}/32
 DNS = ${AWG_DNS:-8.8.8.8,8.8.4.4}
+MTU = 1280
 Jc = ${AWG_JC}
 Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
