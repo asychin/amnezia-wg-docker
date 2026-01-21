@@ -49,7 +49,7 @@ check-vpn-running:
 	S2S_RUNNING=$$(systemctl is-active amneziawg-s2s 2>/dev/null || echo "inactive"); \
 	if [ "$$DOCKER_RUNNING" = "no" ] && [ "$$S2S_RUNNING" != "active" ]; then \
 		echo "$(RED)Error: No VPN server is running$(NC)"; \
-		echo "$(YELLOW)Run 'make up' for standard VPN or 'make up-s2s' for S2S mode$(NC)"; \
+		echo "$(YELLOW)Run 'make up' for standard VPN or 'make up-native-s2s' for S2S mode$(NC)"; \
 		exit 1; \
 	fi
 
