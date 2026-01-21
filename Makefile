@@ -65,12 +65,18 @@ init-submodules:
 	fi
 
 # Generate random obfuscation parameters
+# Note: S1 and S2 must result in different final packet sizes to avoid AmneziaWG error
+# "new sizes should differ". WireGuard init packet is 148 bytes, response is 92 bytes.
+# We ensure (148 + S1) != (92 + S2) by regenerating S2 if they match.
 generate-obfuscation:
 	@AWG_JC=$$(shuf -i 3-10 -n 1); \
 	AWG_JMIN=$$(shuf -i 40-80 -n 1); \
 	AWG_JMAX=$$(shuf -i 500-1000 -n 1); \
-	AWG_S1=$$(shuf -i 50-100 -n 1); \
-	AWG_S2=$$(shuf -i 100-200 -n 1); \
+	AWG_S1=$$(shuf -i 15-150 -n 1); \
+	AWG_S2=$$(shuf -i 15-150 -n 1); \
+	while [ $$((148 + AWG_S1)) -eq $$((92 + AWG_S2)) ]; do \
+		AWG_S2=$$(shuf -i 15-150 -n 1); \
+	done; \
 	H_VALUES=$$(shuf -i 1-4 -n 4 | tr '\n' ' '); \
 	AWG_H1=$$(echo $$H_VALUES | cut -d' ' -f1); \
 	AWG_H2=$$(echo $$H_VALUES | cut -d' ' -f2); \
