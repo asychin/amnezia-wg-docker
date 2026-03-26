@@ -34,10 +34,17 @@ services:
       - AWG_JMAX=${AWG_JMAX:-1000}
       - AWG_S1=${AWG_S1:-86}
       - AWG_S2=${AWG_S2:-574}
+      - AWG_S3=${AWG_S3:-0}
+      - AWG_S4=${AWG_S4:-0}
       - AWG_H1=${AWG_H1:-1}
       - AWG_H2=${AWG_H2:-2}
       - AWG_H3=${AWG_H3:-3}
       - AWG_H4=${AWG_H4:-4}
+      - AWG_I1=${AWG_I1:-}
+      - AWG_I2=${AWG_I2:-}
+      - AWG_I3=${AWG_I3:-}
+      - AWG_I4=${AWG_I4:-}
+      - AWG_I5=${AWG_I5:-}
       - SERVER_PUBLIC_IP=${SERVER_PUBLIC_IP:-auto}
       - CLIENTS_SUBNET=${CLIENTS_SUBNET:-10.13.13.0/24}
       - ALLOWED_IPS=${ALLOWED_IPS:-0.0.0.0/0}
