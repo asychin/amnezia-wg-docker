@@ -104,10 +104,32 @@ AWG_JMIN=${AWG_JMIN:-50}
 AWG_JMAX=${AWG_JMAX:-1000}
 AWG_S1=${AWG_S1:-86}
 AWG_S2=${AWG_S2:-574}
+AWG_S3=${AWG_S3:-0}
+AWG_S4=${AWG_S4:-0}
 AWG_H1=${AWG_H1:-1}
 AWG_H2=${AWG_H2:-2}
 AWG_H3=${AWG_H3:-3}
 AWG_H4=${AWG_H4:-4}
+AWG_I1=${AWG_I1:-}
+AWG_I2=${AWG_I2:-}
+AWG_I3=${AWG_I3:-}
+AWG_I4=${AWG_I4:-}
+AWG_I5=${AWG_I5:-}
+
+# Добавление signature packets только для AWG 2.0 конфигураций.
+# Для обратной совместимости блок i1-i5 пишется только если задан i1.
+append_signature_packets() {
+    local target_file="$1"
+    if [ -n "$AWG_I1" ]; then
+        {
+            echo "i1 = ${AWG_I1}"
+            [ -n "$AWG_I2" ] && echo "i2 = ${AWG_I2}"
+            [ -n "$AWG_I3" ] && echo "i3 = ${AWG_I3}"
+            [ -n "$AWG_I4" ] && echo "i4 = ${AWG_I4}"
+            [ -n "$AWG_I5" ] && echo "i5 = ${AWG_I5}"
+        } >> "$target_file"
+    fi
+}
 
 usage() {
     echo "Использование: $0 {add|remove|list|show|qr} [options]"
@@ -367,11 +389,16 @@ Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
 S1 = ${AWG_S1}
 S2 = ${AWG_S2}
+S3 = ${AWG_S3}
+S4 = ${AWG_S4}
 H1 = ${AWG_H1}
 H2 = ${AWG_H2}
 H3 = ${AWG_H3}
 H4 = ${AWG_H4}
-
+EOF
+    append_signature_packets "${CLIENTS_DIR}/${client_name}.conf"
+    
+    cat >> "${CLIENTS_DIR}/${client_name}.conf" << EOF
 [Peer]
 PublicKey = ${SERVER_PUBLIC_KEY}
 Endpoint = ${PUBLIC_IP}:${AWG_PORT}
