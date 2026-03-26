@@ -127,8 +127,10 @@ append_signature_packets() {
             [ -n "$AWG_I3" ] && echo "i3 = ${AWG_I3}"
             [ -n "$AWG_I4" ] && echo "i4 = ${AWG_I4}"
             [ -n "$AWG_I5" ] && echo "i5 = ${AWG_I5}"
+            true
         } >> "$target_file"
     fi
+    return 0
 }
 
 usage() {

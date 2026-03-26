@@ -36,8 +36,10 @@ append_signature_packets() {
             [ -n "$AWG_I3" ] && echo "i3 = ${AWG_I3}"
             [ -n "$AWG_I4" ] && echo "i4 = ${AWG_I4}"
             [ -n "$AWG_I5" ] && echo "i5 = ${AWG_I5}"
+            true
         } >> "$target_file"
     fi
+    return 0
 }
 
 validate_magic_header() {
@@ -274,8 +276,8 @@ H1 = ${AWG_H1}
 H2 = ${AWG_H2}
 H3 = ${AWG_H3}
 H4 = ${AWG_H4}
-
 EOF
+
     append_signature_packets "$CONFIG_FILE"
     echo "" >> "$CONFIG_FILE"
     
