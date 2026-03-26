@@ -397,6 +397,7 @@ H3 = ${AWG_H3}
 H4 = ${AWG_H4}
 EOF
     append_signature_packets "${CLIENTS_DIR}/${client_name}.conf"
+    echo "" >> "${CLIENTS_DIR}/${client_name}.conf"
     
     cat >> "${CLIENTS_DIR}/${client_name}.conf" << EOF
 [Peer]

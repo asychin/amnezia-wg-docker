@@ -40,6 +40,72 @@ append_signature_packets() {
     fi
 }
 
+validate_magic_header() {
+    local name="$1"
+    local value="$2"
+    local __start_var="$3"
+    local __end_var="$4"
+    local -n out_start_ref="$__start_var"
+    local -n out_end_ref="$__end_var"
+    local max_u32=4294967295
+    local start
+    local end
+
+    if [[ "$value" =~ ^([0-9]+)-([0-9]+)$ ]]; then
+        start="${BASH_REMATCH[1]}"
+        end="${BASH_REMATCH[2]}"
+    elif [[ "$value" =~ ^([0-9]+)$ ]]; then
+        start="${BASH_REMATCH[1]}"
+        end="${BASH_REMATCH[1]}"
+    else
+        error "$name must be uint32 or uint32-uint32, got: $value"
+        return 1
+    fi
+
+    if [ "$start" -gt "$max_u32" ] || [ "$end" -gt "$max_u32" ]; then
+        error "$name must be <= $max_u32, got: $value"
+        return 1
+    fi
+    if [ "$end" -lt "$start" ]; then
+        error "$name range end must be >= start, got: $value"
+        return 1
+    fi
+
+    out_start_ref="$start"
+    out_end_ref="$end"
+    return 0
+}
+
+ranges_overlap() {
+    local a_start="$1"
+    local a_end="$2"
+    local b_start="$3"
+    local b_end="$4"
+    [ "$a_start" -le "$b_end" ] && [ "$b_start" -le "$a_end" ]
+}
+
+validate_obfuscation_params() {
+    local h1_start h1_end h2_start h2_end h3_start h3_end h4_start h4_end
+
+    # Only validate H1-H4 ranges overlap constraints.
+    validate_magic_header "AWG_H1" "$AWG_H1" h1_start h1_end || return 1
+    validate_magic_header "AWG_H2" "$AWG_H2" h2_start h2_end || return 1
+    validate_magic_header "AWG_H3" "$AWG_H3" h3_start h3_end || return 1
+    validate_magic_header "AWG_H4" "$AWG_H4" h4_start h4_end || return 1
+
+    if ranges_overlap "$h1_start" "$h1_end" "$h2_start" "$h2_end" || \
+       ranges_overlap "$h1_start" "$h1_end" "$h3_start" "$h3_end" || \
+       ranges_overlap "$h1_start" "$h1_end" "$h4_start" "$h4_end" || \
+       ranges_overlap "$h2_start" "$h2_end" "$h3_start" "$h3_end" || \
+       ranges_overlap "$h2_start" "$h2_end" "$h4_start" "$h4_end" || \
+       ranges_overlap "$h3_start" "$h3_end" "$h4_start" "$h4_end"; then
+        error "AWG_H1..AWG_H4 ranges must not overlap"
+        return 1
+    fi
+
+    return 0
+}
+
 # Конфигурация по умолчанию
 AWG_INTERFACE=${AWG_INTERFACE:-awg0}
 AWG_PORT=${AWG_PORT:-51820}
@@ -546,6 +612,7 @@ H4 = ${AWG_H4}
 EOF
 
     append_signature_packets "/app/clients/${client_name}.conf"
+    echo "" >> "/app/clients/${client_name}.conf"
     
     cat >> "/app/clients/${client_name}.conf" << EOF
 [Peer]
@@ -615,6 +682,12 @@ main() {
     log "Порт: $AWG_PORT"
     log "Сеть: $AWG_NET"
     log "IP сервера: $AWG_SERVER_IP"
+
+    log "Валидируем параметры обфускации..."
+    if ! validate_obfuscation_params; then
+        error "Некорректные параметры обфускации. Исправьте .env и перезапустите."
+        exit 1
+    fi
     
     # Получаем публичный IP
     get_public_ip
