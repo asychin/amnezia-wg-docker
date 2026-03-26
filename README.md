@@ -106,9 +106,15 @@ These are randomly generated on first `make init`:
 | `AWG_JMAX` | 80-250 | Max junk packet size |
 | `AWG_S1` | 15-150 | Junk data size for init packets |
 | `AWG_S2` | 15-150 | Junk data size for response packets |
-| `AWG_H1-H4` | 5-2147483647 | Magic header values (unique 32-bit integers) |
+| `AWG_S3` | 0-64 | Cookie Reply padding (AWG 2.0) |
+| `AWG_S4` | 0-64 | Transport Data padding (AWG 2.0) |
+| `AWG_H1-H4` | uint32 or uint32-range | Magic headers (`N` or `N-M`, ranges must not overlap) |
+| `AWG_I1-I5` | CPS string | Signature packets in CPS format (AWG 2.0) |
 
-Note: S1 and S2 are constrained so that `S1 + 56 != S2` to ensure different packet sizes.
+Notes:
+- `S1` and `S2` are constrained so that `S1 + 56 != S2` to ensure different packet sizes.
+- For backward compatibility, leave `AWG_I1` empty to disable `I1-I5` signature packets (AWG 1.x-like behavior).
+- `make init` runs `generate-obfuscation`, which now also populates `S3/S4`, non-overlapping `H1-H4` ranges, and default `I1/I2` signatures.
 
 ## Scheduled Backups
 
