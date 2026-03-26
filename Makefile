@@ -71,36 +71,51 @@ init-submodules:
 # - Jmax: recommended 80
 # - S1: 15-150, constraint: S1 + 56 != S2 (ensures different packet sizes)
 # - S2: 15-150
-# - H1/H2/H3/H4: unique 32-bit integers, range 5-2147483647
+# - S3/S4: AWG 2.0 extra paddings (0-64 here for balanced defaults)
+# - H1/H2/H3/H4: non-overlapping uint32 ranges (AWG 2.0 compatible)
+# - I1/I2: default QUIC-like CPS signatures, I3-I5 empty
 generate-obfuscation:
 	@AWG_JC=$$(shuf -i 4-12 -n 1); \
 	AWG_JMIN=$$(shuf -i 8-50 -n 1); \
 	AWG_JMAX=$$(shuf -i 80-250 -n 1); \
 	AWG_S1=$$(shuf -i 15-150 -n 1); \
 	AWG_S2=$$(shuf -i 15-150 -n 1); \
+	AWG_S3=$$(shuf -i 0-64 -n 1); \
+	AWG_S4=$$(shuf -i 0-64 -n 1); \
 	while [ $$((AWG_S1 + 56)) -eq $$AWG_S2 ]; do \
 		AWG_S2=$$(shuf -i 15-150 -n 1); \
 	done; \
-	AWG_H1=$$(shuf -i 5-2147483647 -n 1); \
-	AWG_H2=$$(shuf -i 5-2147483647 -n 1); \
-	while [ $$AWG_H2 -eq $$AWG_H1 ]; do AWG_H2=$$(shuf -i 5-2147483647 -n 1); done; \
-	AWG_H3=$$(shuf -i 5-2147483647 -n 1); \
-	while [ $$AWG_H3 -eq $$AWG_H1 ] || [ $$AWG_H3 -eq $$AWG_H2 ]; do AWG_H3=$$(shuf -i 5-2147483647 -n 1); done; \
-	AWG_H4=$$(shuf -i 5-2147483647 -n 1); \
-	while [ $$AWG_H4 -eq $$AWG_H1 ] || [ $$AWG_H4 -eq $$AWG_H2 ] || [ $$AWG_H4 -eq $$AWG_H3 ]; do AWG_H4=$$(shuf -i 5-2147483647 -n 1); done; \
+	H1_START=$$(shuf -i 100000000-499999000 -n 1); H1_LEN=$$(shuf -i 50-1000 -n 1); AWG_H1="$$H1_START-$$((H1_START + H1_LEN))"; \
+	H2_START=$$(shuf -i 600000000-999999000 -n 1); H2_LEN=$$(shuf -i 50-1000 -n 1); AWG_H2="$$H2_START-$$((H2_START + H2_LEN))"; \
+	H3_START=$$(shuf -i 1100000000-1499999000 -n 1); H3_LEN=$$(shuf -i 50-1000 -n 1); AWG_H3="$$H3_START-$$((H3_START + H3_LEN))"; \
+	H4_START=$$(shuf -i 1600000000-2099999000 -n 1); H4_LEN=$$(shuf -i 50-1000 -n 1); AWG_H4="$$H4_START-$$((H4_START + H4_LEN))"; \
+	AWG_I1='<b 0xc700000001><rc 8><t><r 100>'; \
+	AWG_I2='<b 0xf6ab3267fa><t><rc 20><r 80>'; \
+	AWG_I3=''; \
+	AWG_I4=''; \
+	AWG_I5=''; \
 	sed -i "s/^AWG_JC=.*/AWG_JC=$$AWG_JC/" .env; \
 	sed -i "s/^AWG_JMIN=.*/AWG_JMIN=$$AWG_JMIN/" .env; \
 	sed -i "s/^AWG_JMAX=.*/AWG_JMAX=$$AWG_JMAX/" .env; \
 	sed -i "s/^AWG_S1=.*/AWG_S1=$$AWG_S1/" .env; \
 	sed -i "s/^AWG_S2=.*/AWG_S2=$$AWG_S2/" .env; \
+	sed -i "s/^AWG_S3=.*/AWG_S3=$$AWG_S3/" .env; \
+	sed -i "s/^AWG_S4=.*/AWG_S4=$$AWG_S4/" .env; \
 	sed -i "s/^AWG_H1=.*/AWG_H1=$$AWG_H1/" .env; \
 	sed -i "s/^AWG_H2=.*/AWG_H2=$$AWG_H2/" .env; \
 	sed -i "s/^AWG_H3=.*/AWG_H3=$$AWG_H3/" .env; \
 	sed -i "s/^AWG_H4=.*/AWG_H4=$$AWG_H4/" .env; \
+	sed -i "s|^AWG_I1=.*|AWG_I1=$$AWG_I1|" .env; \
+	sed -i "s|^AWG_I2=.*|AWG_I2=$$AWG_I2|" .env; \
+	sed -i "s|^AWG_I3=.*|AWG_I3=$$AWG_I3|" .env; \
+	sed -i "s|^AWG_I4=.*|AWG_I4=$$AWG_I4|" .env; \
+	sed -i "s|^AWG_I5=.*|AWG_I5=$$AWG_I5|" .env; \
 	echo "$(GREEN)Generated random obfuscation parameters:$(NC)"; \
 	echo "  Jc=$$AWG_JC Jmin=$$AWG_JMIN Jmax=$$AWG_JMAX"; \
-	echo "  S1=$$AWG_S1 S2=$$AWG_S2"; \
-	echo "  H1=$$AWG_H1 H2=$$AWG_H2 H3=$$AWG_H3 H4=$$AWG_H4"
+	echo "  S1=$$AWG_S1 S2=$$AWG_S2 S3=$$AWG_S3 S4=$$AWG_S4"; \
+	echo "  H1=$$AWG_H1 H2=$$AWG_H2 H3=$$AWG_H3 H4=$$AWG_H4"; \
+	echo "  I1=$$AWG_I1"; \
+	echo "  I2=$$AWG_I2"
 
 # ============================================================================
 # HELP
