@@ -252,6 +252,11 @@ EOF
         log "QR код для клиента $client_name:"
         qrencode -t ansiutf8 < "${CLIENTS_DIR}/${client_name}.conf"
     fi
+
+    # Показываем vpn:// URI
+    if [ -x "${SCRIPT_DIR}/generate-vpn-uri.sh" ]; then
+        "${SCRIPT_DIR}/generate-vpn-uri.sh" "$client_name"
+    fi
 }
 
 # Удаление клиента
@@ -417,6 +422,18 @@ case "$1" in
         ;;
     qr)
         show_qr "$2"
+        ;;
+    vpn-url)
+        if [ -z "$2" ]; then
+            usage
+            exit 1
+        fi
+        if [ -x "${SCRIPT_DIR}/generate-vpn-uri.sh" ]; then
+            "${SCRIPT_DIR}/generate-vpn-uri.sh" "$2"
+        else
+            error "generate-vpn-uri.sh не найден"
+            exit 1
+        fi
         ;;
     *)
         usage

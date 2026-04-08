@@ -84,6 +84,8 @@ RUN set -ex && \
         openresolv \
         # Генерация QR кодов
         qrencode \
+        # Python для генерации vpn:// URI
+        python3 \
         # Утилиты
         nano \
         less \
