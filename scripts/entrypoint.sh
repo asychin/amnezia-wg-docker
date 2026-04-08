@@ -16,12 +16,14 @@ AWG_NET=${AWG_NET:-10.13.13.0/24}
 AWG_SERVER_IP=${AWG_SERVER_IP:-10.13.13.1}
 AWG_DNS=${AWG_DNS:-8.8.8.8,8.8.4.4}
 
-# Параметры обфускации AmneziaWG
+# Параметры обфускации AmneziaWG (v2)
 AWG_JC=${AWG_JC:-7}
 AWG_JMIN=${AWG_JMIN:-50}
 AWG_JMAX=${AWG_JMAX:-1000}
 AWG_S1=${AWG_S1:-86}
-AWG_S2=${AWG_S2:-574}
+AWG_S2=${AWG_S2:-120}
+AWG_S3=${AWG_S3:-40}
+AWG_S4=${AWG_S4:-10}
 AWG_H1=${AWG_H1:-1}
 AWG_H2=${AWG_H2:-2}
 AWG_H3=${AWG_H3:-3}
@@ -66,12 +68,14 @@ create_server_config() {
 ListenPort = ${AWG_PORT}
 PrivateKey = ${SERVER_PRIVATE_KEY}
 
-# Параметры обфускации AmneziaWG
+# Параметры обфускации AmneziaWG (v2)
 Jc = ${AWG_JC}
 Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
 S1 = ${AWG_S1}
 S2 = ${AWG_S2}
+S3 = ${AWG_S3}
+S4 = ${AWG_S4}
 H1 = ${AWG_H1}
 H2 = ${AWG_H2}
 H3 = ${AWG_H3}
@@ -336,6 +340,8 @@ Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
 S1 = ${AWG_S1}
 S2 = ${AWG_S2}
+S3 = ${AWG_S3}
+S4 = ${AWG_S4}
 H1 = ${AWG_H1}
 H2 = ${AWG_H2}
 H3 = ${AWG_H3}
@@ -399,6 +405,8 @@ Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
 S1 = ${AWG_S1}
 S2 = ${AWG_S2}
+S3 = ${AWG_S3}
+S4 = ${AWG_S4}
 H1 = ${AWG_H1}
 H2 = ${AWG_H2}
 H3 = ${AWG_H3}

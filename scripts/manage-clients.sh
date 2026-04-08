@@ -28,12 +28,14 @@ SERVER_KEY_DIR="/app/config"
 # Создаем директорию для клиентов если не существует
 mkdir -p "$CLIENTS_DIR" 2>/dev/null || true
 
-# Параметры обфускации
+# Параметры обфускации (v2)
 AWG_JC=${AWG_JC:-7}
 AWG_JMIN=${AWG_JMIN:-50}
 AWG_JMAX=${AWG_JMAX:-1000}
 AWG_S1=${AWG_S1:-86}
-AWG_S2=${AWG_S2:-574}
+AWG_S2=${AWG_S2:-120}
+AWG_S3=${AWG_S3:-40}
+AWG_S4=${AWG_S4:-10}
 AWG_H1=${AWG_H1:-1}
 AWG_H2=${AWG_H2:-2}
 AWG_H3=${AWG_H3:-3}
@@ -195,6 +197,8 @@ Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
 S1 = ${AWG_S1}
 S2 = ${AWG_S2}
+S3 = ${AWG_S3}
+S4 = ${AWG_S4}
 H1 = ${AWG_H1}
 H2 = ${AWG_H2}
 H3 = ${AWG_H3}
