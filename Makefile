@@ -13,7 +13,7 @@ DOCKER_EXEC := docker exec $(SERVICE_NAME)
 DOCKER_LOGS := docker logs
 
 # Read port from .env (fallback to 51820)
-AWG_PORT := $(shell grep -s '^AWG_PORT=' .env | cut -d= -f2 || echo 51820)
+AWG_PORT := $(or $(shell grep -s '^AWG_PORT=' .env | cut -d= -f2),51820)
 
 # Colors
 BLUE := \033[34m
@@ -56,10 +56,9 @@ CLIENT_IP := $(if $(ip),$(ip),$(ARG2))
 check-compose:
 	@$(DOCKER_COMPOSE) version > /dev/null 2>&1 || (echo "$(RED)Error: Docker Compose not installed$(NC)" && exit 1)
 
-# Проверка контейнера через docker compose ps -q (надёжнее чем grep)
+# Проверка контейнера через docker ps -q (по имени контейнера)
 check-container:
-	@if [ -z "$$($(DOCKER_COMPOSE) ps -q $(SERVICE_NAME) 2>/dev/null)" ] || \
-	   [ -z "$$(docker ps -q -f name=$(SERVICE_NAME) 2>/dev/null)" ]; then \
+	@if [ -z "$$(docker ps -q -f name=$(SERVICE_NAME) 2>/dev/null)" ]; then \
 		echo "$(RED)Error: Container $(SERVICE_NAME) is not running$(NC)"; \
 		echo "$(YELLOW)Run 'make up' to start the server$(NC)"; \
 		exit 1; \

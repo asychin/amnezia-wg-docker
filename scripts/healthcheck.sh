@@ -91,18 +91,22 @@ run_check "Интерфейс $AWG_INTERFACE активен" "ip link show $AWG_
 # 3. Проверка порта — пробуем ss → netstat → lsof по порядку
 check_port() {
     local port="$1"
-    local tools=("ss -ulnp" "netstat -ulnp" "lsof -i UDP:${port}")
-    local names=("ss" "netstat" "lsof")
 
-    for i in 0 1 2; do
-        local tool="${names[$i]}"
-        local cmd="${tools[$i]}"
+    # ss и netstat: grep по формату ":PORT "
+    for tool in ss netstat; do
         if command -v "$tool" >/dev/null 2>&1; then
-            if run_check "Порт $port прослушивается ($tool)" "$cmd 2>/dev/null | grep -q ':${port} '" false; then
+            if run_check "Порт $port прослушивается ($tool)" "$tool -ulnp 2>/dev/null | grep -q ':${port} '" false; then
                 return 0
             fi
         fi
     done
+
+    # lsof: выходной формат отличается, проверяем только exit code
+    if command -v lsof >/dev/null 2>&1; then
+        if run_check "Порт $port прослушивается (lsof)" "lsof -i UDP:${port} >/dev/null 2>&1" false; then
+            return 0
+        fi
+    fi
 
     error "❌ Порт $port не прослушивается (проверено всеми доступными методами)"
     HEALTH_STATUS=1
