@@ -29,15 +29,22 @@ AWG_H2=${AWG_H2:-2}
 AWG_H3=${AWG_H3:-3}
 AWG_H4=${AWG_H4:-4}
 
+# Режим вывода: normal (с форматированием) или raw (только URI)
+OUTPUT_MODE="normal"
+
 # Использование
 usage() {
-    echo "Использование: $(basename "$0") <имя_клиента>"
+    echo "Использование: $(basename "$0") [--raw] <имя_клиента>"
     echo ""
     echo "Генерирует vpn:// URI для импорта в AmneziaVPN клиент."
     echo "Клиент должен быть создан заранее через manage-clients.sh."
     echo ""
+    echo "Опции:"
+    echo "  --raw    Вывести только URI без форматирования (для скриптов)"
+    echo ""
     echo "Пример:"
     echo "  $(basename "$0") client1"
+    echo "  $(basename "$0") --raw client1"
     exit 1
 }
 
@@ -82,6 +89,26 @@ print(f'vpn://{encoded}')
 
 # Основная логика
 main() {
+    # Парсинг аргументов
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --raw)
+                OUTPUT_MODE="raw"
+                shift
+                ;;
+            -h|--help)
+                usage
+                ;;
+            -*)
+                error "Неизвестная опция: $1"
+                usage
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
     local client_name="${1:-}"
 
     if [ -z "$client_name" ]; then
@@ -115,14 +142,19 @@ main() {
     fi
 
     # Выводим результат
-    echo ""
-    section "vpn:// URI для клиента: ${client_name}"
-    echo ""
-    echo "${vpn_uri}"
-    echo ""
-    info "Скопируйте строку выше и вставьте в AmneziaVPN клиент"
-    info "Или отсканируйте QR-код: make client-qr NAME=${client_name}"
-    echo ""
+    if [ "$OUTPUT_MODE" = "raw" ]; then
+        # Только URI без форматирования — для использования в скриптах и QR кодах
+        echo "${vpn_uri}"
+    else
+        echo ""
+        section "vpn:// URI для клиента: ${client_name}"
+        echo ""
+        echo "${vpn_uri}"
+        echo ""
+        info "Скопируйте строку выше и вставьте в AmneziaVPN клиент"
+        info "Или отсканируйте QR-код: make client-qr NAME=${client_name}"
+        echo ""
+    fi
 }
 
 main "$@"

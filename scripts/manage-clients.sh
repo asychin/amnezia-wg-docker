@@ -246,15 +246,33 @@ EOF
     log "Клиент $client_name успешно добавлен"
     log "Конфигурация сохранена в: ${CLIENTS_DIR}/${client_name}.conf"
     
-    # Показываем QR код
+    # Генерируем vpn:// URI (не фатально — клиент уже создан)
+    local vpn_uri=""
+    if [ -x "${SCRIPT_DIR}/generate-vpn-uri.sh" ] && command -v python3 &>/dev/null; then
+        vpn_uri=$("${SCRIPT_DIR}/generate-vpn-uri.sh" --raw "$client_name" 2>/dev/null) || true
+    fi
+
+    # Показываем QR код (из vpn:// URI для совместимости с AmneziaVPN)
     if command -v qrencode &> /dev/null; then
         echo ""
         log "QR код для клиента $client_name:"
-        qrencode -t ansiutf8 < "${CLIENTS_DIR}/${client_name}.conf"
+        if [ -n "$vpn_uri" ]; then
+            echo "$vpn_uri" | qrencode -t ansiutf8
+        else
+            warn "vpn:// URI недоступен, QR из raw .conf (только для AmneziaWG)"
+            qrencode -t ansiutf8 < "${CLIENTS_DIR}/${client_name}.conf"
+        fi
     fi
 
-    # Показываем vpn:// URI (не фатально — клиент уже создан)
-    if [ -x "${SCRIPT_DIR}/generate-vpn-uri.sh" ]; then
+    # Показываем vpn:// URI
+    if [ -n "$vpn_uri" ]; then
+        echo ""
+        section "vpn:// URI для клиента: ${client_name}"
+        echo ""
+        echo "${vpn_uri}"
+        echo ""
+        info "Скопируйте строку выше и вставьте в AmneziaVPN клиент"
+    elif [ -x "${SCRIPT_DIR}/generate-vpn-uri.sh" ]; then
         "${SCRIPT_DIR}/generate-vpn-uri.sh" "$client_name" || warn "Не удалось сгенерировать vpn:// URI"
     fi
 }
@@ -380,7 +398,7 @@ show_client() {
     cat "${CLIENTS_DIR}/${client_name}.conf"
 }
 
-# Показать QR код клиента
+# Показать QR код клиента (vpn:// URI для AmneziaVPN)
 show_qr() {
     local client_name="$1"
     
@@ -401,9 +419,22 @@ show_qr() {
         exit 1
     fi
     
+    # Генерируем vpn:// URI для QR кода (совместимо с AmneziaVPN)
+    local vpn_uri=""
+    if [ -x "${SCRIPT_DIR}/generate-vpn-uri.sh" ] && command -v python3 &>/dev/null; then
+        vpn_uri=$("${SCRIPT_DIR}/generate-vpn-uri.sh" --raw "$client_name" 2>/dev/null) || true
+    fi
+    
     log "QR код для клиента $client_name:"
     echo ""
-    qrencode -t ansiutf8 < "${CLIENTS_DIR}/${client_name}.conf"
+    if [ -n "$vpn_uri" ]; then
+        echo "$vpn_uri" | qrencode -t ansiutf8
+        echo ""
+        info "QR код содержит vpn:// URI (совместимо с AmneziaVPN)"
+    else
+        warn "vpn:// URI недоступен, QR из raw .conf (только для AmneziaWG)"
+        qrencode -t ansiutf8 < "${CLIENTS_DIR}/${client_name}.conf"
+    fi
 }
 
 # Основная логика
