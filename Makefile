@@ -244,7 +244,7 @@ monitor: check-compose check-container ## Monitor server (live stats)
 	@echo "$(CYAN)Monitoring AmneziaWG server (Ctrl+C to exit)...$(NC)"
 	@while true; do \
 		clear; \
-		echo "$(CYAN)=== AmneziaWG Monitor ($(shell date '+%H:%M:%S')) ===$(NC)"; \
+		echo "$(CYAN)=== AmneziaWG Monitor ($$(date '+%H:%M:%S')) ===$(NC)"; \
 		echo ""; \
 		$(DOCKER_EXEC) awg show awg0 2>/dev/null || echo "$(YELLOW)Interface not available$(NC)"; \
 		echo ""; \
