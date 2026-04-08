@@ -5,25 +5,9 @@
 
 set -e
 
-# Цвета для логов
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Функция логирования
-log() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1"
-}
-
-warn() {
-    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING:${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR:${NC} $1"
-}
+# Подключаем общую библиотеку
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common.sh"
 
 # Конфигурация по умолчанию
 AWG_INTERFACE=${AWG_INTERFACE:-awg0}
@@ -47,99 +31,7 @@ AWG_H4=${AWG_H4:-4}
 CONFIG_FILE="/app/config/${AWG_INTERFACE}.conf"
 CLIENT_DIR="/app/clients"
 
-# Функция получения публичного IP
-get_public_ip() {
-    if [ "$SERVER_PUBLIC_IP" = "auto" ] || [ -z "$SERVER_PUBLIC_IP" ]; then
-        # Исправляем DNS если нужно (с проверкой прав записи)
-        if ! nslookup google.com >/dev/null 2>&1; then
-            log "Исправляем DNS настройки..."
-            if [ -w /etc/resolv.conf ] || [ -w /etc ]; then
-                echo "nameserver 8.8.8.8" > /etc/resolv.conf
-                echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-            else
-                warn "Нет прав для изменения /etc/resolv.conf, пропускаем..."
-            fi
-        fi
-        
-        log "Определяем публичный IP автоматически..."
-        
-        SERVER_PUBLIC_IP=""
-        
-        # ПРИОРИТЕТНЫЙ МЕТОД: Определение IP через маршрутизацию (самый надёжный)
-        if command -v ip >/dev/null 2>&1; then
-            log "Пробуем определить IP через маршрутизацию (ip route)..."
-            local_ip=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || true)
-            
-            if [ -n "$local_ip" ] && echo "$local_ip" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'; then
-                # Проверяем, не является ли это приватным IP
-                if ! echo "$local_ip" | grep -qE '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.)'; then
-                    SERVER_PUBLIC_IP="$local_ip"
-                    log "✅ Публичный IP определён через маршрутизацию: $SERVER_PUBLIC_IP"
-                else
-                    log "IP из маршрутизации приватный ($local_ip), используем внешние сервисы..."
-                fi
-            fi
-        fi
-        
-        # Если приоритетный метод не сработал, используем внешние сервисы
-        if [ -z "$SERVER_PUBLIC_IP" ]; then
-            # Список сервисов для определения публичного IP (в порядке приоритета)
-            IP_SERVICES=(
-                "http://eth0.me"                    # Быстрый HTTP сервис
-                "https://ipv4.icanhazip.com"        # Надежный HTTPS
-                "https://api.ipify.org"             # JSON API
-                "https://checkip.amazonaws.com"     # AWS сервис
-                "https://ipinfo.io/ip"              # Подробная информация
-                "https://ifconfig.me/ip"            # Классический сервис
-                "http://whatismyip.akamai.com"      # CDN Akamai
-                "http://i.pn"                       # JSON ответ
-            )
-            
-            # Пробуем каждый сервис до получения валидного IP
-            for service in "${IP_SERVICES[@]}"; do
-                log "Пробуем сервис: $service"
-                
-                # Получаем ответ с таймаутом 10 секунд (ПРИНУДИТЕЛЬНО IPv4)
-                response=$(curl -4 -s --connect-timeout 10 --max-time 15 "$service" 2>/dev/null)
-                
-                # Извлекаем IP из ответа
-                if [[ "$service" == *"i.pn"* ]]; then
-                    # Парсим JSON ответ от i.pn
-                    ip=$(echo "$response" | grep '"query"' | sed 's/.*"query"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
-                else
-                    # Простой текстовый ответ - удаляем пробелы и переносы строк
-                    ip=$(echo "$response" | tr -d '[:space:]')
-                fi
-                
-                # Проверяем что получили валидный IPv4 адрес
-                if echo "$ip" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'; then
-                    # Дополнительная проверка диапазонов IPv4
-                    if echo "$ip" | awk -F. '$1>=1 && $1<=255 && $2>=0 && $2<=255 && $3>=0 && $3<=255 && $4>=0 && $4<=255' | grep -q "$ip"; then
-                        SERVER_PUBLIC_IP="$ip"
-                        log "✅ Публичный IP определён: $SERVER_PUBLIC_IP (через $service)"
-                        break
-                    fi
-                fi
-                
-                log "❌ Сервис $service не ответил корректно: '$ip'"
-                sleep 1
-            done
-        fi
-        
-        # Если все методы не сработали - ОШИБКА
-        if [ -z "$SERVER_PUBLIC_IP" ]; then
-            error "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось определить публичный IP!"
-            error "Пожалуйста, укажите IP вручную через переменную окружения:"
-            error "  SERVER_PUBLIC_IP=ВАШ_ПУБЛИЧНЫЙ_IP"
-            error "Или проверьте сетевое подключение контейнера."
-            exit 1
-        fi
-    else
-        log "Используется заданный IP: $SERVER_PUBLIC_IP"
-    fi
-    
-    log "Публичный IP: $SERVER_PUBLIC_IP"
-}
+# get_public_ip() — используется из common.sh (режим strict)
 
 # Функция генерации ключей
 generate_keys() {

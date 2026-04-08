@@ -11,15 +11,13 @@ AWG_PORT=${AWG_PORT:-51820}
 HEALTHCHECK_TIMEOUT=${HEALTHCHECK_TIMEOUT:-5}
 VERBOSE=${HEALTHCHECK_VERBOSE:-false}
 
-# Функция логирования
+# Подключаем общую библиотеку
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common.sh"
+
+# Переопределяем лог-функции для healthcheck (специфический формат)
 log() {
     echo "[HEALTHCHECK] $(date '+%H:%M:%S') $1"
-}
-
-debug() {
-    if [ "$VERBOSE" = "true" ]; then
-        echo "[HEALTHCHECK DEBUG] $(date '+%H:%M:%S') $1"
-    fi
 }
 
 warn() {
