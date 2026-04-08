@@ -125,7 +125,9 @@ generate-obfuscation: check-env
 	sed -i "s/^AWG_S1=.*/AWG_S1=$$AWG_S1/" .env; \
 	sed -i "s/^AWG_S2=.*/AWG_S2=$$AWG_S2/" .env; \
 	sed -i "s/^AWG_S3=.*/AWG_S3=$$AWG_S3/" .env; \
+	grep -q '^AWG_S3=' .env || echo "AWG_S3=$$AWG_S3" >> .env; \
 	sed -i "s/^AWG_S4=.*/AWG_S4=$$AWG_S4/" .env; \
+	grep -q '^AWG_S4=' .env || echo "AWG_S4=$$AWG_S4" >> .env; \
 	sed -i "s/^AWG_H1=.*/AWG_H1=$$AWG_H1/" .env; \
 	sed -i "s/^AWG_H2=.*/AWG_H2=$$AWG_H2/" .env; \
 	sed -i "s/^AWG_H3=.*/AWG_H3=$$AWG_H3/" .env; \
@@ -457,7 +459,6 @@ autocomplete-remove: ## Remove bash autocomplete
 		echo "$(YELLOW)Autocomplete not found$(NC)"; \
 	fi
 
-# Catch-all for positional arguments (client names, IPs)
-# Only matches targets from ARGS to avoid silently swallowing typos
-$(ARG1) $(ARG2):
+# Catch-all target для позиционных аргументов (имена клиентов, IP)
+%:
 	@:
