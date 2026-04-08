@@ -94,11 +94,14 @@ safe_exec "lsof -i UDP" "Открытые UDP сокеты"
 
 section "КОНФИГУРАЦИЯ AMNEZIAWG"
 if [ -f "/app/config/${AWG_INTERFACE}.conf" ]; then
-    safe_exec "cat /app/config/${AWG_INTERFACE}.conf" "Конфигурация сервера"
+    info "Конфигурация сервера (ключи скрыты):"
+    # БЕЗОПАСНОСТЬ: маскируем приватные ключи и PSK
+    sed -E 's/(PrivateKey|PresharedKey)\s*=\s*.+/\1 = [REDACTED]/g' "/app/config/${AWG_INTERFACE}.conf"
 else
     warn "Конфигурационный файл /app/config/${AWG_INTERFACE}.conf не найден"
 fi
 
+# БЕЗОПАСНОСТЬ: awg show не показывает приватные ключи (только публичные + статистику)
 safe_exec "awg show" "Все интерфейсы AmneziaWG"
 if ip link show "$AWG_INTERFACE" >/dev/null 2>&1; then
     safe_exec "awg show $AWG_INTERFACE" "Статус интерфейса $AWG_INTERFACE"
