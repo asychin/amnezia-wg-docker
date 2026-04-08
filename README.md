@@ -1,176 +1,193 @@
 # AmneziaWG Docker Server
 
-A containerized VPN server with DPI bypass capabilities. Based on AmneziaWG protocol for traffic obfuscation.
+Контейнеризированный VPN-сервер с обходом DPI. Основан на протоколе AmneziaWG v2 для обфускации трафика.
 
-## Features
+## Возможности
 
-- One-minute installation with automated setup
-- DPI bypass through traffic obfuscation
-- Userspace mode (no kernel modules required)
-- QR code generation for mobile clients
-- Automatic backups with scheduled backup service
-- Built-in health checks and monitoring
+- Установка за одну минуту с автоматической настройкой
+- Обход DPI через обфускацию трафика (AmneziaWG v2 — S1/S2/S3/S4)
+- Userspace режим (не требуются модули ядра)
+- QR-код и vpn:// URI для мобильных клиентов
+- Автоматические бэкапы с sidecar-сервисом
+- Встроенный healthcheck и мониторинг
 
-## Quick Start
+## Быстрый старт
 
 ```bash
-# Clone with submodules
+# Клонирование с сабмодулями
 git clone --recursive https://github.com/asychin/amnezia-wg-docker.git
 cd amnezia-wg-docker
 
-# Start server
+# Запуск сервера
 make up
 
-# Add a client
+# Добавить клиента (автоматически показывает QR + vpn:// URI)
 make client-add john
 
-# Show QR code for mobile
+# Показать QR-код для мобильного
 make client-qr john
+
+# Показать vpn:// URI для импорта в AmneziaVPN
+make client-vpnurl john
 ```
 
-If you forgot `--recursive` when cloning:
+Если забыли `--recursive` при клонировании:
 ```bash
 git submodule update --init --recursive
 ```
 
-## Requirements
+## Требования
 
 - Docker 20.10+
 - Docker Compose 2.0+
 - Git
 
-## Commands
+## Команды
 
-### Main Commands
+### Основные
 
-| Command | Description |
-|---------|-------------|
-| `make up` | Start VPN server |
-| `make down` | Stop server |
-| `make restart` | Restart server |
-| `make status` | Show server status |
-| `make logs` | View logs |
-| `make build` | Build Docker image |
+| Команда | Описание |
+|---------|----------|
+| `make up` | Запустить VPN-сервер |
+| `make down` | Остановить сервер |
+| `make restart` | Перезапустить сервер |
+| `make reload` | Перезагрузить конфигурацию (без перезапуска) |
+| `make status` | Показать статус сервера |
+| `make logs` | Просмотр логов |
+| `make build` | Собрать Docker-образ (с кешем) |
+| `make rebuild` | Пересобрать Docker-образ (без кеша) |
 
-### Client Management
+### Управление клиентами
 
-| Command | Description |
-|---------|-------------|
-| `make client-add john` | Add client (simple syntax) |
-| `make client-add john 10.13.13.5` | Add client with specific IP |
-| `make client-add name=john ip=10.13.13.5` | Add client (key=value syntax) |
-| `make client-rm john` | Remove client |
-| `make client-qr john` | Show QR code |
-| `make client-config john` | Show configuration |
-| `make client-list` | List all clients |
+| Команда | Описание |
+|---------|----------|
+| `make client-add john` | Добавить клиента |
+| `make client-add john 10.13.13.5` | Добавить клиента с конкретным IP |
+| `make client-rm john` | Удалить клиента |
+| `make client-qr john` | Показать QR-код |
+| `make client-config john` | Показать конфигурацию |
+| `make client-vpnurl john` | Показать vpn:// URI |
+| `make client-list` | Список всех клиентов |
 
-### Backup and Restore
+### Бэкапы
 
-| Command | Description |
-|---------|-------------|
-| `make backup` | Create manual backup |
-| `make restore file=backups/file.tar.gz` | Restore from backup |
-| `make backup-start` | Start scheduled backup service |
-| `make backup-stop` | Stop scheduled backup service |
-| `make backup-cleanup` | Remove old backups (keep last 10) |
+| Команда | Описание |
+|---------|----------|
+| `make backup` | Создать бэкап вручную |
+| `make restore file=backups/file.tar.gz` | Восстановить из бэкапа |
+| `make backup-cleanup` | Удалить старые бэкапы |
+| `make backup-verify file=backups/file.tar.gz` | Проверить целостность бэкапа |
 
-### Utilities
+### Утилиты
 
-| Command | Description |
-|---------|-------------|
-| `make shell` | Enter container shell |
-| `make debug` | Show debug information |
-| `make test` | Test server connectivity |
-| `make clean` | Full cleanup (removes all data) |
-| `make autocomplete-install` | Install bash autocomplete |
+| Команда | Описание |
+|---------|----------|
+| `make shell` | Войти в контейнер |
+| `make debug` | Показать диагностику |
+| `make test` | Проверить связность сервера |
+| `make clean` | Полная очистка (удаляет все данные) |
+| `make version` | Показать версию |
 
-## Configuration
+## Конфигурация
 
-Copy `.env.example` to `.env` and edit as needed. Key settings:
+Скопируйте `.env.example` в `.env` и настройте. Основные параметры:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `AWG_PORT` | 51820 | UDP port (use 443 or 53 to mimic HTTPS/DNS) |
-| `AWG_NET` | 10.13.13.0/24 | VPN network |
-| `AWG_DNS` | 8.8.8.8,8.8.4.4 | DNS servers for clients |
-| `SERVER_PUBLIC_IP` | auto | Server public IP (auto-detected) |
+| Переменная | По умолчанию | Описание |
+|------------|-------------|----------|
+| `AWG_PORT` | 51820 | UDP порт (443 или 53 для маскировки под HTTPS/DNS) |
+| `AWG_NET` | 10.13.13.0/24 | VPN сеть |
+| `AWG_DNS` | 8.8.8.8,8.8.4.4 | DNS серверы для клиентов |
+| `SERVER_PUBLIC_IP` | auto | Публичный IP сервера (автоопределение) |
 
-### Obfuscation Parameters
+### Параметры обфускации (AmneziaWG v2)
 
-These are randomly generated on first `make init`:
+Генерируются автоматически при первом `make init`:
 
-| Variable | Range | Description |
-|----------|-------|-------------|
-| `AWG_JC` | 4-12 | Junk packet count |
-| `AWG_JMIN` | 8-50 | Min junk packet size |
-| `AWG_JMAX` | 80-250 | Max junk packet size |
-| `AWG_S1` | 15-150 | Junk data size for init packets |
-| `AWG_S2` | 15-150 | Junk data size for response packets |
-| `AWG_H1-H4` | 5-2147483647 | Magic header values (unique 32-bit integers) |
+| Переменная | Диапазон | Описание |
+|------------|---------|----------|
+| `AWG_JC` | 4-12 | Количество мусорных пакетов |
+| `AWG_JMIN` | 8-50 | Мин. размер мусорного пакета |
+| `AWG_JMAX` | 80-250 | Макс. размер мусорного пакета |
+| `AWG_S1` | 15-150 | Размер мусорных данных в init-пакетах |
+| `AWG_S2` | 15-150 | Размер мусорных данных в response-пакетах |
+| `AWG_S3` | 0-1216 | Размер мусорных данных в cookie-пакетах **(v2 NEW)** |
+| `AWG_S4` | 0-32 | Размер мусорных данных в data-пакетах **(v2 NEW)** |
+| `AWG_H1-H4` | 5-2147483647 | Magic header values (уникальные 32-bit целые) |
 
-Note: S1 and S2 are constrained so that `S1 + 56 != S2` to ensure different packet sizes.
+Ограничение: `S1 + 56 != S2` (гарантирует разные размеры пакетов).
 
-## Scheduled Backups
+## Автоматические бэкапы
 
-Start the backup sidecar container for automatic backups:
+Bэкапы запускаются автоматически как sidecar-контейнер в docker-compose:
 
 ```bash
-make backup-start
+# Ручной бэкап
+make backup
+
+# Восстановление
+make restore file=backups/amneziawg-20240101-120000.tar.gz
 ```
 
-Configure in `.env`:
-- `BACKUP_INTERVAL` - Backup interval (default: 24h)
-- `BACKUP_KEEP` - Number of backups to keep (default: 10)
+Настройки в `.env`:
+- `BACKUP_INTERVAL` — Интервал бэкапов (по умолчанию: 24h)
+- `BACKUP_KEEP` — Количество хранимых бэкапов (по умолчанию: 10)
 
-## Mobile Setup
+## Подключение мобильных устройств
 
-1. Install AmneziaVPN app ([Android](https://play.google.com/store/apps/details?id=org.amnezia.vpn) / [iOS](https://apps.apple.com/app/amneziavpn/id1600529900))
-2. Run `make client-qr <name>` to display QR code
-3. Scan QR code with the app
-4. Connect
+1. Установите AmneziaVPN ([Android](https://play.google.com/store/apps/details?id=org.amnezia.vpn) / [iOS](https://apps.apple.com/app/amneziavpn/id1600529900))
+2. **Способ 1 (QR-код):** `make client-qr <name>` → отсканируйте QR-код
+3. **Способ 2 (vpn:// URI):** `make client-vpnurl <name>` → скопируйте строку и вставьте в приложение
+4. Подключитесь
 
-## File Structure
+## Структура файлов
 
 ```
 amnezia-wg-docker/
-├── config/           # Server configuration
-├── clients/          # Client configurations
-├── backups/          # Backup archives
-├── scripts/          # Runtime scripts
-├── amneziawg-go/     # Go implementation (submodule)
-└── amneziawg-tools/  # CLI tools (submodule)
+├── config/           # Конфигурация сервера
+├── clients/          # Конфигурации клиентов
+├── backups/          # Архивы бэкапов
+├── scripts/          # Рабочие скрипты
+│   ├── common.sh     # Общая библиотека (логирование, валидация, IP-детекция)
+│   ├── entrypoint.sh # Точка входа контейнера
+│   ├── manage-clients.sh # Управление клиентами
+│   ├── generate-vpn-uri.sh # Генерация vpn:// URI
+│   ├── backup.sh     # Автоматические бэкапы
+│   ├── healthcheck.sh # Проверка здоровья
+│   └── diagnose.sh   # Диагностика
+├── amneziawg-go/     # Go-реализация (сабмодуль)
+└── amneziawg-tools/  # CLI-утилиты (сабмодуль)
 ```
 
-## Troubleshooting
+## Решение проблем
 
-Check server status:
+Проверка статуса сервера:
 ```bash
 make status
 make debug
 make test
 ```
 
-View logs:
+Просмотр логов:
 ```bash
 make logs
 ```
 
-Common issues:
-- Port already in use: Change `AWG_PORT` in `.env`
-- Submodules missing: Run `git submodule update --init --recursive`
-- Container not starting: Check `make debug` output
+Частые проблемы:
+- Порт занят: измените `AWG_PORT` в `.env`
+- Сабмодули отсутствуют: выполните `git submodule update --init --recursive`
+- Контейнер не запускается: проверьте `make debug`
 
-## Documentation
+## Документация
 
-- [Security Guide](SECURITY.md)
-- [Migration Guide](MIGRATION.md)
+- [Руководство по безопасности](SECURITY.md)
+- [Руководство по миграции](MIGRATION.md)
 - [CI/CD Pipeline](PIPELINE.md)
 
-## License
+## Лицензия
 
-MIT License - see [LICENSE](LICENSE)
+MIT License — см. [LICENSE](LICENSE)
 
-## Credits
+## Авторы
 
-- [AmneziaVPN Team](https://github.com/amnezia-vpn) - Original AmneziaWG protocol
-- Docker implementation by [@asychin](https://github.com/asychin)
+- [AmneziaVPN Team](https://github.com/amnezia-vpn) — Оригинальный протокол AmneziaWG
+- Docker-реализация от [@asychin](https://github.com/asychin)
