@@ -67,27 +67,12 @@ services:
       - ./config:/data/config:ro
       - ./clients:/data/clients:ro
       - ./backups:/backups
+      - ./scripts/backup.sh:/app/scripts/backup.sh:ro
     environment:
       - BACKUP_INTERVAL=${BACKUP_INTERVAL:-24h}
       - BACKUP_KEEP=${BACKUP_KEEP:-10}
     entrypoint: /bin/sh
-    command:
-      - -c
-      - |
-        echo "Backup service started. Interval: $${BACKUP_INTERVAL}, Keep: $${BACKUP_KEEP} backups"
-        mkdir -p /backups
-        while true; do
-          sleep $${BACKUP_INTERVAL}
-          BACKUP_FILE="/backups/amneziawg-$$(date +%Y%m%d-%H%M%S).tar.gz"
-          echo "Creating backup: $${BACKUP_FILE}"
-          tar -czf "$${BACKUP_FILE}" -C /data config clients 2>/dev/null
-          if [ -f "$${BACKUP_FILE}" ]; then
-            echo "Backup created successfully"
-            cd /backups && ls -t amneziawg-*.tar.gz 2>/dev/null | tail -n +$$((BACKUP_KEEP + 1)) | xargs rm -f 2>/dev/null
-          else
-            echo "Backup failed"
-          fi
-        done
+    command: ["/app/scripts/backup.sh"]
     restart: unless-stopped
     depends_on:
       - vpn
