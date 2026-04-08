@@ -253,9 +253,9 @@ EOF
         qrencode -t ansiutf8 < "${CLIENTS_DIR}/${client_name}.conf"
     fi
 
-    # Показываем vpn:// URI
+    # Показываем vpn:// URI (не фатально — клиент уже создан)
     if [ -x "${SCRIPT_DIR}/generate-vpn-uri.sh" ]; then
-        "${SCRIPT_DIR}/generate-vpn-uri.sh" "$client_name"
+        "${SCRIPT_DIR}/generate-vpn-uri.sh" "$client_name" || warn "Не удалось сгенерировать vpn:// URI"
     fi
 }
 
