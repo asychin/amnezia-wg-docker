@@ -410,6 +410,11 @@ main() {
     log "Сеть: $AWG_NET"
     log "IP сервера: $AWG_SERVER_IP"
     
+    # Включаем IP forwarding и src_valid_mark (необходимо для VPN)
+    # В host network mode sysctls нельзя задать через docker-compose
+    sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || warn "Не удалось включить ip_forward"
+    sysctl -w net.ipv4.conf.all.src_valid_mark=1 >/dev/null 2>&1 || warn "Не удалось включить src_valid_mark"
+    
     # Получаем публичный IP
     get_public_ip
     
