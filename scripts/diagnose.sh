@@ -9,33 +9,9 @@ set -e
 AWG_INTERFACE=${AWG_INTERFACE:-awg0}
 AWG_PORT=${AWG_PORT:-51820}
 
-# Цвета для логов
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
-
-log() {
-    echo -e "${GREEN}[ДИАГНОСТИКА]${NC} $1"
-}
-
-warn() {
-    echo -e "${YELLOW}[ПРЕДУПРЕЖДЕНИЕ]${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[ОШИБКА]${NC} $1"
-}
-
-info() {
-    echo -e "${BLUE}[ИНФОРМАЦИЯ]${NC} $1"
-}
-
-section() {
-    echo -e "\n${CYAN}=== $1 ===${NC}"
-}
+# Подключаем общую библиотеку
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common.sh"
 
 # Функция для выполнения команды с отловом ошибок
 safe_exec() {
@@ -118,11 +94,14 @@ safe_exec "lsof -i UDP" "Открытые UDP сокеты"
 
 section "КОНФИГУРАЦИЯ AMNEZIAWG"
 if [ -f "/app/config/${AWG_INTERFACE}.conf" ]; then
-    safe_exec "cat /app/config/${AWG_INTERFACE}.conf" "Конфигурация сервера"
+    info "Конфигурация сервера (ключи скрыты):"
+    # БЕЗОПАСНОСТЬ: маскируем приватные ключи и PSK
+    sed -E 's/(PrivateKey|PresharedKey)\s*=\s*.+/\1 = [REDACTED]/g' "/app/config/${AWG_INTERFACE}.conf"
 else
     warn "Конфигурационный файл /app/config/${AWG_INTERFACE}.conf не найден"
 fi
 
+# БЕЗОПАСНОСТЬ: awg show не показывает приватные ключи (только публичные + статистику)
 safe_exec "awg show" "Все интерфейсы AmneziaWG"
 if ip link show "$AWG_INTERFACE" >/dev/null 2>&1; then
     safe_exec "awg show $AWG_INTERFACE" "Статус интерфейса $AWG_INTERFACE"

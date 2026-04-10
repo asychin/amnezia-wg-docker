@@ -5,25 +5,9 @@
 
 set -e
 
-# Цвета для логов
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
-
-# Функция логирования
-log() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')]${NC} $1"
-}
-
-warn() {
-    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] WARNING:${NC} $1"
-}
-
-error() {
-    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] ERROR:${NC} $1"
-}
+# Подключаем общую библиотеку
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/common.sh"
 
 # Конфигурация по умолчанию
 AWG_INTERFACE=${AWG_INTERFACE:-awg0}
@@ -32,12 +16,14 @@ AWG_NET=${AWG_NET:-10.13.13.0/24}
 AWG_SERVER_IP=${AWG_SERVER_IP:-10.13.13.1}
 AWG_DNS=${AWG_DNS:-8.8.8.8,8.8.4.4}
 
-# Параметры обфускации AmneziaWG
+# Параметры обфускации AmneziaWG (v2)
 AWG_JC=${AWG_JC:-7}
 AWG_JMIN=${AWG_JMIN:-50}
 AWG_JMAX=${AWG_JMAX:-1000}
 AWG_S1=${AWG_S1:-86}
-AWG_S2=${AWG_S2:-574}
+AWG_S2=${AWG_S2:-120}
+AWG_S3=${AWG_S3:-40}
+AWG_S4=${AWG_S4:-10}
 AWG_H1=${AWG_H1:-1}
 AWG_H2=${AWG_H2:-2}
 AWG_H3=${AWG_H3:-3}
@@ -47,99 +33,7 @@ AWG_H4=${AWG_H4:-4}
 CONFIG_FILE="/app/config/${AWG_INTERFACE}.conf"
 CLIENT_DIR="/app/clients"
 
-# Функция получения публичного IP
-get_public_ip() {
-    if [ "$SERVER_PUBLIC_IP" = "auto" ] || [ -z "$SERVER_PUBLIC_IP" ]; then
-        # Исправляем DNS если нужно (с проверкой прав записи)
-        if ! nslookup google.com >/dev/null 2>&1; then
-            log "Исправляем DNS настройки..."
-            if [ -w /etc/resolv.conf ] || [ -w /etc ]; then
-                echo "nameserver 8.8.8.8" > /etc/resolv.conf
-                echo "nameserver 8.8.4.4" >> /etc/resolv.conf
-            else
-                warn "Нет прав для изменения /etc/resolv.conf, пропускаем..."
-            fi
-        fi
-        
-        log "Определяем публичный IP автоматически..."
-        
-        SERVER_PUBLIC_IP=""
-        
-        # ПРИОРИТЕТНЫЙ МЕТОД: Определение IP через маршрутизацию (самый надёжный)
-        if command -v ip >/dev/null 2>&1; then
-            log "Пробуем определить IP через маршрутизацию (ip route)..."
-            local_ip=$(ip -4 route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' || true)
-            
-            if [ -n "$local_ip" ] && echo "$local_ip" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'; then
-                # Проверяем, не является ли это приватным IP
-                if ! echo "$local_ip" | grep -qE '^(10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|127\.)'; then
-                    SERVER_PUBLIC_IP="$local_ip"
-                    log "✅ Публичный IP определён через маршрутизацию: $SERVER_PUBLIC_IP"
-                else
-                    log "IP из маршрутизации приватный ($local_ip), используем внешние сервисы..."
-                fi
-            fi
-        fi
-        
-        # Если приоритетный метод не сработал, используем внешние сервисы
-        if [ -z "$SERVER_PUBLIC_IP" ]; then
-            # Список сервисов для определения публичного IP (в порядке приоритета)
-            IP_SERVICES=(
-                "http://eth0.me"                    # Быстрый HTTP сервис
-                "https://ipv4.icanhazip.com"        # Надежный HTTPS
-                "https://api.ipify.org"             # JSON API
-                "https://checkip.amazonaws.com"     # AWS сервис
-                "https://ipinfo.io/ip"              # Подробная информация
-                "https://ifconfig.me/ip"            # Классический сервис
-                "http://whatismyip.akamai.com"      # CDN Akamai
-                "http://i.pn"                       # JSON ответ
-            )
-            
-            # Пробуем каждый сервис до получения валидного IP
-            for service in "${IP_SERVICES[@]}"; do
-                log "Пробуем сервис: $service"
-                
-                # Получаем ответ с таймаутом 10 секунд (ПРИНУДИТЕЛЬНО IPv4)
-                response=$(curl -4 -s --connect-timeout 10 --max-time 15 "$service" 2>/dev/null)
-                
-                # Извлекаем IP из ответа
-                if [[ "$service" == *"i.pn"* ]]; then
-                    # Парсим JSON ответ от i.pn
-                    ip=$(echo "$response" | grep '"query"' | sed 's/.*"query"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
-                else
-                    # Простой текстовый ответ - удаляем пробелы и переносы строк
-                    ip=$(echo "$response" | tr -d '[:space:]')
-                fi
-                
-                # Проверяем что получили валидный IPv4 адрес
-                if echo "$ip" | grep -qE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'; then
-                    # Дополнительная проверка диапазонов IPv4
-                    if echo "$ip" | awk -F. '$1>=1 && $1<=255 && $2>=0 && $2<=255 && $3>=0 && $3<=255 && $4>=0 && $4<=255' | grep -q "$ip"; then
-                        SERVER_PUBLIC_IP="$ip"
-                        log "✅ Публичный IP определён: $SERVER_PUBLIC_IP (через $service)"
-                        break
-                    fi
-                fi
-                
-                log "❌ Сервис $service не ответил корректно: '$ip'"
-                sleep 1
-            done
-        fi
-        
-        # Если все методы не сработали - ОШИБКА
-        if [ -z "$SERVER_PUBLIC_IP" ]; then
-            error "❌ КРИТИЧЕСКАЯ ОШИБКА: Не удалось определить публичный IP!"
-            error "Пожалуйста, укажите IP вручную через переменную окружения:"
-            error "  SERVER_PUBLIC_IP=ВАШ_ПУБЛИЧНЫЙ_IP"
-            error "Или проверьте сетевое подключение контейнера."
-            exit 1
-        fi
-    else
-        log "Используется заданный IP: $SERVER_PUBLIC_IP"
-    fi
-    
-    log "Публичный IP: $SERVER_PUBLIC_IP"
-}
+# get_public_ip() — используется из common.sh (режим strict)
 
 # Функция генерации ключей
 generate_keys() {
@@ -174,12 +68,14 @@ create_server_config() {
 ListenPort = ${AWG_PORT}
 PrivateKey = ${SERVER_PRIVATE_KEY}
 
-# Параметры обфускации AmneziaWG
+# Параметры обфускации AmneziaWG (v2)
 Jc = ${AWG_JC}
 Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
 S1 = ${AWG_S1}
 S2 = ${AWG_S2}
+S3 = ${AWG_S3}
+S4 = ${AWG_S4}
 H1 = ${AWG_H1}
 H2 = ${AWG_H2}
 H3 = ${AWG_H3}
@@ -293,12 +189,27 @@ setup_iptables() {
     fi
     log "Используем интерфейс для NAT: $out_interface"
     
-    # Очистка старых правил (игнорируем ошибки)
-    iptables -t nat -F 2>/dev/null || warn "Не удалось очистить NAT правила"
-    iptables -t filter -F FORWARD 2>/dev/null || warn "Не удалось очистить FORWARD правила"
+    # Используем кастомные цепочки чтобы не затрагивать правила хоста
+    # (критично для network_mode: host — flush основных цепочек сломает весь хост)
+    local nat_chain="AWG-POSTROUTING"
+    local fwd_chain="AWG-FORWARD"
     
-    # Пытаемся включить NAT для клиентов (доступ в интернет)
-    if iptables -t nat -A POSTROUTING -s ${AWG_NET} -o $out_interface -j MASQUERADE 2>/dev/null; then
+    # Создаём кастомные цепочки (если не существуют)
+    iptables -t nat -N $nat_chain 2>/dev/null || true
+    iptables -t filter -N $fwd_chain 2>/dev/null || true
+    
+    # Очищаем только наши цепочки (безопасно для хоста)
+    iptables -t nat -F $nat_chain 2>/dev/null || warn "Не удалось очистить цепочку $nat_chain"
+    iptables -t filter -F $fwd_chain 2>/dev/null || warn "Не удалось очистить цепочку $fwd_chain"
+    
+    # Добавляем jump-правила в основные цепочки (если ещё не добавлены)
+    iptables -t nat -C POSTROUTING -j $nat_chain 2>/dev/null || \
+        iptables -t nat -A POSTROUTING -j $nat_chain 2>/dev/null || true
+    iptables -t filter -C FORWARD -j $fwd_chain 2>/dev/null || \
+        iptables -t filter -A FORWARD -j $fwd_chain 2>/dev/null || true
+    
+    # NAT для клиентов (доступ в интернет)
+    if iptables -t nat -A $nat_chain -s ${AWG_NET} -o $out_interface -j MASQUERADE 2>/dev/null; then
         log "✅ NAT правило добавлено (VPN -> интернет)"
     else
         warn "❌ Не удалось добавить NAT правило"
@@ -309,43 +220,43 @@ setup_iptables() {
         log "Site-to-site режим: настраиваем доступ к локальной сети $SERVER_SUBNET"
         
         # NAT для доступа VPN клиентов к локальной сети сервера
-        if iptables -t nat -A POSTROUTING -s ${AWG_NET} -d ${SERVER_SUBNET} -j MASQUERADE 2>/dev/null; then
+        if iptables -t nat -A $nat_chain -s ${AWG_NET} -d ${SERVER_SUBNET} -j MASQUERADE 2>/dev/null; then
             log "✅ NAT правило добавлено (VPN -> локальная сеть $SERVER_SUBNET)"
         else
             warn "❌ Не удалось добавить NAT правило для локальной сети"
         fi
         
         # Forward правила для трафика между VPN и локальной сетью
-        if iptables -A FORWARD -s ${AWG_NET} -d ${SERVER_SUBNET} -j ACCEPT 2>/dev/null; then
+        if iptables -A $fwd_chain -s ${AWG_NET} -d ${SERVER_SUBNET} -j ACCEPT 2>/dev/null; then
             log "✅ FORWARD правило добавлено (VPN -> локальная сеть)"
         else
             warn "❌ Не удалось добавить FORWARD правило (VPN -> локальная сеть)"
         fi
         
-        if iptables -A FORWARD -s ${SERVER_SUBNET} -d ${AWG_NET} -j ACCEPT 2>/dev/null; then
+        if iptables -A $fwd_chain -s ${SERVER_SUBNET} -d ${AWG_NET} -j ACCEPT 2>/dev/null; then
             log "✅ FORWARD правило добавлено (локальная сеть -> VPN)"
         else
             warn "❌ Не удалось добавить FORWARD правило (локальная сеть -> VPN)"
         fi
     fi
     
-    # Пытаемся настроить forward правила
-    if iptables -A FORWARD -i ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
+    # Forward правила для VPN трафика
+    if iptables -A $fwd_chain -i ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
         log "✅ FORWARD правило (входящий) добавлено"
     else
         warn "❌ Не удалось добавить FORWARD правило (входящий)"
     fi
     
-    if iptables -A FORWARD -o ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
+    if iptables -A $fwd_chain -o ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
         log "✅ FORWARD правило (исходящий) добавлено"
     else
         warn "❌ Не удалось добавить FORWARD правило (исходящий)"
     fi
     
     # MSS clamping для предотвращения PMTUD Black Hole
-    # В режиме host network (S2S) нет Docker-прослойки которая делает это автоматически
-    # Это правило заставляет TCP соединения использовать правильный размер сегмента
-    if iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; then
+    if iptables -t mangle -C FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; then
+        log "✅ MSS clamping правило уже существует"
+    elif iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; then
         log "✅ MSS clamping правило добавлено (предотвращение PMTUD Black Hole)"
     else
         warn "❌ Не удалось добавить MSS clamping правило"
@@ -444,6 +355,8 @@ Jmin = ${AWG_JMIN}
 Jmax = ${AWG_JMAX}
 S1 = ${AWG_S1}
 S2 = ${AWG_S2}
+S3 = ${AWG_S3}
+S4 = ${AWG_S4}
 H1 = ${AWG_H1}
 H2 = ${AWG_H2}
 H3 = ${AWG_H3}
@@ -474,74 +387,6 @@ EOF
     fi
 }
 
-# Функция создания клиентской конфигурации
-create_client_config() {
-    local client_name=${1:-"client1"}
-    local client_ip=${2:-"10.13.13.2"}
-    
-    log "Создаем конфигурацию для клиента: $client_name"
-    
-    # Убеждаемся что директория clients существует (755 for user access)
-    mkdir -p /app/clients
-    chmod 755 /app/clients
-    
-    # Генерируем ключи клиента
-    CLIENT_PRIVATE_KEY=$(awg genkey)
-    CLIENT_PUBLIC_KEY=$(echo "$CLIENT_PRIVATE_KEY" | awg pubkey)
-    
-    # Сохраняем ключи (private key secure, public key readable)
-    echo "$CLIENT_PRIVATE_KEY" > "/app/clients/${client_name}_private.key"
-    chmod 600 "/app/clients/${client_name}_private.key"
-    echo "$CLIENT_PUBLIC_KEY" > "/app/clients/${client_name}_public.key"
-    chmod 644 "/app/clients/${client_name}_public.key"
-    
-    # Создаем конфигурацию клиента
-    cat > "/app/clients/${client_name}.conf" << EOF
-[Interface]
-PrivateKey = ${CLIENT_PRIVATE_KEY}
-Address = ${client_ip}/32
-DNS = ${AWG_DNS}
-MTU = 1280
-Jc = ${AWG_JC}
-Jmin = ${AWG_JMIN}
-Jmax = ${AWG_JMAX}
-S1 = ${AWG_S1}
-S2 = ${AWG_S2}
-H1 = ${AWG_H1}
-H2 = ${AWG_H2}
-H3 = ${AWG_H3}
-H4 = ${AWG_H4}
-
-[Peer]
-PublicKey = ${SERVER_PUBLIC_KEY}
-Endpoint = ${SERVER_PUBLIC_IP}:${AWG_PORT}
-AllowedIPs = ${ALLOWED_IPS:-0.0.0.0/0}
-PersistentKeepalive = 25
-EOF
-    
-    # Make client config readable for users to import
-    chmod 644 "/app/clients/${client_name}.conf"
-    
-    # Добавляем peer в конфигурацию сервера
-    cat >> "$CONFIG_FILE" << EOF
-
-[Peer]
-# ${client_name}
-PublicKey = ${CLIENT_PUBLIC_KEY}
-AllowedIPs = ${client_ip}/32
-EOF
-    
-    log "Конфигурация клиента $client_name создана"
-    log "Приватный ключ: $CLIENT_PRIVATE_KEY"
-    log "Публичный ключ: $CLIENT_PUBLIC_KEY"
-    
-    # Генерируем QR код
-    if command -v qrencode &> /dev/null; then
-        qrencode -t ansiutf8 < "/app/clients/${client_name}.conf"
-        log "QR код для клиента $client_name сгенерирован"
-    fi
-}
-
 # Функция для остановки сервиса
 cleanup() {
     log "Получен сигнал завершения..."
@@ -565,6 +410,16 @@ cleanup() {
         ip link del ${AWG_INTERFACE} 2>/dev/null || true
     fi
     
+    # Очищаем наши iptables цепочки (не трогаем правила хоста)
+    iptables -t nat -F AWG-POSTROUTING 2>/dev/null || true
+    iptables -t filter -F AWG-FORWARD 2>/dev/null || true
+    iptables -t nat -D POSTROUTING -j AWG-POSTROUTING 2>/dev/null || true
+    iptables -t filter -D FORWARD -j AWG-FORWARD 2>/dev/null || true
+    iptables -t nat -X AWG-POSTROUTING 2>/dev/null || true
+    iptables -t filter -X AWG-FORWARD 2>/dev/null || true
+    # Удаляем MSS clamping правило из mangle таблицы
+    iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
+    
     log "AmneziaWG userspace остановлен"
     exit 0
 }
@@ -579,6 +434,11 @@ main() {
     log "Порт: $AWG_PORT"
     log "Сеть: $AWG_NET"
     log "IP сервера: $AWG_SERVER_IP"
+    
+    # Включаем IP forwarding и src_valid_mark (необходимо для VPN)
+    # В host network mode sysctls нельзя задать через docker-compose
+    sysctl -w net.ipv4.ip_forward=1 >/dev/null 2>&1 || warn "Не удалось включить ip_forward"
+    sysctl -w net.ipv4.conf.all.src_valid_mark=1 >/dev/null 2>&1 || warn "Не удалось включить src_valid_mark"
     
     # Получаем публичный IP
     get_public_ip

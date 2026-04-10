@@ -1,14 +1,14 @@
 # AmneziaWG Docker Server
 
-A containerized VPN server with DPI bypass capabilities. Based on AmneziaWG protocol for traffic obfuscation.
+A containerized VPN server with DPI bypass capabilities. Based on AmneziaWG v2 protocol for traffic obfuscation.
 
 ## Features
 
 - One-minute installation with automated setup
-- DPI bypass through traffic obfuscation
+- DPI bypass through traffic obfuscation (AmneziaWG v2 — S1/S2/S3/S4)
 - Userspace mode (no kernel modules required)
-- QR code generation for mobile clients
-- Automatic backups with scheduled backup service
+- QR code and vpn:// URI generation for mobile clients
+- Automatic backups with sidecar service
 - Built-in health checks and monitoring
 
 ## Quick Start
@@ -21,11 +21,14 @@ cd amnezia-wg-docker
 # Start server
 make up
 
-# Add a client
+# Add a client (automatically shows QR + vpn:// URI)
 make client-add john
 
 # Show QR code for mobile
 make client-qr john
+
+# Show vpn:// URI for AmneziaVPN import
+make client-vpnurl john
 ```
 
 If you forgot `--recursive` when cloning:
@@ -48,20 +51,22 @@ git submodule update --init --recursive
 | `make up` | Start VPN server |
 | `make down` | Stop server |
 | `make restart` | Restart server |
+| `make reload` | Reload configuration (without restart) |
 | `make status` | Show server status |
 | `make logs` | View logs |
-| `make build` | Build Docker image |
+| `make build` | Build Docker image (with cache) |
+| `make rebuild` | Rebuild Docker image (no cache) |
 
 ### Client Management
 
 | Command | Description |
 |---------|-------------|
-| `make client-add john` | Add client (simple syntax) |
+| `make client-add john` | Add client |
 | `make client-add john 10.13.13.5` | Add client with specific IP |
-| `make client-add name=john ip=10.13.13.5` | Add client (key=value syntax) |
 | `make client-rm john` | Remove client |
 | `make client-qr john` | Show QR code |
 | `make client-config john` | Show configuration |
+| `make client-vpnurl john` | Show vpn:// URI |
 | `make client-list` | List all clients |
 
 ### Backup and Restore
@@ -70,19 +75,18 @@ git submodule update --init --recursive
 |---------|-------------|
 | `make backup` | Create manual backup |
 | `make restore file=backups/file.tar.gz` | Restore from backup |
-| `make backup-start` | Start scheduled backup service |
-| `make backup-stop` | Stop scheduled backup service |
-| `make backup-cleanup` | Remove old backups (keep last 10) |
+| `make backup-cleanup` | Remove old backups |
+| `make backup-verify file=backups/file.tar.gz` | Verify backup integrity |
 
 ### Utilities
 
 | Command | Description |
 |---------|-------------|
 | `make shell` | Enter container shell |
-| `make debug` | Show debug information |
+| `make debug` | Show diagnostics |
 | `make test` | Test server connectivity |
 | `make clean` | Full cleanup (removes all data) |
-| `make autocomplete-install` | Install bash autocomplete |
+| `make version` | Show version |
 
 ## Configuration
 
@@ -95,7 +99,7 @@ Copy `.env.example` to `.env` and edit as needed. Key settings:
 | `AWG_DNS` | 8.8.8.8,8.8.4.4 | DNS servers for clients |
 | `SERVER_PUBLIC_IP` | auto | Server public IP (auto-detected) |
 
-### Obfuscation Parameters
+### Obfuscation Parameters (AmneziaWG v2)
 
 These are randomly generated on first `make init`:
 
@@ -106,16 +110,22 @@ These are randomly generated on first `make init`:
 | `AWG_JMAX` | 80-250 | Max junk packet size |
 | `AWG_S1` | 15-150 | Junk data size for init packets |
 | `AWG_S2` | 15-150 | Junk data size for response packets |
+| `AWG_S3` | 0-1216 | Junk data size for cookie packets **(v2 NEW)** |
+| `AWG_S4` | 0-32 | Junk data size for data packets **(v2 NEW)** |
 | `AWG_H1-H4` | 5-2147483647 | Magic header values (unique 32-bit integers) |
 
 Note: S1 and S2 are constrained so that `S1 + 56 != S2` to ensure different packet sizes.
 
 ## Scheduled Backups
 
-Start the backup sidecar container for automatic backups:
+Backups run automatically as a sidecar container in docker-compose:
 
 ```bash
-make backup-start
+# Manual backup
+make backup
+
+# Restore
+make restore file=backups/amneziawg-20240101-120000.tar.gz
 ```
 
 Configure in `.env`:
@@ -124,9 +134,9 @@ Configure in `.env`:
 
 ## Mobile Setup
 
-1. Install AmneziaVPN app ([Android](https://play.google.com/store/apps/details?id=org.amnezia.vpn) / [iOS](https://apps.apple.com/app/amneziavpn/id1600529900))
-2. Run `make client-qr <name>` to display QR code
-3. Scan QR code with the app
+1. Install AmneziaVPN ([Android](https://play.google.com/store/apps/details?id=org.amnezia.vpn) / [iOS](https://apps.apple.com/app/amneziavpn/id1600529900))
+2. **Option 1 (QR code):** `make client-qr <name>` → scan the QR code
+3. **Option 2 (vpn:// URI):** `make client-vpnurl <name>` → copy the string and paste into the app
 4. Connect
 
 ## File Structure
@@ -137,6 +147,13 @@ amnezia-wg-docker/
 ├── clients/          # Client configurations
 ├── backups/          # Backup archives
 ├── scripts/          # Runtime scripts
+│   ├── common.sh     # Shared library (logging, validation, IP detection)
+│   ├── entrypoint.sh # Container entrypoint
+│   ├── manage-clients.sh # Client management
+│   ├── generate-vpn-uri.sh # vpn:// URI generation
+│   ├── backup.sh     # Automatic backups
+│   ├── healthcheck.sh # Health checks
+│   └── diagnose.sh   # Diagnostics
 ├── amneziawg-go/     # Go implementation (submodule)
 └── amneziawg-tools/  # CLI tools (submodule)
 ```
