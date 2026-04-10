@@ -417,6 +417,8 @@ cleanup() {
     iptables -t filter -D FORWARD -j AWG-FORWARD 2>/dev/null || true
     iptables -t nat -X AWG-POSTROUTING 2>/dev/null || true
     iptables -t filter -X AWG-FORWARD 2>/dev/null || true
+    # Удаляем MSS clamping правило из mangle таблицы
+    iptables -t mangle -D FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null || true
     
     log "AmneziaWG userspace остановлен"
     exit 0
