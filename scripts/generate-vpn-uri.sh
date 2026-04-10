@@ -132,7 +132,7 @@ config = {
         "awg": {
             "isThirdPartyConfig": True,
             "last_config": json.dumps(last_config_obj, separators=(",", ":")),
-            "port": server_port,
+            "port": int(server_port),
             **protocol_info,
             "transport_proto": "udp",
         },

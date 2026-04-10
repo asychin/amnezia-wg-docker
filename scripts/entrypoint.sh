@@ -189,12 +189,27 @@ setup_iptables() {
     fi
     log "Используем интерфейс для NAT: $out_interface"
     
-    # Очистка старых правил (игнорируем ошибки)
-    iptables -t nat -F 2>/dev/null || warn "Не удалось очистить NAT правила"
-    iptables -t filter -F FORWARD 2>/dev/null || warn "Не удалось очистить FORWARD правила"
+    # Используем кастомные цепочки чтобы не затрагивать правила хоста
+    # (критично для network_mode: host — flush основных цепочек сломает весь хост)
+    local nat_chain="AWG-POSTROUTING"
+    local fwd_chain="AWG-FORWARD"
     
-    # Пытаемся включить NAT для клиентов (доступ в интернет)
-    if iptables -t nat -A POSTROUTING -s ${AWG_NET} -o $out_interface -j MASQUERADE 2>/dev/null; then
+    # Создаём кастомные цепочки (если не существуют)
+    iptables -t nat -N $nat_chain 2>/dev/null || true
+    iptables -t filter -N $fwd_chain 2>/dev/null || true
+    
+    # Очищаем только наши цепочки (безопасно для хоста)
+    iptables -t nat -F $nat_chain 2>/dev/null || warn "Не удалось очистить цепочку $nat_chain"
+    iptables -t filter -F $fwd_chain 2>/dev/null || warn "Не удалось очистить цепочку $fwd_chain"
+    
+    # Добавляем jump-правила в основные цепочки (если ещё не добавлены)
+    iptables -t nat -C POSTROUTING -j $nat_chain 2>/dev/null || \
+        iptables -t nat -A POSTROUTING -j $nat_chain 2>/dev/null || true
+    iptables -t filter -C FORWARD -j $fwd_chain 2>/dev/null || \
+        iptables -t filter -A FORWARD -j $fwd_chain 2>/dev/null || true
+    
+    # NAT для клиентов (доступ в интернет)
+    if iptables -t nat -A $nat_chain -s ${AWG_NET} -o $out_interface -j MASQUERADE 2>/dev/null; then
         log "✅ NAT правило добавлено (VPN -> интернет)"
     else
         warn "❌ Не удалось добавить NAT правило"
@@ -205,43 +220,43 @@ setup_iptables() {
         log "Site-to-site режим: настраиваем доступ к локальной сети $SERVER_SUBNET"
         
         # NAT для доступа VPN клиентов к локальной сети сервера
-        if iptables -t nat -A POSTROUTING -s ${AWG_NET} -d ${SERVER_SUBNET} -j MASQUERADE 2>/dev/null; then
+        if iptables -t nat -A $nat_chain -s ${AWG_NET} -d ${SERVER_SUBNET} -j MASQUERADE 2>/dev/null; then
             log "✅ NAT правило добавлено (VPN -> локальная сеть $SERVER_SUBNET)"
         else
             warn "❌ Не удалось добавить NAT правило для локальной сети"
         fi
         
         # Forward правила для трафика между VPN и локальной сетью
-        if iptables -A FORWARD -s ${AWG_NET} -d ${SERVER_SUBNET} -j ACCEPT 2>/dev/null; then
+        if iptables -A $fwd_chain -s ${AWG_NET} -d ${SERVER_SUBNET} -j ACCEPT 2>/dev/null; then
             log "✅ FORWARD правило добавлено (VPN -> локальная сеть)"
         else
             warn "❌ Не удалось добавить FORWARD правило (VPN -> локальная сеть)"
         fi
         
-        if iptables -A FORWARD -s ${SERVER_SUBNET} -d ${AWG_NET} -j ACCEPT 2>/dev/null; then
+        if iptables -A $fwd_chain -s ${SERVER_SUBNET} -d ${AWG_NET} -j ACCEPT 2>/dev/null; then
             log "✅ FORWARD правило добавлено (локальная сеть -> VPN)"
         else
             warn "❌ Не удалось добавить FORWARD правило (локальная сеть -> VPN)"
         fi
     fi
     
-    # Пытаемся настроить forward правила
-    if iptables -A FORWARD -i ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
+    # Forward правила для VPN трафика
+    if iptables -A $fwd_chain -i ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
         log "✅ FORWARD правило (входящий) добавлено"
     else
         warn "❌ Не удалось добавить FORWARD правило (входящий)"
     fi
     
-    if iptables -A FORWARD -o ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
+    if iptables -A $fwd_chain -o ${AWG_INTERFACE} -j ACCEPT 2>/dev/null; then
         log "✅ FORWARD правило (исходящий) добавлено"
     else
         warn "❌ Не удалось добавить FORWARD правило (исходящий)"
     fi
     
     # MSS clamping для предотвращения PMTUD Black Hole
-    # В режиме host network (S2S) нет Docker-прослойки которая делает это автоматически
-    # Это правило заставляет TCP соединения использовать правильный размер сегмента
-    if iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; then
+    if iptables -t mangle -C FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; then
+        log "✅ MSS clamping правило уже существует"
+    elif iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu 2>/dev/null; then
         log "✅ MSS clamping правило добавлено (предотвращение PMTUD Black Hole)"
     else
         warn "❌ Не удалось добавить MSS clamping правило"
@@ -394,6 +409,14 @@ cleanup() {
         log "Удаляем интерфейс ${AWG_INTERFACE}..."
         ip link del ${AWG_INTERFACE} 2>/dev/null || true
     fi
+    
+    # Очищаем наши iptables цепочки (не трогаем правила хоста)
+    iptables -t nat -F AWG-POSTROUTING 2>/dev/null || true
+    iptables -t filter -F AWG-FORWARD 2>/dev/null || true
+    iptables -t nat -D POSTROUTING -j AWG-POSTROUTING 2>/dev/null || true
+    iptables -t filter -D FORWARD -j AWG-FORWARD 2>/dev/null || true
+    iptables -t nat -X AWG-POSTROUTING 2>/dev/null || true
+    iptables -t filter -X AWG-FORWARD 2>/dev/null || true
     
     log "AmneziaWG userspace остановлен"
     exit 0
