@@ -252,14 +252,18 @@ EOF
         vpn_uri=$("${SCRIPT_DIR}/generate-vpn-uri.sh" --raw "$client_name" 2>/dev/null) || true
     fi
 
-    # Показываем QR код (из vpn:// URI для совместимости с AmneziaVPN)
+    # Показываем QR код (бинарный формат AmneziaVPN)
     if command -v qrencode &> /dev/null; then
         echo ""
         log "QR код для клиента $client_name:"
-        if [ -n "$vpn_uri" ]; then
-            echo "$vpn_uri" | qrencode -t ansiutf8
+        local qr_data=""
+        if [ -x "${SCRIPT_DIR}/generate-vpn-uri.sh" ] && command -v python3 &>/dev/null; then
+            qr_data=$("${SCRIPT_DIR}/generate-vpn-uri.sh" --qr "$client_name" 2>/dev/null) || true
+        fi
+        if [ -n "$qr_data" ]; then
+            echo "$qr_data" | qrencode -t ansiutf8
         else
-            warn "vpn:// URI недоступен, QR из raw .conf (только для AmneziaWG)"
+            warn "Бинарный QR недоступен, QR из raw .conf (только для AmneziaWG)"
             qrencode -t ansiutf8 < "${CLIENTS_DIR}/${client_name}.conf"
         fi
     fi
@@ -419,20 +423,20 @@ show_qr() {
         exit 1
     fi
     
-    # Генерируем vpn:// URI для QR кода (совместимо с AmneziaVPN)
-    local vpn_uri=""
+    # Генерируем QR код в бинарном формате AmneziaVPN (magic header)
+    local qr_data=""
     if [ -x "${SCRIPT_DIR}/generate-vpn-uri.sh" ] && command -v python3 &>/dev/null; then
-        vpn_uri=$("${SCRIPT_DIR}/generate-vpn-uri.sh" --raw "$client_name" 2>/dev/null) || true
+        qr_data=$("${SCRIPT_DIR}/generate-vpn-uri.sh" --qr "$client_name" 2>/dev/null) || true
     fi
     
     log "QR код для клиента $client_name:"
     echo ""
-    if [ -n "$vpn_uri" ]; then
-        echo "$vpn_uri" | qrencode -t ansiutf8
+    if [ -n "$qr_data" ]; then
+        echo "$qr_data" | qrencode -t ansiutf8
         echo ""
-        info "QR код содержит vpn:// URI (совместимо с AmneziaVPN)"
+        info "QR код в бинарном формате AmneziaVPN (совместимо с AmneziaVPN клиентом)"
     else
-        warn "vpn:// URI недоступен, QR из raw .conf (только для AmneziaWG)"
+        warn "Бинарный QR недоступен, QR из raw .conf (только для AmneziaWG)"
         qrencode -t ansiutf8 < "${CLIENTS_DIR}/${client_name}.conf"
     fi
 }
